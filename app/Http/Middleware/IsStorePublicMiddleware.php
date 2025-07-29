@@ -18,6 +18,9 @@ class IsStorePublicMiddleware
     {
         $storeId = $request->route('storeId');
         $store = Store::findOrFail($storeId);
+
+        // dd($store->load('plan'), $store->load('paymentDetail'));
+
         $user = auth()->user();
         if ($store && $store->type === 'protected') {
             if($user && $store->user_id === $user->id){

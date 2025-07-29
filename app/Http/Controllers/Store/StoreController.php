@@ -31,7 +31,7 @@ class StoreController extends Controller
         $store = Store::findOrFail($storeId);
 
         return Inertia::render('store/profile', [
-            'store' => $store
+            'store' => $store->load('plan')
         ]);
     }
 

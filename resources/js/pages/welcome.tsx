@@ -74,7 +74,7 @@ export default function Welcome() {
                 />
             </Head>
 
-            <div className="bg-white dark:bg-black text-black dark:text-white">
+            <div className="">
                 {/* ✅ HERO SECTION */}
                 <section
                     ref={heroRef}
@@ -153,7 +153,7 @@ export default function Welcome() {
                 {/* ✅ STORE PREVIEW */}
                 <section
                     ref={storeRef}
-                    className="py-4 px-6 bg-gray-50 dark:bg-gray-950 text-center"
+                    className="py-4 px-6 text-center"
                 >
                     <h2 className="text-3xl md:text-5xl font-bold mb-6">
                         Create Your Store Instantly
@@ -169,7 +169,7 @@ export default function Welcome() {
                 </section>
 
                 {/* ✅ FOOTER CTA */}
-                <section className="py-16 bg-black text-white text-center dark:bg-white dark:text-black">
+                <section className="py-16  text-center">
                     <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to Start?</h2>
                     <p className="text-lg mb-8">
                         Create your custom gear and open your store today.

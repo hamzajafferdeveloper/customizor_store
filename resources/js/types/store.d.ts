@@ -11,6 +11,7 @@ export interface StoreData {
     plan_id: number;
     bio: string;
     logo: string;
-    created_at: string; // ISO date string
-    updated_at: string; // ISO date string
+    created_at: string;
+    updated_at: string;
+    [key: string]: unknown;
 }

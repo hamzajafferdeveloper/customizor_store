@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\home;
 
 use App\Http\Controllers\Controller;
+use App\Models\PaymentDetail;
 use App\Models\Plan;
+use App\Models\Store;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,24 +14,53 @@ class PaymentController extends Controller
     public function showPaymentForm($planId)
     {
         $user = auth()->user();
+        $plan = Plan::findOrFail($planId);
 
+        // If user is not paid, show checkout page
         if (!$user->is_paid) {
-            $plan = Plan::findOrFail($planId);
-
             return Inertia::render('home/payment/checkout', [
                 'stripeKey' => config('services.stripe.key'),
                 'plan' => $plan,
             ]);
-        } elseif ($user->is_paid) {
-            if ($user->with('store')->count() > 0) {
-                return redirect()->route('store.create');
-            } else {
-                return redirect()->route('home')->with('error', 'You already have a store.');
-            }
-        } else {
-            dd('You are not authorized to access this page.');
-            return redirect()->route('home')->with('error', 'You are not authorized to access this page.');
         }
+
+        // If user is already paid
+        if ($user->is_paid) {
+            // Fetch user's payments
+            $paymentDetails = PaymentDetail::where('user_id', $user->id)
+                ->where('type', 'new')
+                ->get();
+
+            // ✅ Check if user has any payment with the given plan_id
+            $paymentForPlan = $paymentDetails->firstWhere('plan_id', $planId);
+
+            if ($paymentForPlan) {
+                // ✅ Check if any store is linked with this plan_id for this user
+                $storeExists = Store::where('user_id', $user->id)
+                    ->where('plan_id', $planId)
+                    ->exists();
+
+                if ($storeExists) {
+                    // If store already exists for this plan_id → redirect to payment page
+                    return Inertia::render('home/payment/checkout', [
+                        'stripeKey' => config('services.stripe.key'),
+                        'plan' => $plan,
+                        'message' => 'You already have a store for this plan. Please choose another plan.',
+                    ]);
+                } else {
+                    // If payment exists but no store yet → redirect to store.create
+                    return redirect()->route('store.create');
+                }
+            } else {
+                // If no payment for this plan → show checkout page
+                return Inertia::render('home/payment/checkout', [
+                    'stripeKey' => config('services.stripe.key'),
+                    'plan' => $plan,
+                ]);
+            }
+        }
+
+        return redirect()->route('home')->with('error', 'You are not authorized to access this page.');
     }
 
     /**

@@ -57,9 +57,9 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
         const data = new FormData();
 
         if (currentField === 'logo' && selectedFile) {
-            data.append('logo', selectedFile); // ✅ Send file
+            data.append('logo', selectedFile);
         } else if (currentField) {
-            data.append(currentField, tempValue); // ✅ Send text field
+            data.append(currentField, tempValue);
         }
 
         // Send the request
@@ -168,8 +168,8 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
                             </div>
                         </div>
                         <div>
-                            <p className="text-muted-foreground">Plan ID</p>
-                            <p className="font-semibold">{formData.plan_id}</p>
+                            <p className="text-muted-foreground">Plan</p>
+                            <p className="font-semibold">{store?.plan?.name}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Created At</p>

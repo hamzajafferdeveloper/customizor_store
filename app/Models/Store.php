@@ -36,4 +36,9 @@ class Store extends Model
         return $this->belongsTo(Plan::class);
     }
 
+    public function paymentDetail()
+    {
+        return $this->belongsTo(PaymentDetail::class);
+    }
+
 }

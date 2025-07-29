@@ -18,14 +18,19 @@ class IsStoreAdminMiddleware
     {
         $storeId = $request->route('storeId');
         $user = auth()->user();
+
         if (!$user) {
-            return abort(403, 'UnAthorized Access');
-        } else {
-            $store = Store::where('user_id', $user->id)->first();
-            if (!$store || $store && $store->id != $storeId ) {
-                return abort(403, 'UnAthorized Access');
-            }
-            return $next($request);
+            return abort(403, 'Unauthorized Access');
         }
+
+        // Fetch all stores for this user
+        $stores = Store::where('user_id', $user->id)->pluck('id'); // only IDs for performance
+
+        // ✅ Check if $storeId exists in user's stores
+        if (!$stores->contains($storeId)) {
+            return abort(403, 'Unauthorized Access');
+        }
+
+        return $next($request);
     }
 }

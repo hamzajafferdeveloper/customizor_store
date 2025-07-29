@@ -56,6 +56,9 @@ class HomeController extends Controller
             });
         }
 
+        $plan = $store->load('plan');
+        // dd($plan->);
+
         $products = $query->with('productColors.color')->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
         $categories = Category::all();
         $colors = Color::all();
@@ -324,4 +327,5 @@ class HomeController extends Controller
             'permissions' => $storePermissions->permissions,
         ]);
     }
+    
 }
