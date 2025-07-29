@@ -4,6 +4,7 @@ namespace App\Http\Controllers\home;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentDetail;
+use App\Models\Plan;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +44,12 @@ class StoreController extends Controller
             ->where('type', 'new')
             ->first();
 
+        $plan = Plan::findOrFail($paymentDetails->plan_id);
+
+        $expiryDate = $plan->billing_cycle === 'yearly'
+            ? now()->addYear()->toDateString()
+            : now()->addMonth()->toDateString();
+
         try {
             $store = Store::create([
                 'name' => $validatedData['name'],
@@ -52,6 +59,7 @@ class StoreController extends Controller
                 'email' => $validatedData['email'],
                 'country' => $validatedData['country'],
                 'phone' => $validatedData['phone'],
+                'plan_expiry_date' => $expiryDate,
                 'logo' => $request->file('logo')
                     ? $request->file('logo')->store('store-logos', 'public')
                     : null,

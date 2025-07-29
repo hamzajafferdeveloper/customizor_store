@@ -22,8 +22,7 @@ class Store extends Model
         'type',
         'status',
         'bio',
-        'domain',
-        'database'
+        'plan_expiry_date',
     ];
 
     public function user()

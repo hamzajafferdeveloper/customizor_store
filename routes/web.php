@@ -11,6 +11,16 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+Route::get('/checkout/mail', function() {
+    return view('mails.payment.checkout');
+});
+Route::get('/renew/mail', function() {
+    return view('mails.payment.renew');
+});
+Route::get('/upgrade/mail', function() {
+    return view('mails.payment.upgrade');
+});
+
 Route::get('/docs', [HomeController::class, 'docs'])->name('documentation');
 Route::get('/pricing', [HomeController::class, 'pricing'])->name('pricing');
 Route::get('/product/customizer/template={id}', [HomeController::class, 'customizer'])->name('customizer');
@@ -20,8 +30,13 @@ Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product
 Route::middleware(['auth', 'verified'])->group(function () {
     // Payment Routes
     Route::get('/checkout/plan-id={planId}', [PaymentController::class, 'showPaymentForm'])->name('checkout.form');
+    Route::get('/upgrade/store-id={storeId}', [PaymentController::class, 'showUpgradeForm'])->name('upgrade.form');
+    Route::get('/renew/store-id={storeId}', [PaymentController::class, 'showRenewForm'])->name('renew.form');
+
     Route::post('/payment-intent', [PaymentController::class, 'createIntent'])->name('payment.intent');
     Route::post('/confirmation', [PaymentController::class, 'confirmation'])->name('payment.confirmation');
+    Route::post('/upgrade/confirm', [PaymentController::class, 'upgradeConfirmation']);
+    Route::post('/renew/confirm', [PaymentController::class, 'renewConfirmation']);
 
     // Store Routes
     Route::get('/create/store', [StoreController::class, 'create'])->name('store.create');

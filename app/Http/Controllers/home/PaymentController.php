@@ -3,11 +3,17 @@
 namespace App\Http\Controllers\home;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CheckSuccessfullMail;
+use App\Mail\RenewSuccessfullMail;
+use App\Mail\UpgradeSuccessfullMail;
 use App\Models\PaymentDetail;
 use App\Models\Plan;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 class PaymentController extends Controller
 {
@@ -63,6 +69,42 @@ class PaymentController extends Controller
         return redirect()->route('home')->with('error', 'You are not authorized to access this page.');
     }
 
+    public function showUpgradeForm($storeId)
+    {
+        $plans = Plan::where('id', '!=', 1)->get();
+        $store = Store::findOrFail($storeId);
+
+        $user = auth()->user();
+        if ($store->user_id === $user->id) {
+            return Inertia::render('home/payment/upgrade', [
+                'stripeKey' => config('services.stripe.key'),
+                'plans' => $plans,
+                'storeId' => $storeId
+            ]);
+        } else {
+            return abort(403, 'Unathorized Access');
+        }
+
+    }
+
+    public function showRenewForm($storeId)
+    {
+        $store = Store::findOrFail($storeId);
+
+        $plan = $store->load('plan');
+
+        $user = auth()->user();
+        if ($store->user_id === $user->id) {
+            return Inertia::render('home/payment/renew', [
+                'stripeKey' => config('services.stripe.key'),
+                'plan' => $plan->plan,
+                'storeId' => $storeId
+            ]);
+        } else {
+            return abort(403, 'Unathorized Access');
+        }
+    }
+
     /**
      * Create a Stripe Payment Intent
      *
@@ -71,9 +113,9 @@ class PaymentController extends Controller
      */
     public function createIntent(Request $request)
     {
-        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(config('services.stripe.secret'));
 
-        $intent = \Stripe\PaymentIntent::create([
+        $intent = PaymentIntent::create([
             'amount' => $request->amount ?? 1999,
             'currency' => 'usd',
         ]);
@@ -96,14 +138,105 @@ class PaymentController extends Controller
         $user->save();
 
         // Store payment details
-        $paymentDetail = new \App\Models\PaymentDetail();
+        $paymentDetail = new PaymentDetail();
         $paymentDetail->user_id = $user->id;
         $paymentDetail->plan_id = $request->input('plan.id');
         $paymentDetail->amount = $request->input('plan.price');
         $paymentDetail->type = 'new'; // Assuming this is a new payment
         $paymentDetail->save();
 
-        return redirect()->back()->with('success', 'Payment successful!');
+        Mail::to($user->email)->send(new CheckSuccessfullMail());
+
+        return redirect()->route('store.create')->with('success', 'Payment successful!');
     }
 
+    public function upgradeConfirmation(Request $request)
+    {
+        // Optional: Validate
+        $request->validate([
+            'store_id' => 'required',
+            'plan.id' => 'required|integer',
+            'plan.price' => 'required|numeric',
+        ]);
+
+        // Update user as paid
+        $user = auth()->user();
+        $user->is_paid = true;
+        $user->save();
+
+        $store = Store::findOrFail($request->input('store_id'));
+
+        $oldDetail = PaymentDetail::findOrFail($store->payment_detail_id);
+
+        $oldDetail->update([
+            'type' => 'upgrade'
+        ]);
+
+        // Store payment details
+        $paymentDetail = new PaymentDetail();
+        $paymentDetail->user_id = $user->id;
+        $paymentDetail->plan_id = $request->input('plan.id');
+        $paymentDetail->amount = $request->input('plan.price');
+        $paymentDetail->type = 'upgrade';
+        $paymentDetail->save();
+
+        Mail::to($user->email)->send(new UpgradeSuccessfullMail());
+
+        $plan = Plan::findOrFail($request->input('plan.id'));
+
+        $expiryDate = $plan->billing_cycle === 'yearly'
+            ? now()->addYear()->toDateString()
+            : now()->addMonth()->toDateString();
+
+        $store->update([
+            'payment_detail_id' => $paymentDetail->id,
+            'plan_id' => $request->input('plan.id'),
+            'plan_expiry_date' => $expiryDate,
+            'status' => 'active'
+        ]);
+
+        return redirect()->route('store.dashboard', $request->input('store_id'));
+    }
+
+    public function renewConfirmation(Request $request)
+    {
+        // Optional: Validate
+        $request->validate([
+            'store_id' => 'required',
+            'plan.id' => 'required|integer',
+            'plan.price' => 'required|numeric',
+        ]);
+
+        // Update user as paid
+        $user = auth()->user();
+        $user->is_paid = true;
+        $user->save();
+
+        // Store payment details
+        $paymentDetail = new PaymentDetail();
+        $paymentDetail->user_id = $user->id;
+        $paymentDetail->plan_id = $request->input('plan.id');
+        $paymentDetail->amount = $request->input('plan.price');
+        $paymentDetail->type = 'upgrade'; // Assuming this is a new payment
+        $paymentDetail->save();
+
+        $store = Store::findOrFail($request->input('store_id'));
+
+        $plan = Plan::findOrFail($request->input('plan.id'));
+
+        $expiryDate = $plan->billing_cycle === 'yearly'
+            ? now()->addYear()->toDateString()
+            : now()->addMonth()->toDateString();
+
+        $store->update([
+            'payment_detail_id' => $paymentDetail->id,
+            'plan_id' => $request->input('plan.id'),
+            'plan_expiry_date' => $expiryDate,
+            'status' => 'active'
+        ]);
+
+        Mail::to($user->email)->send(new RenewSuccessfullMail());
+
+        return redirect()->route('store.dashboard', $request->input('store_id'));
+    }
 }

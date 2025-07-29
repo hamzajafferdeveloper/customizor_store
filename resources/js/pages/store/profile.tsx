@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import StoreLayout from '@/layouts/store-layout';
 import { SharedData } from '@/types';
 import { StoreData } from '@/types/store';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
@@ -177,6 +177,17 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
                         </div>
                     </div>
                 </Card>
+
+                <div className="flex w-full gap-2">
+                    <Link className="w-1/2" href={route('upgrade.form', store.id)}>
+                        <Button className="w-full">Upgrade</Button>
+                    </Link>
+                    <Link className="w-1/2" href={route('renew.form', store.id)}>
+                        <Button className="w-full hover:bg-gray-800/20" variant="outline">
+                            Renew
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Edit Modal */}
