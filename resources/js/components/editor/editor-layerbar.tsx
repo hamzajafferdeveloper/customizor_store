@@ -62,13 +62,13 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems }: Prop
                         onChange={(e) => setSearch(e.target.value)}
                         className="mb-3"
                     />
-                    <ScrollArea className="h-[400px] pr-2">
+                    <ScrollArea className=" pr-2">
                         <div className="flex flex-col-reverse gap-3">
                             {filteredItems.length > 0 ? (
                                 filteredItems.map((item, index) => (
                                     <Card
                                         key={item.id}
-                                        style={{ minHeight: '48px' }}
+                                        
                                         className={`relative transition-all duration-200 ease-in-out cursor-move select-none ${
                                             draggingId === item.id
                                                 ? "opacity-40 scale-[0.98] ring-2 ring-primary/30 z-10"
@@ -88,15 +88,9 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems }: Prop
                                                     {item.type === "image" ? (
                                                         item.fileType === "svg" ? (
                                                             <object type="image/svg+xml" data={item.src} className="w-5 h-5" />
-                                                        ) : item.fileType === "image" ? (
+                                                        ) :  (
                                                             <img
                                                                 src={item.src}
-                                                                alt={item.originalFileName}
-                                                                className="w-5 h-5 object-contain"
-                                                            />
-                                                        ) : (
-                                                            <img
-                                                                src={`/storage/${item.src}`}
                                                                 alt={item.originalFileName}
                                                                 className="w-5 h-5 object-contain"
                                                             />

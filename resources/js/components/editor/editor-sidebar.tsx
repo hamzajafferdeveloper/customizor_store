@@ -1,7 +1,7 @@
 import EditorSidebarIcons from '@/components/editor/editor-sidebar-icons';
 import { leatherColors, protectionColors } from '@/constant/editorcolor';
 import { SharedData } from '@/types';
-import { LogoCategory, Permission } from '@/types/data';
+import { AllowedPermission, LogoCategory, Permission } from '@/types/data';
 import { CanvasItem } from '@/types/editor';
 import { SvgColorBar, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
@@ -22,7 +22,7 @@ type Props = {
     handleResetCanvas: () => void;
     AddText: () => void;
     selectedItemId: string | null;
-    permissions: Permission[];
+    Allowedpermissions: AllowedPermission;
 };
 
 export function EditorSidebar({
@@ -36,7 +36,7 @@ export function EditorSidebar({
     handleResetCanvas,
     AddText,
     selectedItemId,
-    permissions,
+    Allowedpermissions,
 }: Props) {
     const { auth } = usePage<SharedData>().props;
 
@@ -48,7 +48,7 @@ export function EditorSidebar({
     // ✅ Function to get permission or fallback for admin
     const getPermission = (key: string) => {
         if (isAdmin) return { is_enabled: true, limit: 'unlimited' };
-        const permission = permissions.find((p) => p.key === key);
+        const permission = Allowedpermissions.permissions.find((p) => p.key === key);
         return {
             is_enabled: permission?.pivot?.is_enabled || false,
             limit: permission?.pivot?.limit || null,
@@ -89,7 +89,7 @@ export function EditorSidebar({
 
     return (
         <aside className="mt-2 h-full w-full space-y-2 lg:flex">
-            <div className="h-fit w-fit rounded-md border shadow">
+            <div className="h-fit rounded-md border shadow">
                 {/* Icons Bar */}
                 <EditorSidebarIcons
                     showBar={showBar}
@@ -152,6 +152,7 @@ export function EditorSidebar({
                                 AddText={AddText}
                                 selectedItemId={selectedItemId}
                                 uploadedItems={uploadedItems}
+                                allowedfonts={Allowedpermissions.fonts}
                                 limit={TextLimit}
                                 onUpdateTextLayer={(id, updates) => {
                                     setUploadedItems((items) =>

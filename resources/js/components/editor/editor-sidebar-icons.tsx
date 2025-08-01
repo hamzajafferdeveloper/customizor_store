@@ -47,7 +47,7 @@ export default function EditorSidebarIcons({
     };
 
     return (
-        <div className="flex w-full flex-row lg:flex-col">
+        <div className="flex w-full flex-row justify-evenly  lg:flex-col">
             <Home
                 className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'colorbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
                 onClick={() => setShowBar('colorbar')}

@@ -122,20 +122,30 @@ export async function downloadClippedCanvas({
             const link = document.createElement('a');
             link.href = url;
             link.download = `${fileName}.png`;
+
+            // ✅ Fix for Firefox: Append to DOM
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+
             URL.revokeObjectURL(url);
         }, 'image/png');
     } else {
         const dataUrl = canvas.toDataURL('image/png');
         const svgWrapped = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-            <image href="${dataUrl}" width="${width}" height="${height}" />
-        </svg>`;
+        <image href="${dataUrl}" width="${width}" height="${height}" />
+    </svg>`;
         const blob = new Blob([svgWrapped], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = `${fileName}.svg`;
+
+        // ✅ Fix for Firefox: Append to DOM
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+
         URL.revokeObjectURL(url);
     }
 }

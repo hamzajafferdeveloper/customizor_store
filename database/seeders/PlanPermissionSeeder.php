@@ -25,6 +25,10 @@ class PlanPermissionSeeder extends Seeder
             ['key' => 'download_png', 'description' => 'Can download PNG format'],
             ['key' => 'logo_gallery_show', 'description' => 'Can see logo gallery option'],
             ['key' => 'logo_gallery', 'description' => 'Can use logo gallery'],
+            ['key' => 'simple_product', 'description' => 'Can use simple product'],
+            ['key' => 'starter_product', 'description' => 'Can use starter product'],
+            ['key' => 'pro_product', 'description' => 'Can use pro product'],
+            ['key' => 'ultra_product', 'description' => 'Can use ultra product'],
         ];
 
         foreach ($permissions as $perm) {

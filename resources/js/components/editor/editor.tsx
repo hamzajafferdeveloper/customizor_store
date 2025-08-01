@@ -4,12 +4,12 @@ import { Template, TemplatePart } from '@/types/helper';
 import EditorCanvas from './editor-canvas';
 import { EditorSidebar } from './editor-sidebar';
 import { CanvasItem } from '@/types/editor';
-import { LogoCategory, Permission } from "@/types/data";
+import { AllowedPermission, LogoCategory } from "@/types/data";
 
 type Props = {
   template: Template;
     logoGallery: LogoCategory[]
-    permissions: Permission[]
+    permissions: AllowedPermission
 };
 
 export default function Editor({ template, logoGallery, permissions }: Props) {
@@ -76,7 +76,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
           handleResetCanvas={handleResetCanvas}
           AddText={AddText}
           selectedItemId={selectedItemId}
-          permissions={permissions}
+          Allowedpermissions={permissions}
         />
       </div>
     </main>

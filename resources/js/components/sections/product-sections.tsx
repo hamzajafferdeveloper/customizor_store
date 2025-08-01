@@ -99,7 +99,10 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
             {filterData.length > 0 ? (
                 <section className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {filterData.map((product) => {
-                        const showCrown = auth?.user?.type === 'user' && (page_type === 'home' && product.type !== 'simple') ;
+                        // const showCrown = true;
+                        const showCrown = (page_type === 'home' && product.type !== 'simple') && auth?.user?.type !== 'admin';
+                        // console.log(auth?.user?.type);
+                        // console.log(auth?.user && auth?.user?.type === 'user');
 
                         return (
                             <Card

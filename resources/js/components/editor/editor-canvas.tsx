@@ -351,8 +351,8 @@ export default function EditorCanvas({
             </button> */}
             {/* Main editor container */}
             <div
-                className="background-container bg-white dark:bg-transparent relative aspect-square w-full overflow-hidden rounded-lg border-2 lg:max-w-[700px] xl:max-w-[900px]"
-                ref={downloadRef}
+                className="background-container relative p-6 w-full overflow-hidden rounded-lg border-2 bg-white lg:max-w-[700px] xl:max-w-[900px] dark:bg-transparent"
+                
                 onMouseDown={handlePanStart}
                 style={{ cursor: isPanning ? 'grabbing' : 'default' }}
             >
@@ -368,7 +368,9 @@ export default function EditorCanvas({
                     }}
                 >
                     {/* SVG template container */}
-                    <div id="svg-container" className="h-full w-full" ref={svgContainerRef} onClick={handleSvgContainerClick} />
+                    <div className="" ref={downloadRef}>
+                        <div id="svg-container" className="h-full w-full" ref={svgContainerRef} onClick={handleSvgContainerClick} />
+                    </div>
 
                     {/* Uploaded items container (masked to SVG shape) */}
                     {svgOverlayBox && svgMaskUrl && (
@@ -438,17 +440,40 @@ export default function EditorCanvas({
                                                     />
                                                 )
                                             ) : (
-                                                <p
-                                                    style={{
-                                                        fontSize: item.fontSize,
-                                                        fontFamily: item.fontFamily,
-                                                        fontWeight: item.bold ? 'bold' : 'normal',
-                                                        textDecoration: item.underline ? 'underline' : 'none',
-                                                        color: item.color,
-                                                    }}
-                                                >
-                                                    {item.text}
-                                                </p>
+                                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                    {/* Stroke layer */}
+                                                    <span
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 0,
+                                                            left: 0,
+                                                            fontSize: item.fontSize,
+                                                            fontFamily: item.fontFamily,
+                                                            fontStyle: item.italic ? 'italic' : 'normal',
+                                                            fontWeight: item.bold ? 'bold' : 'normal',
+                                                            WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
+                                                            color: 'transparent',
+                                                            zIndex: 0,
+                                                        }}
+                                                    >
+                                                        {item.text}
+                                                    </span>
+
+                                                    {/* Fill layer */}
+                                                    <span
+                                                        style={{
+                                                            position: 'relative',
+                                                            color: item.color,
+                                                            fontSize: item.fontSize,
+                                                            fontFamily: item.fontFamily,
+                                                            fontStyle: item.italic ? 'italic' : 'normal',
+                                                            fontWeight: item.bold ? 'bold' : 'normal',
+                                                            zIndex: 1,
+                                                        }}
+                                                    >
+                                                        {item.text}
+                                                    </span>
+                                                </div>
                                             )}
                                         </ContextMenuTrigger>
                                         <ContextMenuContent>
@@ -497,25 +522,25 @@ export default function EditorCanvas({
                                     {/* Handle Svg Color Change */}
                                     {item.type === 'image' && (
                                         <>
-                                                    <div
-                                                        className="resize-handle absolute bottom-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
-                                                        onMouseDown={(e) => {
-                                                            e.stopPropagation();
-                                                            setIsResizing(true);
-                                                            resizeStart.current = {
-                                                                x: e.clientX,
-                                                                y: e.clientY,
-                                                                width: item.width,
-                                                                height: item.height,
-                                                            };
-                                                        }}
-                                                        onClick={() => {
-                                                            setOpenSvgDialog(true);
-                                                            setSelectedSvgId(selectedItemId);
-                                                        }}
-                                                    >
-                                                        <Pen size={16} className="text-indigo-500" />
-                                                    </div>
+                                            <div
+                                                className="resize-handle absolute bottom-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                                onMouseDown={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsResizing(true);
+                                                    resizeStart.current = {
+                                                        x: e.clientX,
+                                                        y: e.clientY,
+                                                        width: item.width,
+                                                        height: item.height,
+                                                    };
+                                                }}
+                                                onClick={() => {
+                                                    setOpenSvgDialog(true);
+                                                    setSelectedSvgId(selectedItemId);
+                                                }}
+                                            >
+                                                <Pen size={16} className="text-indigo-500" />
+                                            </div>
                                         </>
                                     )}
                                     {/* Resize Handle */}
@@ -563,20 +588,36 @@ export default function EditorCanvas({
                 </div>
             </div>
             {/* Move the zoom control bar OUTSIDE the canvas area, at the bottom-right of the main editor area */}
-            <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 dark:bg-gray-800/50 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto">
-                <button onClick={handleZoomOut} disabled={zoom <= MIN_ZOOM} className="rounded p-1 hover:bg-gray-100 disabled:opacity-50 transition-all duration-75 dark:hover:bg-gray-700">
+            <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
+                <button
+                    onClick={handleZoomOut}
+                    disabled={zoom <= MIN_ZOOM}
+                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                >
                     <Minus size={18} />
                 </button>
                 <span className="px-2 font-mono">{(zoom * 100).toFixed(0)}%</span>
-                <button onClick={handleZoomIn} disabled={zoom >= MAX_ZOOM} className="rounded p-1 hover:bg-gray-100 disabled:opacity-50 transition-all duration-75 dark:hover:bg-gray-700">
+                <button
+                    onClick={handleZoomIn}
+                    disabled={zoom >= MAX_ZOOM}
+                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                >
                     <Plus size={18} />
                 </button>
-                <button onClick={handleResetView} className="rounded p-1 hover:bg-gray-100 transition-all duration-75 dark:hover:bg-gray-700">
+                <button onClick={handleResetView} className="rounded p-1 transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-700">
                     <RefreshCw size={18} />
                 </button>
             </div>
             {selecetSvgId && (
-                <SvgColorChangeModal open={openSvgDialog} onOpenChange={() => {setOpenSvgDialog(false), setSelectedSvgId(null)}} selecetSvgId={selecetSvgId} setUploadedItems={setUploadedItems} uploadedItems={uploadedItems} />
+                <SvgColorChangeModal
+                    open={openSvgDialog}
+                    onOpenChange={() => {
+                        setOpenSvgDialog(false), setSelectedSvgId(null);
+                    }}
+                    selecetSvgId={selecetSvgId}
+                    setUploadedItems={setUploadedItems}
+                    uploadedItems={uploadedItems}
+                />
             )}
         </main>
     );

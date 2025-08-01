@@ -1,7 +1,7 @@
 import Editor from '@/components/editor/editor';
 import AppLayout from '@/layouts/app-layout';
 import StoreLayout from '@/layouts/store-layout';
-import { LogoCategory, Permission } from '@/types/data';
+import { AllowedPermission, LogoCategory, Permission } from '@/types/data';
 import { type Template } from '@/types/helper';
 import { StoreData } from '@/types/store';
 import { Head } from '@inertiajs/react';
@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/react';
 type Props = {
     template: Template;
     logoGallery: LogoCategory[];
-    permissions: Permission[];
+    permissions: AllowedPermission;
     store: StoreData;
 };
 

@@ -153,7 +153,7 @@ export const handleAddText = (
     const newItem: CanvasItem = {
         id: crypto.randomUUID(),
         type: 'text',
-        text: 'Hello, world!',
+        text: 'Text here',
         fontSize: 16,
         fontFamily: 'Arial',
         color: '#000000',
@@ -165,6 +165,9 @@ export const handleAddText = (
         zIndex: 10,
         bold: false,
         underline: false,
+        stroke: 0,
+        strokeColor: '#000000',
+        italic: false
     };
 
     newItems.push(newItem);

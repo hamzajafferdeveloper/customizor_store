@@ -56,10 +56,30 @@ class HomeController extends Controller
             });
         }
 
-        $plan = $store->load('plan');
-        // dd($plan->);
+        $plan = $store->load('plan.permissions');
+        $permissions = $plan->plan->permissions->pluck('key')->toArray();
 
-        $products = $query->with('productColors.color')->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+        // Map permissions to product types
+        $allowedTypes = [];
+        if (in_array('simple_product', $permissions)) {
+            $allowedTypes[] = 'simple';
+        }
+        if (in_array('starter_product', $permissions)) {
+            $allowedTypes[] = 'starter';
+        }
+        if (in_array('pro_product', $permissions)) {
+            $allowedTypes[] = 'pro';
+        }
+        if (in_array('ultra_product', $permissions)) {
+            $allowedTypes[] = 'ultra';
+        }
+
+        // Fetch products based on allowed types
+        $products = $query->whereIn('type', $allowedTypes)
+            ->with('productColors.color')
+            ->orderBy('id', 'DESC')
+            ->paginate($perPage)
+            ->withQueryString();
         $categories = Category::all();
         $colors = Color::all();
 
@@ -317,7 +337,7 @@ class HomeController extends Controller
     public function customizeProduct(string $storeId, string $id)
     {
         $store = Store::findOrFail($storeId);
-        $storePermissions = Plan::with('permissions')->where('id', $store->plan_id)->first();
+        $storePermissions = Plan::with('permissions', 'fonts')->where('id', $store->plan_id)->first();
         $template = SvgTemplate::with('part')->findOrFail($id);
         $logoGallery = LogoCategory::with('logos')->get();
         return Inertia::render('store/customizer', [
@@ -327,5 +347,5 @@ class HomeController extends Controller
             'permissions' => $storePermissions->permissions,
         ]);
     }
-    
+
 }

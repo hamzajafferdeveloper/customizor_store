@@ -33,7 +33,7 @@ class HomeController extends Controller
     public function customizer(string $id)
     {
         $template = SvgTemplate::with('part')->findOrFail($id);
-        $storePermissions = Plan::with('permissions')->where('id', 1)->first();
+        $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
         $product = $template->load('product');
         $logoGallery = LogoCategory::with('logos')->get();
 
@@ -41,7 +41,7 @@ class HomeController extends Controller
             return Inertia::render('home/product/customizer', [
                 'template' => $template,
                 'logoGallery' => $logoGallery,
-                'permissions' => $storePermissions->permissions,
+                'permissions' => $storePermissions,
             ]);
         } else {
             if ($product->product->type != 'simple') {
@@ -50,7 +50,7 @@ class HomeController extends Controller
                 return Inertia::render('home/product/customizer', [
                     'template' => $template,
                     'logoGallery' => $logoGallery,
-                    'permissions' => $storePermissions->permissions,
+                    'permissions' => $storePermissions,
                 ]);
 
             }

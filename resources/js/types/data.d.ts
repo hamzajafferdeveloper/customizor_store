@@ -49,10 +49,15 @@ export interface LogoCategory {
     updated_at: string;
 }
 
+export interface AllowedPermission {
+    permissions: Permission[],
+    fonts: Font[]
+}
+
 export interface Permission {
     id: number;
     key: string;
-    pivot: any
+    pivot: any;
     description: string;
     created_at: string;
     updated_at: string;
@@ -68,4 +73,21 @@ export interface Plan {
     created_at: string;
     updated_at: string;
     permissions: Permission[]; // Array of permissions associated with the plan
+}
+
+export interface Font {
+    id: number;
+    name: string;
+    path: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Part {
+    id: number;
+    name: string;
+    path: string;
+    parts_category_id: number;
+    created_at: string;
+    updated_at: string;
 }

@@ -30,8 +30,12 @@ export type TextLayer = CanvasItemBase & {
   text: string;
   fontSize: number;
   fontFamily: string;
+  fontPath?:string;
   bold?: boolean;
   color: string;
+  stroke?: number;
+  strokeColor?: string;
+  italic?: boolean;
   underline?: boolean;
   isCurved?: boolean;
   curveValue?: number; // Degree or arc amount

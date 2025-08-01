@@ -68,7 +68,7 @@ export default function EditorLogoBar({ logoGallery, setUploadedItems, showLogo,
                         ← Back to categories
                     </button>
 
-                    <div className="grid grid-cols-5 gap-4 lg:grid-cols-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 lg:grid-cols-2">
                         {filteredLogos && filteredLogos.length > 0 ? (
                             filteredLogos.map((logo) => (
                                 <div

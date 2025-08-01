@@ -31,4 +31,9 @@ class Plan extends Model
         return $this->belongsToMany(Permission::class, 'plan_permissions')
             ->withPivot('is_enabled', 'limit');
     }
+
+    public function fonts()
+    {
+        return $this->belongsToMany(Font::class, 'font_plans', 'plan_id', 'font_id');
+    }
 }
