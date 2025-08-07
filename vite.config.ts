@@ -14,6 +14,13 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    server: {
+        host: '192.168.1.6', // <-- Use your actual IP address here
+        port: 5173,
+        strictPort: true,
+        origin: 'http://192.168.1.6:5173', // <-- Explicitly define origin
+        cors: true, // <-- Enable CORS
+    },
     esbuild: {
         jsx: 'automatic',
     },

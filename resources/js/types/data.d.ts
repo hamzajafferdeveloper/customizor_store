@@ -50,8 +50,8 @@ export interface LogoCategory {
 }
 
 export interface AllowedPermission {
-    permissions: Permission[],
-    fonts: Font[]
+    permissions: Permission[];
+    fonts: Font[];
 }
 
 export interface Permission {
@@ -79,6 +79,14 @@ export interface Font {
     id: number;
     name: string;
     path: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PartCategroyWithPart {
+    id: number;
+    name: string;
+    parts: Part[]
     created_at: string;
     updated_at: string;
 }

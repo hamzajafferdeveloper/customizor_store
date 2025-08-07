@@ -37,6 +37,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
     const clearFilters = () => {
         router.get(baseUrl, {}, { preserveScroll: true });
     };
+
     return (
         <div>
             {/* Category Filter */}
@@ -96,13 +97,36 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                 </div>
             </header>
 
-            {filterData.length > 0 ? (
-                <section className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {filterData.map((product) => {
-                        // const showCrown = true;
-                        const showCrown = (page_type === 'home' && product.type !== 'simple') && auth?.user?.type !== 'admin';
-                        // console.log(auth?.user?.type);
-                        // console.log(auth?.user && auth?.user?.type === 'user');
+            <div className="px-4 py-2">
+                {store?.banner?.path && (
+                    <div
+                        className="flex h-56 w-full rounded-md border md:h-64"
+                        style={{
+                            backgroundImage: `url('/storage/${store.banner.path}')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    ></div>
+                )}
+            </div>
+
+            <section className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <Card
+                    onClick={() => router.get(route('design.product'), {}, { preserveScroll: true })}
+                    className="flex min-w-0 cursor-pointer flex-col justify-between transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
+                >
+                    <CardHeader className="p-2">
+                        <img src="/storage/create-your-own-product-base.png" alt="create-your-own-product-base" className="rounded-md object-cover" />
+                    </CardHeader>
+                    <CardContent className="flex flex-col">
+                        <h1 className="font-semibold">Design your own product</h1>
+                        <div className="flex flex-wrap gap-2"></div>
+                    </CardContent>
+                </Card>
+
+                {filterData.length > 0 ? (
+                    filterData.map((product) => {
+                        const showCrown = page_type === 'home' && product.type !== 'simple' && auth?.user?.type !== 'admin';
 
                         return (
                             <Card
@@ -136,14 +160,14 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                                 </CardContent>
                             </Card>
                         );
-                    })}
-                </section>
-            ) : (
-                <div className="flex h-full flex-col items-center justify-center text-gray-400/90">
-                    <Rabbit className="h-64 w-64 rotate-y-180" />
-                    <p>No Product Found.</p>
-                </div>
-            )}
+                    })
+                ) : (
+                    <div className="flex h-full flex-col items-center justify-center text-gray-400/90">
+                        <Rabbit className="h-64 w-64 rotate-y-180" />
+                        <p>No Product Found.</p>
+                    </div>
+                )}
+            </section>
 
             <footer className="flex w-full items-center justify-center border-t px-4 py-2">
                 <div className="flex w-full max-w-xl items-center justify-between">

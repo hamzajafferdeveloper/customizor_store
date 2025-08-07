@@ -1,38 +1,40 @@
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
-import { downloadClippedCanvas } from '@/lib/downloadEditorCanvas';
+import { downloadCreateProduct } from '@/lib/downloadEditorCanvas';
 import { handleDeleteItem, handleMouseDown } from '@/lib/editor';
 import { onEvent } from '@/lib/event-bus';
+import { PartLayer } from '@/types/createProduct';
 import { CanvasItem } from '@/types/editor';
 import { Maximize2, Minus, Pen, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react';
 import { RefObject, useEffect, useRef, useState } from 'react';
-import SvgColorChangeModal from './svg-color-change-modal';
+import SvgColorChangeModal from '../editor/svg-color-change-modal';
 
 type Props = {
     svgContainerRef: RefObject<HTMLDivElement | null>;
     fileInputRef: RefObject<HTMLInputElement | null>;
-    handleSvgContainerClick: (event: React.MouseEvent<HTMLDivElement>) => void;
+    // handleSvgContainerClick: (event: React.MouseEvent<HTMLDivElement>) => void;
     handleUploadChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     uploadedItems: CanvasItem[];
     setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>;
     selectedItemId: string | null;
     setSelectedItemId: React.Dispatch<React.SetStateAction<string | null>>;
     downloadRef: RefObject<HTMLDivElement | null>;
+    uploadedPart: PartLayer[];
 };
 
-export default function EditorCanvas({
+export default function CreateProductCanvas({
     downloadRef,
     svgContainerRef,
     fileInputRef,
-    handleSvgContainerClick,
+    // handleSvgContainerClick,
     handleUploadChange,
     uploadedItems,
     setUploadedItems,
     selectedItemId,
     setSelectedItemId,
+    uploadedPart,
 }: Props) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const offsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
-    const canvasContainerRef = useRef<HTMLDivElement | null>(null);
     const editorMianRef = useRef<HTMLDivElement | null>(null);
     const [openSvgDialog, setOpenSvgDialog] = useState<boolean>(false);
     const [selecetSvgId, setSelectedSvgId] = useState<string | null>(null);
@@ -68,9 +70,6 @@ export default function EditorCanvas({
     const [isPanning, setIsPanning] = useState(false);
     const panStart = useRef<{ x: number; y: number; panX: number; panY: number }>({ x: 0, y: 0, panX: 0, panY: 0 });
 
-    const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
-    const [lastPanPosition, setLastPanPosition] = useState<{ x: number; y: number } | null>(null);
-
     // --- PAN EVENTS ---
     useEffect(() => {
         if (!isPanning) return;
@@ -105,75 +104,20 @@ export default function EditorCanvas({
     const handleZoomOut = () => setZoom((z) => Math.max(z - ZOOM_STEP, MIN_ZOOM));
 
     // --- PAN START HANDLER ---
-    const handlePanStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-        const target = e.target as HTMLElement;
-        if (target.closest('.uploaded-item') || target.closest('.controller-overlay')) return;
-
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
+    const handlePanStart = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Only pan if not clicking on an item or controller
+        if ((e.target as HTMLElement).closest('.uploaded-item') || (e.target as HTMLElement).closest('.controller-overlay')) {
+            return;
+        }
         e.preventDefault();
         setIsPanning(true);
         panStart.current = {
-            x: clientX,
-            y: clientY,
+            x: e.clientX,
+            y: e.clientY,
             panX: pan.x,
             panY: pan.y,
         };
     };
-
-    // --- PAN MOVE HANDLER ---
-    const handlePanMove = (e: MouseEvent | TouchEvent) => {
-        if (!isPanning || !lastPanPosition) return;
-
-        const point = 'touches' in e ? e.touches[0] : e;
-        const currentX = point.clientX;
-        const currentY = point.clientY;
-
-        const dx = currentX - lastPanPosition.x;
-        const dy = currentY - lastPanPosition.y;
-
-        setCanvasOffset((prevOffset) => ({
-            x: prevOffset.x + dx,
-            y: prevOffset.y + dy,
-        }));
-
-        setLastPanPosition({ x: currentX, y: currentY });
-    };
-
-    // --- PAN END HANDLER ---
-    const handlePanEnd = () => {
-        setIsPanning(false);
-        setLastPanPosition(null);
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-            if (!draggingId || !svgContainerRef.current) return;
-            const container = svgContainerRef.current.getBoundingClientRect();
-
-            const newX = clientX - container.left - offsetRef.current.offsetX;
-            const newY = clientY - container.top - offsetRef.current.offsetY;
-
-            setUploadedItems((prev) => prev.map((item) => (item.id === draggingId ? { ...item, x: newX, y: newY } : item)));
-        };
-
-        const handleUp = () => setDraggingId(null);
-
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchmove', handleMouseMove);
-        window.addEventListener('touchend', handleUp);
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleUp);
-            window.removeEventListener('touchmove', handleMouseMove);
-            window.removeEventListener('touchend', handleUp);
-        };
-    }, [draggingId, setUploadedItems]);
 
     // Deselect on click outside
     useEffect(() => {
@@ -190,17 +134,13 @@ export default function EditorCanvas({
     // Resize logic
     useEffect(() => {
         if (!isResizing) return;
-
-        const handleMove = (e: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
+        const handleMouseMove = (e: MouseEvent) => {
             if (!selectedItemId) return;
             setUploadedItems((prev) =>
                 prev.map((item) => {
                     if (item.id !== selectedItemId) return item;
-                    const dx = clientX - resizeStart.current.x;
-                    const dy = clientY - resizeStart.current.y;
+                    const dx = e.clientX - resizeStart.current.x;
+                    const dy = e.clientY - resizeStart.current.y;
                     return {
                         ...item,
                         width: Math.max(20, resizeStart.current.width + dx),
@@ -209,39 +149,28 @@ export default function EditorCanvas({
                 }),
             );
         };
-
-        const handleUp = () => setIsResizing(false);
-
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchmove', handleMove);
-        window.addEventListener('touchend', handleUp);
-
+        const handleMouseUp = () => setIsResizing(false);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
         return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleUp);
-            window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('touchend', handleUp);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isResizing, selectedItemId, setUploadedItems]);
 
     // Rotate logic
     useEffect(() => {
         if (!isRotating) return;
-
-        const handleMove = (e: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
+        const handleMouseMove = (e: MouseEvent) => {
             if (!selectedItemId) return;
             setUploadedItems((prev) =>
                 prev.map((item) => {
                     if (item.id !== selectedItemId) return item;
-
                     const centerX = item.x + item.width / 2;
                     const centerY = item.y + item.height / 2;
-                    const currentAngle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
-
+                    // Calculate current angle from center to mouse
+                    const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+                    // Calculate new rotation
                     return {
                         ...item,
                         rotation: rotateStart.current.originalRotation + (currentAngle - rotateStart.current.initialAngle),
@@ -249,19 +178,12 @@ export default function EditorCanvas({
                 }),
             );
         };
-
-        const handleUp = () => setIsRotating(false);
-
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchmove', handleMove);
-        window.addEventListener('touchend', handleUp);
-
+        const handleMouseUp = () => setIsRotating(false);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
         return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleUp);
-            window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('touchend', handleUp);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isRotating, selectedItemId, setUploadedItems]);
 
@@ -406,9 +328,10 @@ export default function EditorCanvas({
 
     const handleDownload = ({ format, fileName }: { format: 'svg' | 'png'; fileName: string }) => {
         if (svgOverlayBox) {
-            downloadClippedCanvas({
+            downloadCreateProduct({
                 svgContainerId: 'svg-container',
                 uploadedItems,
+                uploadedPart,
                 svgOverlayBox: { width: svgOverlayBox.width, height: svgOverlayBox.height },
                 zoom,
                 pan,
@@ -417,49 +340,6 @@ export default function EditorCanvas({
             });
         }
     };
-
-    /**
-     * ✅ Stop Scroll when use touch inside container
-     */
-    useEffect(() => {
-        const preventScroll = (e: TouchEvent) => {
-            // Only prevent if the touch is inside the canvas container
-            if (!canvasContainerRef.current) return;
-
-            const touch = e.touches[0];
-            const bounds = canvasContainerRef.current.getBoundingClientRect();
-
-            if (touch.clientX >= bounds.left && touch.clientX <= bounds.right && touch.clientY >= bounds.top && touch.clientY <= bounds.bottom) {
-                e.preventDefault();
-            }
-        };
-
-        document.body.addEventListener('touchmove', preventScroll, { passive: false });
-
-        return () => {
-            document.body.removeEventListener('touchmove', preventScroll);
-        };
-    }, []);
-
-    useEffect(() => {
-        const handleTouchMove = (e: TouchEvent) => {
-            if (isPanning) e.preventDefault(); // prevent scroll on touch drag
-            handlePanMove(e); // call your pan move logic
-        };
-
-        document.addEventListener('mousemove', handlePanMove);
-        document.addEventListener('mouseup', handlePanEnd);
-
-        document.addEventListener('touchmove', handleTouchMove, { passive: false });
-        document.addEventListener('touchend', handlePanEnd);
-
-        return () => {
-            document.removeEventListener('mousemove', handlePanMove);
-            document.removeEventListener('mouseup', handlePanEnd);
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handlePanEnd);
-        };
-    }, [isPanning, lastPanPosition]);
 
     return (
         <main className="relative flex h-full w-full items-center justify-center" ref={editorMianRef}>
@@ -470,15 +350,9 @@ export default function EditorCanvas({
                 <input type="file" accept=".svg,.png,.jpg,.jpeg" multiple className="hidden" ref={fileInputRef} onChange={handleUploadChange} />
             )}
 
-            {/* <button className="cursor-pointer rounded-md bg-gray-300 px-4 py-2" onClick={() => handleDownload()}>
-                Save
-            </button> */}
-            {/* Main editor container */}
             <div
-                ref={canvasContainerRef}
-                className="background-container relative w-full overflow-hidden rounded-lg border-2 bg-white p-6 lg:max-w-[700px] xl:max-w-[900px] dark:bg-transparent"
+                className="background-container relative w-full overflow-hidden rounded-lg border-2 bg-white p-6 lg:max-w-[700px] xl:max-w-[900px]"
                 onMouseDown={handlePanStart}
-                onTouchStart={handlePanStart}
                 style={{ cursor: isPanning ? 'grabbing' : 'default' }}
             >
                 {/* --- ZOOM & PAN WRAPPER --- */}
@@ -492,9 +366,25 @@ export default function EditorCanvas({
                         position: 'relative',
                     }}
                 >
-                    {/* SVG template container */}
-                    <div className="" ref={downloadRef}>
-                        <div id="svg-container" className="h-full w-full" ref={svgContainerRef} onClick={handleSvgContainerClick} />
+                    <div>
+                        <div id="svg-container" className="h-full w-full" ref={svgContainerRef} />
+                        {uploadedPart.map((part) => (
+                            <img
+                                key={part.id}
+                                src={part.path}
+                                alt={part.name}
+                                // className="border border-red-700"
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    pointerEvents: 'none',
+                                }}
+                            />
+                        ))}
                     </div>
 
                     {/* Uploaded items container (masked to SVG shape) */}
@@ -534,7 +424,6 @@ export default function EditorCanvas({
                                         borderRadius: 8,
                                     }}
                                     onMouseDown={(e) => handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef)}
-                                    onTouchStart={(e) => handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef)}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedItemId(item.id);
@@ -713,6 +602,7 @@ export default function EditorCanvas({
                         })()}
                 </div>
             </div>
+
             {/* Move the zoom control bar OUTSIDE the canvas area, at the bottom-right of the main editor area */}
             <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
                 <button
@@ -734,6 +624,7 @@ export default function EditorCanvas({
                     <RefreshCw size={18} />
                 </button>
             </div>
+
             {selecetSvgId && (
                 <SvgColorChangeModal
                     open={openSvgDialog}

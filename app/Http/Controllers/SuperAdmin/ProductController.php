@@ -5,6 +5,10 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Color;
+use App\Models\LogoCategory;
+use App\Models\Part;
+use App\Models\PartsCategory;
+use App\Models\Plan;
 use App\Models\PlanPermission;
 use App\Models\Product;
 use App\Models\ProductColors;
@@ -309,5 +313,19 @@ class ProductController extends Controller
 
         return redirect()->route('product.index')
             ->with('success', 'Product deleted successfully!');
+    }
+
+    public function createOwnProduct()
+    {
+        $svgContent = Storage::disk('public')->get('create-product-mask.svg');
+        $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
+        $logoGallery = LogoCategory::with('logos')->get();
+        $parts = PartsCategory::with('parts')->get();
+        return Inertia::render('home/product/create-your-product', [
+            'template' => $svgContent,
+            'logoGallery' => $logoGallery,
+            'permissions' => $storePermissions,
+            'parts' => $parts
+        ]);
     }
 }

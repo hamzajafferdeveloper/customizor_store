@@ -1,8 +1,10 @@
+import { LogoGallery } from '@/types/data';
+import { CanvasItem } from '@/types/editor';
 import { Template, TemplatePart } from '@/types/helper';
-import { CanvasItem } from "@/types/editor";
-import { LogoGallery } from "@/types/data";
 import { RefObject } from 'react';
 import { toBase64 } from './fileUtils';
+
+const id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
 // Click On SvgTemplate Container
 export const handleClickonSvgContainer = (
@@ -88,19 +90,19 @@ export const handlePaintPart = (part: TemplatePart, color: string, svgContainer:
 // Handle Upload File
 export const handleUploadFile = (
     e: React.ChangeEvent<HTMLInputElement>,
-    setUploadedItems: (value: (((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[])) => void
+    setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void,
 ) => {
     const files = e.target.files;
     if (!files) return;
 
     const newItems: CanvasItem[] = [];
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file) => {
         const src = URL.createObjectURL(file);
         const isSvg = file.type === 'image/svg+xml';
 
         const newItem: CanvasItem = {
-            id: crypto.randomUUID(),
+            id: id,
             type: 'image',
             fileType: isSvg ? 'svg' : 'image',
             src,
@@ -117,41 +119,36 @@ export const handleUploadFile = (
         newItems.push(newItem);
     });
 
-    setUploadedItems(prev => [...prev, ...newItems]);
+    setUploadedItems((prev) => [...prev, ...newItems]);
 };
 
 // Handle Upload Logo
-export const handleUploadLogo = async (
-  logo: LogoGallery,
-  setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>
-) => {
-  const base64Logo = await toBase64(`/storage/${logo.source}`);
+export const handleUploadLogo = async (logo: LogoGallery, setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>) => {
+    const base64Logo = await toBase64(`/storage/${logo.source}`);
 
-  const newItem: CanvasItem = {
-    id: crypto.randomUUID(),
-    type: 'image',
-    fileType: 'logo',
-    src: base64Logo, // ✅ Use Base64
-    name: logo.name,
-    originalFileName: logo.name,
-    x: 100,
-    y: 100,
-    width: 200,
-    height: 200,
-    rotation: 0,
-    zIndex: 10,
-  };
+    const newItem: CanvasItem = {
+        id: id,
+        type: 'image',
+        fileType: 'logo',
+        src: base64Logo, // ✅ Use Base64
+        name: logo.name,
+        originalFileName: logo.name,
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200,
+        rotation: 0,
+        zIndex: 10,
+    };
 
-  setUploadedItems((prev) => [...prev, newItem]);
+    setUploadedItems((prev) => [...prev, newItem]);
 };
 // Handle Add Text
-export const handleAddText = (
-    setUploadedItems: (value: (((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[])) => void
-) => {
+export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void) => {
     const newItems: CanvasItem[] = [];
 
     const newItem: CanvasItem = {
-        id: crypto.randomUUID(),
+        id: id,
         type: 'text',
         text: 'Text here',
         fontSize: 16,
@@ -167,32 +164,41 @@ export const handleAddText = (
         underline: false,
         stroke: 0,
         strokeColor: '#000000',
-        italic: false
+        italic: false,
     };
 
     newItems.push(newItem);
 
-    setUploadedItems(prev => [...prev, ...newItems]);
-
-}
+    setUploadedItems((prev) => [...prev, ...newItems]);
+};
 
 // Handle Delete Item
-export const handleDeleteItem = (
-    id: string,
-    setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void
-) => {
+export const handleDeleteItem = (id: string, setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void) => {
     setUploadedItems((prevItems) => prevItems.filter((item) => item.id !== id));
 };
 
 // Handle Mouse function to move the items
-export  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, item: CanvasItem, svgContainerRef: RefObject<HTMLDivElement | null>, setDraggingId: (value: string) => void, offsetRef: RefObject<{ offsetX: number, offsetY: number }>) => {
+export const handleMouseDown = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
+    item: CanvasItem,
+    svgContainerRef: RefObject<HTMLDivElement | null>,
+    setDraggingId: (value: string) => void,
+    offsetRef: RefObject<{ offsetX: number; offsetY: number }>,
+) => {
     if (!svgContainerRef.current) return;
+
     const rect = svgContainerRef.current.getBoundingClientRect();
+
+    // Get clientX and clientY from either mouse or touch event
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
     setDraggingId(item.id);
     offsetRef.current = {
-        offsetX: e.clientX - rect.left - item.x,
-        offsetY: e.clientY - rect.top - item.y,
+        offsetX: clientX - rect.left - item.x,
+        offsetY: clientY - rect.top - item.y,
     };
+
+    e.stopPropagation(); // Prevent parent handlers
+    e.preventDefault(); // Prevent scroll/zoom
 };
-
-

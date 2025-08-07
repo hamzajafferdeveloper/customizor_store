@@ -22,6 +22,7 @@ Route::prefix('/{storeId}')->name('store.')->middleware('isStorePublic')->group(
         Route::post('/product/{slug}/store-template', [HomeController::class, 'storeTemplate'])->name('product.store.template');
         Route::get('/profile', [StoreController::class, 'profile'])->name('profile');
         Route::post('/update/profile', [StoreController::class, 'updateProfile'])->name('profile.update');
+        Route::post('/store/banner', [StoreController::class, 'banner'])->name('banner');
     });
     Route::get('/product/{id}/customize', [HomeController::class, 'customizeProduct'])->name('product.customizer');
 });

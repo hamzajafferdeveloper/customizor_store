@@ -26,6 +26,7 @@ Route::get('/pricing', [HomeController::class, 'pricing'])->name('pricing');
 Route::get('/product/customizer/template={id}', [HomeController::class, 'customizer'])->name('customizer');
 Route::get('/product', [ProductController::class, 'index'])->name('product.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/design-our-own-product', [ProductController::class, 'createOwnProduct'])->name('design.product');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Payment Routes

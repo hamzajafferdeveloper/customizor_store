@@ -9,7 +9,8 @@ import StoreLayout from '@/layouts/store-layout';
 import { SharedData } from '@/types';
 import { StoreData } from '@/types/store';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { PenBox } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 
 const StoreProfile = ({ store }: { store: StoreData }) => {
@@ -27,6 +28,10 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
     const [tempValue, setTempValue] = useState<string>('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [filePreview, setFilePreview] = useState<string | null>(null);
+    const [bannerFile, setBannerFile] = useState<File | null>(null);
+    const [bannerPreview, setBannerPreview] = useState<string | null>(store.banner ? `/storage/${store.banner.path}` : null);
+
+    const BannerRef = useRef<HTMLInputElement | null>(null);
 
     const fields: { label: string; key: keyof StoreData; type?: 'text' | 'number' | 'email' | 'file'; visible: boolean }[] = [
         { label: 'Store Name', key: 'name', type: 'text', visible: true },
@@ -104,27 +109,53 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
         });
     };
 
+    const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setBannerFile(file);
+
+            // Generate preview
+            const previewURL = URL.createObjectURL(file);
+            setBannerPreview(previewURL);
+
+            // If you want to send immediately:
+            const formData = new FormData();
+            formData.append('banner', file);
+
+            router.post(route('store.banner', store.id), formData);
+        }
+    };
+
     return (
         <StoreLayout store={store}>
             <Head title="Store Profile" />
-            <div className="mx-auto flex max-w-5xl flex-col gap-8 p-6">
-                {/* Profile Header */}
-                <div className="relative h-48 overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="absolute top-4 flex w-full flex-col items-center justify-center gap-4 text-center md:top-0 md:bottom-4 md:left-6 md:flex-row md:justify-start md:text-start">
-                        <img
-                            src={filePreview || `/storage/${formData.logo}` || '/placeholder.png'}
-                            alt="Store Logo"
-                            className="h-24 w-24 cursor-pointer rounded-full border-4 border-white object-cover shadow-lg transition hover:opacity-90"
-                            onClick={() => handleFieldClick('logo')}
-                        />
-                        <div className="text-white">
-                            <h1 className="text-2xl font-bold">{formData.name}</h1>
-                            <p className="opacity-80">{formData.email}</p>
-                        </div>
-                    </div>
+            {/* Profile Header */}
+            <div className="relative">
+                {/* Gradient Banner */}
+                <div
+                    className="flex h-56 w-full justify-end gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-center text-white"
+                    style={{
+                        backgroundImage: bannerPreview ? `url(${bannerPreview})` : '',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                >
+                    <input type="file" accept="image/*" ref={BannerRef} className="hidden" onChange={handleBannerChange} />
+                    <PenBox className="m-2 cursor-pointer" onClick={() => BannerRef.current?.click()} />
                 </div>
 
+                {/* Logo Section */}
+                <div className="absolute inset-x-0 -bottom-20 flex justify-center">
+                    <img
+                        src={filePreview ? filePreview : formData.logo ? `/storage/${formData.logo}` : '/placeholder.png'}
+                        alt="Store Logo"
+                        className="h-44 w-44 cursor-pointer rounded-full border-4 border-white object-cover shadow-lg transition hover:opacity-90"
+                        onClick={() => handleFieldClick('logo')}
+                    />
+                </div>
+            </div>
+
+            <div className="mx-auto mt-24 flex max-w-5xl flex-col gap-8 p-6">
                 {/* Profile Details Card */}
                 <Card className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
                     <div className="mb-4 flex w-full justify-between">
@@ -157,7 +188,7 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
                     <div className="grid grid-cols-2 gap-6 text-sm">
                         <div>
                             <p className="text-muted-foreground">Status</p>
-                            <p className="font-semibold capitalize">{formData.status}</p>
+                            <p className="font-semibold capitalize">{formData.status || 'N/A'}</p>
                         </div>
                         <div>
                             <p className="mb-2 text-muted-foreground">Store Type</p>
@@ -169,15 +200,16 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
                         </div>
                         <div>
                             <p className="text-muted-foreground">Plan</p>
-                            <p className="font-semibold">{store?.plan?.name}</p>
+                            <p className="font-semibold">{store?.plan?.name || 'N/A'}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Created At</p>
-                            <p className="font-semibold">{new Date(formData.created_at).toLocaleDateString()}</p>
+                            <p className="font-semibold">{formData.created_at ? new Date(formData.created_at).toLocaleDateString() : 'N/A'}</p>
                         </div>
                     </div>
                 </Card>
 
+                {/* Buttons */}
                 <div className="flex w-full gap-2">
                     <Link className="w-1/2" href={route('upgrade.form', store.id)}>
                         <Button className="w-full">Upgrade</Button>

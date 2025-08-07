@@ -1,11 +1,11 @@
 import { CanvasItem } from '@/types/editor';
-import { Home } from 'lucide-react';
 import { RefObject } from 'react';
 import CommonSideBarIcons from '../common/sidebar-icons';
+import { Component } from 'lucide-react';
 
 type Props = {
     setShowBar: Function;
-    showBar: 'layerbar' | 'textbar' | 'logobar' | 'colorbar';
+    showBar: 'layerbar' | 'textbar' | 'logobar' | 'colorbar' | 'partsbar';
     fileInputRef: RefObject<HTMLInputElement | null>;
     handleResetCanvas: () => void;
     uploadedItems: CanvasItem[];
@@ -14,7 +14,7 @@ type Props = {
     imageuploadLimit: number | string;
 };
 
-export default function EditorSidebarIcons({
+export default function ProductSidebarIcons({
     setShowBar,
     showBar,
     fileInputRef,
@@ -26,9 +26,9 @@ export default function EditorSidebarIcons({
 }: Props) {
     return (
         <div className="flex w-full flex-row justify-evenly lg:flex-col">
-            <Home
-                className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'colorbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
-                onClick={() => setShowBar('colorbar')}
+            <Component
+                className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'partsbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
+                onClick={() => setShowBar('partsbar')}
             />
             <CommonSideBarIcons
                 setShowBar={setShowBar}

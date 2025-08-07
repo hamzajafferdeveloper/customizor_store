@@ -33,7 +33,7 @@ class HomeController extends Controller
 
     public function products(Request $request, string $storeId)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::with('banner')->findOrFail($storeId);
 
         $perPage = $request->input('per_page', 10);
         $query = Product::query();
@@ -344,7 +344,7 @@ class HomeController extends Controller
             'store' => $store,
             'template' => $template,
             'logoGallery' => $logoGallery,
-            'permissions' => $storePermissions->permissions,
+            'permissions' => $storePermissions,
         ]);
     }
 

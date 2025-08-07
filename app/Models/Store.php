@@ -40,4 +40,9 @@ class Store extends Model
         return $this->belongsTo(PaymentDetail::class);
     }
 
+    public function banner()
+    {
+        return $this->hasOne(StoreBanner::class);
+    }
+
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Store;
 
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Models\StoreBanner;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +29,7 @@ class StoreController extends Controller
 
     public function profile(string $storeId)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::with('banner')->findOrFail($storeId);
 
         return Inertia::render('store/profile', [
             'store' => $store->load('plan')
@@ -67,4 +68,39 @@ class StoreController extends Controller
 
         return redirect()->back();
     }
+
+    public function banner(Request $request, string $storeId)
+    {
+        // Validate request
+        $validated = $request->validate([
+            'banner' => 'required|file|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Find existing banner for this store
+        $storeBanner = StoreBanner::where('store_id', $storeId)->first();
+
+        // Store the uploaded file in 'public/banners'
+        $filePath = $request->file('banner')->store('banners', 'public');
+
+        if ($storeBanner) {
+            // If a banner exists, delete old file and update
+            if ($storeBanner->banner && \Storage::disk('public')->exists($storeBanner->banner)) {
+                \Storage::disk('public')->delete($storeBanner->banner);
+            }
+
+            $storeBanner->update([
+                'path' => $filePath,
+            ]);
+        } else {
+            // If no banner exists, create a new record
+            StoreBanner::create([
+                'store_id' => $storeId,
+                'path' => $filePath,
+            ]);
+        }
+
+        return redirect()->route('store.dashboard', $storeId)->with('success', 'Banner Added Or Updated Successfully');
+
+    }
+
 }

@@ -2,9 +2,9 @@ import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { type Template } from "@/types/helper";
 import Editor from '@/components/editor/editor';
-import { LogoCategory, Permission } from "@/types/data";
+import { AllowedPermission, LogoCategory, Permission } from "@/types/data";
 
-export default function Customizer({ template, logoGallery, permissions }: { template: Template, logoGallery: LogoCategory[], permissions: Permission[] }) {
+export default function Customizer({ template, logoGallery, permissions }: { template: Template, logoGallery: LogoCategory[], permissions: AllowedPermission }) {
 
     return (
         <AppLayout>
