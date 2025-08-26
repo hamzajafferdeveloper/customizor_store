@@ -250,7 +250,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                 </div>
 
                 {/* Sidebar: Template Details + Parts */}
-                <aside className="my-2 max-h-[80vh] overflow-y-auto rounded-md border-2 p-2 xl:h-full xl:w-2/5">
+                <aside className="my-2 max-h-[80vh] rounded-md border-2 p-2 xl:w-2/5">
                     <div className="flex w-full gap-2">
                         <Input
                             className="w-4/5"
@@ -263,9 +263,9 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                         </Button>
                     </div>
 
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-4 overflow-y-auto">
                         <div className="flex justify-between border-b border-gray-300 p-3">
-                            <h1 className="text-xl">Selected Parts</h1>
+                            <h1 className="text-xl">Selected Parts ({selectedParts.length})</h1>
                             <div className="flex items-center gap-1 text-gray-500">
                                 <p>Show Color</p>
                                 <Switch checked={showHoverColor} onCheckedChange={handleShowHoverColor} />
@@ -275,7 +275,8 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                         {selectedParts.length === 0 ? (
                             <p className="p-2 text-sm text-gray-500">Click on SVG parts to select them</p>
                         ) : (
-                            selectedParts.map((part) => (
+                            <div className=' space-y-2 max-h-[68vh]'>
+                                {selectedParts.map((part) => (
                                 <div key={part.id} className="flex w-full items-center gap-2 rounded-md border border-gray-300 p-2">
                                     <Input
                                         placeholder={`Name for ${part.isGroup ? 'Group' : 'Part'} ${part.id}`}
@@ -324,7 +325,8 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                                         </TooltipContent>
                                     </Tooltip>
                                 </div>
-                            ))
+                            ))}
+                            </div>
                         )}
                     </div>
                 </aside>
