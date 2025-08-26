@@ -1,7 +1,7 @@
 import EditorSidebarIcons from '@/components/editor/editor-sidebar-icons';
 import { leatherColors, protectionColors } from '@/constant/editorcolor';
 import { SharedData } from '@/types';
-import { AllowedPermission, LogoCategory, Permission } from '@/types/data';
+import { AllowedPermission, LogoCategory } from '@/types/data';
 import { CanvasItem } from '@/types/editor';
 import { SvgColorBar, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
@@ -103,67 +103,69 @@ export function EditorSidebar({
                 />
             </div>
 
-            {showBar === 'colorbar' ? (
-                <div className="z-30 flex h-[70vh] w-full flex-col overflow-y-auto rounded-md border shadow-2xl lg:ml-2">
-                    <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">Change color of part</p>
-
-                    {/* Make EditorColorBar grow + scroll if it overflows */}
-                    <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-                        <EditorColorBar
-                            parts={parts}
-                            color={color}
-                            openColorMenu={openColorMenu}
-                            paintPart={paintPart}
-                            ChageLayerColor={ChageLayerColor}
-                        />
-                    </div>
-                </div>
-            ) : showBar === 'layerbar' ? (
-                <div className="z-30 flex h-[70vh] w-full flex-col overflow-y-auto rounded-md border shadow-2xl lg:ml-2">
-                    <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">All added Layer</p>
-
-                    {/* Make EditorLayerBar grow + scroll if it overflows */}
-                    <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-                        <EditorLayerBar uploadedItems={uploadedItems} setUploadedItems={setUploadedItems} />
-                    </div>
-                </div>
-            ) : showBar === 'logobar' ? (
-                <div className="z-30 flex h-[70vh] w-full flex-col overflow-y-auto rounded-md border shadow-2xl lg:ml-2">
-                    <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">Logo Gallery</p>
-
-                    {/* Make EditorLogoBar grow + scroll if it overflows */}
-                    <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-                        <EditorLogoBar
-                            logoGallery={logoGallery}
-                            setUploadedItems={setUploadedItems}
-                            showLogo={ShowLogoGallery}
-                            useLogo={UseLogoGallery}
-                        />
-                    </div>
-                </div>
-            ) : (
-                showBar === 'textbar' && (
-                    <div className="z-30 flex h-[70vh] w-full flex-col overflow-y-auto rounded-md border shadow-2xl lg:ml-2">
-                        <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">Text Settings</p>
+            <div className="z-30 flex h-[70vh] w-full flex-col overflow-y-auto rounded-md border shadow-2xl lg:ml-2">
+                {showBar === 'colorbar' ? (
+                    <>
+                        <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">Change color of part</p>
 
                         {/* Make EditorColorBar grow + scroll if it overflows */}
                         <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-                            <EditorTextBar
-                                AddText={AddText}
-                                selectedItemId={selectedItemId}
-                                uploadedItems={uploadedItems}
-                                allowedfonts={Allowedpermissions.fonts}
-                                limit={TextLimit}
-                                onUpdateTextLayer={(id, updates) => {
-                                    setUploadedItems((items) =>
-                                        items.map((item) => (item.id === id && item.type === 'text' ? { ...item, ...updates } : item)),
-                                    );
-                                }}
+                            <EditorColorBar
+                                parts={parts}
+                                color={color}
+                                openColorMenu={openColorMenu}
+                                paintPart={paintPart}
+                                ChageLayerColor={ChageLayerColor}
                             />
                         </div>
-                    </div>
-                )
-            )}
+                    </>
+                ) : showBar === 'layerbar' ? (
+                    <>
+                        <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">All added Layer</p>
+
+                        {/* Make EditorLayerBar grow + scroll if it overflows */}
+                        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+                            <EditorLayerBar uploadedItems={uploadedItems} setUploadedItems={setUploadedItems} />
+                        </div>
+                    </>
+                ) : showBar === 'logobar' ? (
+                    <>
+                        <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">Logo Gallery</p>
+
+                        {/* Make EditorLogoBar grow + scroll if it overflows */}
+                        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+                            <EditorLogoBar
+                                logoGallery={logoGallery}
+                                setUploadedItems={setUploadedItems}
+                                showLogo={ShowLogoGallery}
+                                useLogo={UseLogoGallery}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    showBar === 'textbar' && (
+                        <>
+                            <p className="w-full shrink-0 p-3 text-center text-2xl font-semibold">Text Settings</p>
+
+                            {/* Make EditorColorBar grow + scroll if it overflows */}
+                            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <EditorTextBar
+                                    AddText={AddText}
+                                    selectedItemId={selectedItemId}
+                                    uploadedItems={uploadedItems}
+                                    allowedfonts={Allowedpermissions.fonts}
+                                    limit={TextLimit}
+                                    onUpdateTextLayer={(id, updates) => {
+                                        setUploadedItems((items) =>
+                                            items.map((item) => (item.id === id && item.type === 'text' ? { ...item, ...updates } : item)),
+                                        );
+                                    }}
+                                />
+                            </div>
+                        </>
+                    )
+                )}
+            </div>
         </aside>
     );
 }

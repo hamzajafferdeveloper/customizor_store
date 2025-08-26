@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Category } from '@/types/data';
-import { LogoGalleryPagination, PartPagination } from '@/types/pagination';
-import { Head, router, usePage, Link } from '@inertiajs/react';
-import { EllipsisVertical, Pen, Trash2 } from 'lucide-react';
+import { PartPagination } from '@/types/pagination';
+import { Head, router, usePage, } from '@inertiajs/react';
+import { EllipsisVertical, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
-import EditCategoryModal from '@/pages/super-admin/logo-gallery/component/edit-logo-gallery-category';
-import CreateLogoModal from "@/pages/super-admin/logo-gallery/component/create-logo";
 import CreatePartModal from './component/create-part';
 
 type FlashProps = {
@@ -29,7 +27,6 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
     const [selectedPart, setSelectedPart] = useState<Category | null>(null);
     const [perPage, setPerPage] = useState<number>(parseInt(new URLSearchParams(window.location.search).get('per_page') || '10'));
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [editOpen, setEditOpen] = useState(false);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);

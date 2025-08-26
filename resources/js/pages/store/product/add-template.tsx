@@ -1,9 +1,8 @@
 import AddTemplateSection from '@/components/sections/add-temaplate-section';
 import StoreLayout from '@/layouts/store-layout';
-import { type SharedData } from '@/types';
 import { Product } from '@/types/data';
 import { StoreData } from '@/types/store';
-import { Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 
 type Props = {
     store: StoreData;

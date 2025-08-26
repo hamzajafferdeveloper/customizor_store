@@ -1,12 +1,8 @@
-
 import { Head } from '@inertiajs/react';
-
 import SuperAdminLayout from '../../../layouts/super-admin-layout';
 import { type BreadcrumbItem } from '../../../types';
 import { Product } from '../../../types/data';
 import AddTemplateSection from '@/components/sections/add-temaplate-section';
-
-
 
 export default function AddTemplate({ product }: { product: Product }) {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -15,8 +11,6 @@ export default function AddTemplate({ product }: { product: Product }) {
             href: `/product/add/template/product-slug=${product.slug}`,
         },
     ];
-
-
 
     return (
         <SuperAdminLayout breadcrumbs={breadcrumbs}>

@@ -9,9 +9,14 @@ export interface StoreData {
     status: 'active' | 'inactive';
     payment_detail_id: number | null;
     plan_id: number;
+    banner: StoreBanner;
     bio: string;
     logo: string;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;
+}
+
+export interface StoreBanner {
+    path: string;
 }

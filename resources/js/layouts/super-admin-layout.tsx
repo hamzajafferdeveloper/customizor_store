@@ -13,4 +13,5 @@ export default ({ children, breadcrumbs, ...props }: SuperAdminLayoutProps) => (
         {children}
         <ToastContainer />
     </SuperAdminLayoutTemplate>
+    
 );

@@ -1,11 +1,13 @@
+import { type SharedData } from '@/types';
 import { Product } from '@/types/data';
 import { StoreData } from '@/types/store';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { CircleSlash2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useSidebar } from '../ui/sidebar';
 import { Switch } from '../ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
@@ -14,20 +16,41 @@ type SelectedPart = {
     name?: string;
     protection?: boolean;
     isGroup?: boolean;
-    color?: string;
+    color?: string; // user-selected color
+    defaultColor?: string; // original SVG color
 };
 
 const AddTemplateSection = ({ product, store }: { product: Product; store?: StoreData }) => {
+    const { toggleSidebar } = useSidebar();
+    const sharedData = usePage<SharedData>();
     const fileRef = useRef<HTMLInputElement | null>(null);
     const svgContainerRef = useRef<HTMLDivElement | null>(null);
+
     const [svgContent, setSvgContent] = useState<string | null>(null);
     const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
     const [templateName, setTemplateName] = useState<string>('');
+    const [showHoverColor, setShowHoverColor] = useState<boolean>(false);
+
+    // 🔑 store latest selectedParts for handlers (so we don’t rebind)
+    const selectedPartsRef = useRef<SelectedPart[]>([]);
+    useEffect(() => {
+        selectedPartsRef.current = selectedParts;
+    }, [selectedParts]);
+
+    const handleShowHoverColor = (checked: boolean) => {
+        setShowHoverColor(checked);
+    };
+
+    const targetedSvgPart = (partId: string) => {
+        if (!svgContent || !svgContainerRef.current) return;
+        const svgEl = svgContainerRef.current.querySelector('svg');
+        if (!svgEl) return;
+        return svgEl.querySelector<SVGElement>(`[part-id="${partId}"]`);
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = () => {
             const text = reader.result as string;
@@ -36,54 +59,10 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
         reader.readAsText(file);
     };
 
-    useEffect(() => {
-        if (!svgContent || !svgContainerRef.current) return;
-
-        const container = svgContainerRef.current;
-        const svgEl = container.querySelector('svg');
-        if (!svgEl) return;
-
-        const parts = svgEl.querySelectorAll('path, rect, circle, polygon, polyline, ellipse, line');
-        const handlers: { element: SVGGraphicsElement; handler: EventListener }[] = [];
-
-        parts.forEach((el) => {
-            const element = el as SVGGraphicsElement;
-            element.style.cursor = 'pointer';
-
-            const handleClick = (event: Event) => {
-                event.stopPropagation();
-                const target = event.currentTarget as SVGGraphicsElement;
-
-                if (!target.id) {
-                    const newId = `part-${Math.random().toString(36).substr(2, 9)}`;
-                    target.setAttribute('part-id', newId);
-
-                    const updatedSvg = svgContainerRef.current?.innerHTML;
-                    if (updatedSvg) {
-                        setSvgContent(updatedSvg);
-                    }
-
-                    setSelectedParts((prev) => [...prev, { id: newId, name: '', color: '#000000', isGroup: false, protection: false }]);
-                } else {
-                    toast.error('Part already selected');
-                }
-            };
-
-            element.addEventListener('click', handleClick);
-            handlers.push({ element, handler: handleClick });
-        });
-
-        return () => {
-            handlers.forEach(({ element, handler }) => {
-                element.removeEventListener('click', handler);
-            });
-        };
-    }, [svgContent, selectedParts]);
-
     const handleColorChange = (partId: string, newColor: string) => {
         setSelectedParts((prev) => prev.map((part) => (part.id === partId ? { ...part, color: newColor } : part)));
 
-        const el = svgContainerRef.current?.querySelector(`#${partId}`) as SVGGraphicsElement;
+        const el = svgContainerRef.current?.querySelector<SVGGraphicsElement>(`[part-id="${partId}"]`);
         if (el) {
             el.setAttribute('fill', newColor);
             const updatedSvg = svgContainerRef.current?.innerHTML;
@@ -92,32 +71,82 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
     };
 
     const handleRemovePart = (partId: string) => {
-        const el = svgContainerRef.current?.querySelector(`#${partId}`) as SVGGraphicsElement;
-        if (el) {
-            el.removeAttribute('stroke');
-            el.removeAttribute('stroke-width');
-            el.removeAttribute('part-id');
+        const targetedPart = targetedSvgPart(partId);
+        if (targetedPart) {
+            // restore default color if we had it
+            const orig = selectedParts.find((p) => p.id === partId)?.defaultColor ?? null;
+            if (orig) targetedPart.setAttribute('fill', orig);
+            targetedPart.removeAttribute('part-id');
+        }
+        setSelectedParts((prev) => prev.filter((p) => p.id !== partId));
+
+        const updatedSvg = svgContainerRef.current?.innerHTML;
+        if (updatedSvg) setSvgContent(updatedSvg);
+    };
+
+    // ✅ Bind clicks once per svgContent load (not per selectedParts change)
+    useEffect(() => {
+        if (!svgContent || !svgContainerRef.current) return;
+
+        const svgEl = svgContainerRef.current.querySelector('svg');
+        if (!svgEl) return;
+
+        const onSvgClick = (event: Event) => {
+            const target = (event.target as Element)?.closest<SVGGraphicsElement>('path,rect,circle,polygon,polyline,ellipse,line');
+            if (!target) return;
+
+            const existingId = target.getAttribute('part-id');
+            if (existingId) {
+                const existsInState = selectedPartsRef.current.some((p) => p.id === existingId);
+                if (existsInState) {
+                    toast.error('Part already selected');
+                    return;
+                }
+            }
+
+            const newId = existingId ?? `part-${Math.random().toString(36).slice(2, 9)}`;
+            target.setAttribute('part-id', newId);
+
+            const defaultColor = target.getAttribute('fill') || '#000000';
+
+            setSelectedParts((prev) => [...prev, { id: newId, name: '', color: defaultColor, defaultColor, isGroup: false, protection: false }]);
 
             const updatedSvg = svgContainerRef.current?.innerHTML;
             if (updatedSvg) setSvgContent(updatedSvg);
-        }
+        };
 
-        setSelectedParts((prev) => prev.filter((p) => p.id !== partId));
-    };
+        svgEl.addEventListener('click', onSvgClick);
+        return () => {
+            svgEl.removeEventListener('click', onSvgClick);
+        };
+    }, [svgContent, showHoverColor, selectedParts]);
+
+    // ✅ keep DOM in sync with selectedParts (e.g. when removing)
+    useEffect(() => {
+        if (!svgContainerRef.current) return;
+        const svgEl = svgContainerRef.current.querySelector('svg');
+        if (!svgEl) return;
+
+        const keep = new Set(selectedParts.map((p) => p.id));
+        svgEl.querySelectorAll<SVGGraphicsElement>('[part-id]').forEach((el) => {
+            const pid = el.getAttribute('part-id');
+            if (pid && !keep.has(pid)) {
+                el.removeAttribute('part-id');
+            }
+        });
+    }, [selectedParts]);
 
     const handleSubmit = () => {
         if (!svgContent || selectedParts.length === 0) {
             toast.error('Please select parts and upload an SVG before saving.');
             return;
         }
-
         const payload = {
             product_id: product.id,
             name: templateName,
             svg: svgContent,
             parts: selectedParts,
         };
-
         if (store) {
             router.post(route('store.product.store.template', { storeId: store.id, slug: product.slug }), payload);
         } else {
@@ -132,10 +161,73 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
             svg.setAttribute('height', '100%');
             svg.style.width = '100%';
             svg.style.height = '100%';
-            svg.style.objectFit = 'contain'; // optional
-            svg.style.display = 'block'; // avoids extra whitespace
+            svg.style.objectFit = 'contain';
+            svg.style.display = 'block';
         }
     }, [svgContent]);
+
+    useEffect(() => {
+        if (sharedData.props.sidebarOpen === true) {
+            toggleSidebar();
+        }
+    }, []);
+
+    // 🔁 Show per-part selected color when `showHoverColor` is ON using CSS variable
+    useEffect(() => {
+        if (!svgContainerRef.current) return;
+        const svgEl = svgContainerRef.current.querySelector('svg');
+        if (!svgEl) return;
+
+        // remove old style if any
+        const oldStyle = svgEl.querySelector('#hover-style');
+        if (oldStyle) oldStyle.remove();
+
+        if (showHoverColor) {
+            // inject a single rule that uses a per-element CSS variable
+            const style = document.createElement('style');
+            style.id = 'hover-style';
+            style.innerHTML = `
+            [part-id] {
+                fill: var(--part-fill) !important;
+                opacity: 0.8;
+                cursor: pointer;
+                stroke: #333;
+                stroke-width: 1px;
+            }`;
+            svgEl.appendChild(style);
+
+            // set the CSS variable for each selected part element
+            selectedParts.forEach((part) => {
+                const el = svgEl.querySelector<SVGGraphicsElement>(`[part-id="${part.id}"]`);
+                if (el) {
+                    // use user color if present, else fallback to defaultColor
+                    const color = part.color || part.defaultColor || '#000000';
+                    el.style.setProperty('--part-fill', color);
+                }
+            });
+        } else {
+            // remove any per-element CSS variable and restore the original/default fill attribute
+            selectedParts.forEach((part) => {
+                const el = svgEl.querySelector<SVGGraphicsElement>(`[part-id="${part.id}"]`);
+                if (el) {
+                    el.style.removeProperty('--part-fill');
+                    if (part.defaultColor) {
+                        el.setAttribute('fill', part.defaultColor);
+                    } else {
+                        // if there was no defaultColor, remove inline fill so original SVG styling remains
+                        el.removeAttribute('fill');
+                    }
+                }
+            });
+        }
+
+        // cleanup on unmount / re-run
+        return () => {
+            const s = svgEl.querySelector('#hover-style');
+            if (s) s.remove();
+        };
+    }, [showHoverColor, svgContent, selectedParts]);
+
     return (
         <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <div className="h-full w-full xl:flex">
@@ -151,14 +243,14 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                             <p>No SVG Template Selected. Click me to select Template</p>
                         </div>
                     ) : (
-                        <div className="h-[90vh] w-[800px] rounded-md border p-4">
+                        <div className="h-auto w-full rounded-md border-3 p-4 lg:w-[calc(100%-10rem)]">
                             <div className="h-full w-full overflow-hidden" ref={svgContainerRef} dangerouslySetInnerHTML={{ __html: svgContent }} />
                         </div>
                     )}
                 </div>
 
                 {/* Sidebar: Template Details + Parts */}
-                <aside className="rounded-md border-2 p-2 xl:h-full xl:w-2/5">
+                <aside className="my-2 max-h-[80vh] overflow-y-auto rounded-md border-2 p-2 xl:h-full xl:w-2/5">
                     <div className="flex w-full gap-2">
                         <Input
                             className="w-4/5"
@@ -174,6 +266,10 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                     <div className="mt-4 space-y-2">
                         <div className="flex justify-between border-b border-gray-300 p-3">
                             <h1 className="text-xl">Selected Parts</h1>
+                            <div className="flex items-center gap-1 text-gray-500">
+                                <p>Show Color</p>
+                                <Switch checked={showHoverColor} onCheckedChange={handleShowHoverColor} />
+                            </div>
                         </div>
 
                         {selectedParts.length === 0 ? (
