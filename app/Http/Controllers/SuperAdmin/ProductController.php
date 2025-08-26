@@ -77,18 +77,18 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        // dd($request);
         $validated = $request->validate([
             'title' => 'required|string|max:100',
             'sku' => 'required|string|max:100|unique:products,sku',
             'type' => 'required|string|in:simple,starter,pro,ultra',
             'price' => 'required|numeric|min:0',
+            'price_type' => 'required|in:physical,digital',
 
             'sizes' => 'required|array|min:1',
-            'sizes.*' => 'required|string|max:20',
+            'sizes.*' => 'required|string',
 
             'materials' => 'required|array|min:1',
-            'materials.*' => 'required|string|max:30',
+            'materials.*' => 'required|string',
 
             'colors' => 'required|array|min:1',
             'colors.*' => 'required|integer|exists:colors,id',
@@ -127,10 +127,11 @@ class ProductController extends Controller
             'image' => $product_image,
             'type' => $validated['type'],
             'user_id' => auth()->id(), // Assuming the user is authenticated
-            'sizes' => json_encode(array_values($validated['sizes'])),
-            'materials' => json_encode(array_values($validated['materials'])),
+            'sizes' => array_values($validated['sizes']),
+            'materials' => array_values($validated['materials']),
             'categories_id' => $validated['categories_id'],
             'price' => $validated['price'],
+            'price_type' => $validated['price_type'],
         ]);
 
         foreach (array_filter($validated['colors']) as $colorId) {

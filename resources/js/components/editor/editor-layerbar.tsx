@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { CanvasItem } from '@/types/editor';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { handleDeleteItem } from '@/lib/editor';
+import { CanvasItem } from '@/types/editor';
 import { TextIcon, Trash2 } from 'lucide-react';
-import { handleDeleteItem } from "@/lib/editor";
-import { Input } from "@/components/ui/input";
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
     uploadedItems: CanvasItem[];
@@ -14,11 +14,15 @@ type Props = {
 export default function EditorLayerBar({ uploadedItems, setUploadedItems }: Props) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
-    const [search, setSearch] = useState<string>("");
+    const [search, setSearch] = useState<string>('');
+    const [touchStartY, setTouchStartY] = useState<number | null>(null);
+    const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+
+    const layerBarRef = useRef<HTMLDivElement | null>(null);
 
     const handleDragStart = (id: string) => {
         setDraggingId(id);
-        document.body.classList.add("dragging");
+        document.body.classList.add('dragging');
     };
 
     const handleDragOver = (event: React.DragEvent<HTMLDivElement>, overId: string) => {
@@ -44,86 +48,118 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems }: Prop
     const handleDragEnd = () => {
         setDraggingId(null);
         setHoveredId(null);
-        document.body.classList.remove("dragging");
+        document.body.classList.remove('dragging');
     };
 
-    const filteredItems = uploadedItems.filter((item) =>
-        (item.name || '').toLowerCase().includes(search.trim().toLowerCase())
-    );
+    const filteredItems = uploadedItems.filter((item) => (item.name || '').toLowerCase().includes(search.trim().toLowerCase()));
+
+    useEffect(() => {
+        const preventScroll = (e: TouchEvent) => {
+            // Only prevent if the touch is inside the canvas container
+            if (!layerBarRef.current) return;
+
+            const touch = e.touches[0];
+            const bounds = layerBarRef.current.getBoundingClientRect();
+
+            if (touch.clientX >= bounds.left && touch.clientX <= bounds.right && touch.clientY >= bounds.top && touch.clientY <= bounds.bottom) {
+                e.preventDefault();
+            }
+        };
+
+        document.body.addEventListener('touchmove', preventScroll, { passive: false });
+
+        return () => {
+            document.body.removeEventListener('touchmove', preventScroll);
+        };
+    }, []);
 
     return (
-        <div className="w-full h-full bg-muted rounded-lg shadow-sm p-3">
-            <h2 className="text-lg font-semibold mb-2">Layers</h2>
+        <div className="h-full w-full rounded-lg bg-muted p-3 shadow-sm">
+            <h2 className="mb-2 text-lg font-semibold">Layers</h2>
             {uploadedItems.length > 0 ? (
                 <>
-                    <Input
-                        placeholder="Search layers by name..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="mb-3"
-                    />
-                    <ScrollArea className=" pr-2">
-                        <div className="flex flex-col-reverse gap-3">
+                    <Input placeholder="Search layers by name..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-3" />
+                    <ScrollArea className="pr-2">
+                        <div ref={layerBarRef} className="flex flex-col-reverse gap-3">
                             {filteredItems.length > 0 ? (
                                 filteredItems.map((item, index) => (
                                     <Card
                                         key={item.id}
-                                        
-                                        className={`relative transition-all duration-200 ease-in-out cursor-move select-none ${
+                                        className={`relative cursor-move transition-all duration-200 ease-in-out select-none ${
                                             draggingId === item.id
-                                                ? "opacity-40 scale-[0.98] ring-2 ring-primary/30 z-10"
+                                                ? 'z-10 scale-[0.98] opacity-40 ring-2 ring-primary/30'
                                                 : hoveredId === item.id
-                                                    ? "ring-2 ring-muted-foreground/40"
-                                                    : "z-0"
+                                                  ? 'ring-2 ring-muted-foreground/40'
+                                                  : 'z-0'
                                         }`}
                                         draggable
                                         onDragStart={() => handleDragStart(item.id)}
                                         onDragOver={(e) => handleDragOver(e, item.id)}
                                         onDragLeave={() => setHoveredId(null)}
                                         onDragEnd={handleDragEnd}
+                                        onTouchStart={(e) => {
+                                            setDraggingId(item.id);
+                                            setTouchStartY(e.touches[0].clientY);
+                                            setDraggedItemIndex(index);
+                                        }}
+                                        onTouchMove={(e) => {
+                                            const currentY = e.touches[0].clientY;
+                                            if (touchStartY === null || draggedItemIndex === null) return;
+
+                                            const deltaY = currentY - touchStartY;
+                                            const direction = deltaY > 20 ? 'down' : deltaY < -20 ? 'up' : null;
+
+                                            if (!direction) return;
+
+                                            setUploadedItems((prev) => {
+                                                const newItems = [...prev];
+                                                const from = draggedItemIndex;
+                                                const to = direction === 'down' ? from - 1 : from + 1;
+
+                                                if (to < 0 || to >= newItems.length) return prev;
+
+                                                // Swap
+                                                [newItems[from], newItems[to]] = [newItems[to], newItems[from]];
+                                                setDraggedItemIndex(to);
+                                                setTouchStartY(currentY);
+                                                return newItems;
+                                            });
+                                        }}
+                                        onTouchEnd={() => {
+                                            setDraggingId(null);
+                                            setTouchStartY(null);
+                                            setDraggedItemIndex(null);
+                                        }}
                                     >
                                         <CardHeader className="flex flex-row items-center justify-between gap-3 px-3 py-2">
                                             <div className="flex flex-row items-center gap-3">
-                                                <div className="w-6 h-6 flex items-center justify-center bg-muted rounded">
-                                                    {item.type === "image" ? (
-                                                        item.fileType === "svg" ? (
-                                                            <object type="image/svg+xml" data={item.src} className="w-5 h-5" />
-                                                        ) :  (
-                                                            <img
-                                                                src={item.src}
-                                                                alt={item.originalFileName}
-                                                                className="w-5 h-5 object-contain"
-                                                            />
+                                                <div className="flex h-6 w-6 items-center justify-center rounded bg-muted">
+                                                    {item.type === 'image' ? (
+                                                        item.fileType === 'svg' ? (
+                                                            <object type="image/svg+xml" data={item.src} className="h-5 w-5" />
+                                                        ) : (
+                                                            <img src={item.src} alt={item.originalFileName} className="h-5 w-5 object-contain" />
                                                         )
                                                     ) : (
-                                                        <TextIcon className="w-5 h-5 text-muted-foreground" />
+                                                        <TextIcon className="h-5 w-5 text-muted-foreground" />
                                                     )}
                                                 </div>
-                                                <CardTitle className="text-sm">
-                                                    {item.name || `Item ${index + 1}`}
-                                                </CardTitle>
+                                                <CardTitle className="text-sm">{item.name || `Item ${index + 1}`}</CardTitle>
                                             </div>
-                                            <div className="p-1 hover:text-destructive transition-colors">
-                                                <Trash2
-                                                    className="w-4 h-4"
-                                                    onClick={() => handleDeleteItem(item.id, setUploadedItems)}
-                                                />
+                                            <div className="p-1 transition-colors hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" onClick={() => handleDeleteItem(item.id, setUploadedItems)} />
                                             </div>
                                         </CardHeader>
                                     </Card>
                                 ))
                             ) : (
-                                <div className="text-center text-xs text-muted-foreground italic py-4">
-                                    No matching layers found.
-                                </div>
+                                <div className="py-4 text-center text-xs text-muted-foreground italic">No matching layers found.</div>
                             )}
                         </div>
                     </ScrollArea>
                 </>
             ) : (
-                <div className="text-sm text-muted-foreground italic px-2 py-4 text-center">
-                    No items available
-                </div>
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground italic">No items available</div>
             )}
         </div>
     );

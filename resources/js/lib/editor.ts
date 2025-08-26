@@ -3,6 +3,7 @@ import { CanvasItem } from '@/types/editor';
 import { Template, TemplatePart } from '@/types/helper';
 import { RefObject } from 'react';
 import { toBase64 } from './fileUtils';
+import { generateUniqueId } from './utils';
 
 const id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
@@ -102,7 +103,7 @@ export const handleUploadFile = (
         const isSvg = file.type === 'image/svg+xml';
 
         const newItem: CanvasItem = {
-            id: id,
+            id: generateUniqueId(),
             type: 'image',
             fileType: isSvg ? 'svg' : 'image',
             src,
@@ -127,7 +128,7 @@ export const handleUploadLogo = async (logo: LogoGallery, setUploadedItems: Reac
     const base64Logo = await toBase64(`/storage/${logo.source}`);
 
     const newItem: CanvasItem = {
-        id: id,
+        id: generateUniqueId(),
         type: 'image',
         fileType: 'logo',
         src: base64Logo, // ✅ Use Base64
@@ -148,7 +149,7 @@ export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[
     const newItems: CanvasItem[] = [];
 
     const newItem: CanvasItem = {
-        id: id,
+        id: generateUniqueId(),
         type: 'text',
         text: 'Text here',
         fontSize: 16,

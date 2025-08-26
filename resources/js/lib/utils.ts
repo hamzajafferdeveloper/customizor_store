@@ -14,3 +14,9 @@ export const isLightColor = (hex: string): boolean => {
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
     return luminance > 186; // threshold
 };
+
+export const generateUniqueId = () => {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2) + Date.now().toString(36);
+};

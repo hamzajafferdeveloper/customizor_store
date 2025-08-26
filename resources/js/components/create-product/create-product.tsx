@@ -7,6 +7,7 @@ import { Template } from '@/types/helper';
 import { useEffect, useRef, useState } from 'react';
 import CreateProductCanvas from './product-canvas';
 import { CreateProductSidebar } from './product-sidebar';
+import { generateUniqueId } from '@/lib/utils';
 
 type Props = {
     template: Template;
@@ -29,6 +30,7 @@ export default function CreateProductEditor({ template, logoGallery, permissions
 
     const handleResetCanvas = () => {
         setUploadedItems([]);
+        setUploadedPart([]);
         loadSvgMasktemplate(template);
     };
 
@@ -43,10 +45,8 @@ export default function CreateProductEditor({ template, logoGallery, permissions
 
             const imageUrl = `${window.location.origin}/storage/${part.path}`; // ✅ Ensure full URL
 
-            const id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
-
             const newPart: PartLayer = {
-                id: id,
+                id: generateUniqueId(),
                 name: part.name,
                 color: '#000000',
                 zIndex: 10,

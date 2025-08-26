@@ -126,9 +126,14 @@ const SingleProductSection = ({
                 <div className="ml-10 space-y-2 p-5 lg:mr-0 lg:p-10 xl:p-14">
                     <h1 className="text-5xl font-bold">{product.title}</h1>
                     <p className="text-xs">SKU: {product.sku}</p>
-                    <p className="text-sm">
-                        Product Type: <b>{product.type}</b>{' '}
-                    </p>
+                    <div className="sm:flex space-y-2 sm:space-y-0 gap-2">
+                        <p className="w-fit rounded-full border-2 p-3 text-sm shadow-2xs">
+                            Product Type: <b>{product.type}</b>{' '}
+                        </p>
+                        <p className="w-fit rounded-full border-2 p-3 text-sm shadow-2xs">
+                            Product Price: <b>{product.price}</b>{' '}
+                        </p>
+                    </div>
                     <p className="pl-3 text-sm">Color:</p>
                     <div className="flex flex-wrap gap-2">
                         <div className="flex flex-wrap gap-2">

@@ -29,6 +29,7 @@ export interface Product {
     template: Template;
     categories_id: number;
     price: string;
+    price_type: 'physical' | 'digital';
     store_id: number;
 }
 

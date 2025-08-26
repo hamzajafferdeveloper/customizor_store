@@ -14,9 +14,10 @@ export type ProductForm = {
   type: string ;
   sizes: string[];
   materials: string[];
-  colors: number[]; // assuming you're storing selected color IDs (not names)
+  colors: number[];
   categories_id: number | null;
-  price: string;
+  price: number | string;
+  price_type: 'physical' | 'digital';
 };
 
 export type EditProductForm = {
@@ -25,7 +26,7 @@ export type EditProductForm = {
   type: string ;
   sizes: string[];
   materials: string[];
-  colors: number[]; // assuming you're storing selected color IDs (not names)
+  colors: number[];
   categories_id: number | null;
 };
 

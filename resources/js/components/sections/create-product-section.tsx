@@ -5,15 +5,18 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Category, Color } from '@/types/data';
 import { ProductForm } from '@/types/form';
 import { StoreData } from '@/types/store';
 import { useForm } from '@inertiajs/react';
 import { RabbitIcon, X } from 'lucide-react';
-import { FormEventHandler, useRef, useState } from 'react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import { Badge } from '../ui/badge';
 
 const CreateProductSection = ({ catogories, colors, store }: { catogories: Category[]; colors: Color[]; store?: StoreData }) => {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [manualSku, setManualSku] = useState(false);
     const fileRef = useRef<HTMLInputElement | null>(null);
 
     const { data, setData, post, processing, errors } = useForm<ProductForm>({
@@ -26,6 +29,7 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
         colors: [],
         categories_id: null,
         price: 0,
+        price_type: 'physical',
     });
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,22 +62,32 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
         if (store) {
             post(route('store.product.store', store?.id), {
-                forceFormData: true, // This will internally convert data to FormData (including file/array handling)
-                onError: (err) => console.error(err), // optional for debugging
+                forceFormData: true,
+                // onError: (err) => console.error(err),
                 onSuccess: () => console.log('Submitted successfully!'),
             });
         } else {
             post(route('superadmin.product.store'), {
-                forceFormData: true, // This will internally convert data to FormData (including file/array handling)
-                onError: (err) => console.error(err), // optional for debugging
+                forceFormData: true,
+                // onError: (err) => console.error(err),
                 onSuccess: () => console.log('Submitted successfully!'),
             });
         }
     };
-    
+
+    useEffect(() => {
+        if (!manualSku && data.title) {
+            const generatedSku = data.title
+                .toLowerCase()
+                .replace(/[^a-z0-9 ]/g, '')
+                .trim()
+                .replace(/\s+/g, '-');
+            setData('sku', generatedSku);
+        }
+    }, [data.title, manualSku]);
+
     return (
         <div className="flex flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <div className="relative h-fit flex-1 overflow-hidden rounded-xl lg:mt-5 lg:flex dark:border-sidebar-border">
@@ -85,6 +99,7 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={submit} className="grid gap-4">
+                                {/* Product Title */}
                                 <div className="grid gap-2">
                                     <Label htmlFor="title">Product Title</Label>
                                     <Input
@@ -94,24 +109,31 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                                         onChange={(e) => setData('title', e.target.value)}
                                         placeholder="Cotton Shirt..."
                                         required
+                                        tabIndex={1}
                                     />
                                     <InputError message={errors.title} />
                                 </div>
+                                {/* Product SKU */}
+                                <div className="grid gap-4">
+                                    <Label htmlFor="sku">Product SKU</Label>
+                                    <Input
+                                        id="sku"
+                                        type="text"
+                                        value={data.sku}
+                                        onChange={(e) => {
+                                            setManualSku(true);
+                                            setData('sku', e.target.value);
+                                        }}
+                                        placeholder="SKU-LG-RD"
+                                        required
+                                        tabIndex={2}
+                                    />
+                                    <InputError message={errors.sku} />
+                                </div>
 
+                                {/* Product Price and it's type */}
                                 <div className="flex gap-2">
-                                    <div className="grid gap-2 w-1/2">
-                                        <Label htmlFor="sku">Product SKU</Label>
-                                        <Input
-                                            id="sku"
-                                            type="text"
-                                            value={data.sku}
-                                            onChange={(e) => setData('sku', e.target.value)}
-                                            placeholder="SKU-LG-RD"
-                                            required
-                                        />
-                                        <InputError message={errors.sku} />
-                                    </div>
-                                    <div className="grid gap-2 w-1/2">
+                                    <div className="grid w-4/5 gap-2">
                                         <Label htmlFor="sku">Product Price</Label>
                                         <Input
                                             id="sku"
@@ -120,16 +142,31 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                                             onChange={(e) => setData('price', e.target.value)}
                                             placeholder="100.00"
                                             required
+                                            tabIndex={3}
                                         />
                                         <InputError message={errors.price} />
                                     </div>
+                                    <div className="grid w-1/5 gap-2">
+                                        <Label htmlFor="sku">Price Type</Label>
+                                        <Select value={data.price_type} onValueChange={(val) => setData('price_type', val as 'physical' | 'digital')}>
+                                            <SelectTrigger className="full" tabIndex={4}>
+                                                <SelectValue placeholder="Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="physical">Physical</SelectItem>
+                                                <SelectItem value="digital">Digital</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <InputError message={errors.price_type} />
+                                    </div>
                                 </div>
 
+                                {/* Product Category */}
                                 <div className="grid gap-2">
                                     <Label>Category</Label>
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start">
+                                            <Button variant="outline" className="w-full justify-start" tabIndex={5}>
                                                 {catogories.find((c) => c.id === data.categories_id)?.name || 'Select Category'}
                                             </Button>
                                         </PopoverTrigger>
@@ -152,10 +189,11 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                                     <InputError message={errors.categories_id} />
                                 </div>
 
+                                {/* Product Colors */}
                                 <div className="grid gap-2">
                                     <Label>Colors</Label>
                                     <Popover>
-                                        <PopoverTrigger asChild>
+                                        <PopoverTrigger asChild tabIndex={6}>
                                             <div className="max-w-lg rounded-md border">
                                                 <div
                                                     className="w-full justify-start overflow-x-auto px-2 py-1 whitespace-nowrap"
@@ -220,12 +258,13 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                                     <InputError message={errors.colors} />
                                 </div>
 
+                                {/* Product Type */}
                                 {!store && (
                                     <div className="grid gap-2">
                                         <Label>Type</Label>
                                         <Popover>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline" className="w-full justify-start">
+                                                <Button variant="outline" className="w-full justify-start" tabIndex={8}>
                                                     {data.type ? data.type : 'Select Product Type'}
                                                 </Button>
                                             </PopoverTrigger>
@@ -248,36 +287,75 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                                     </div>
                                 )}
 
+                                {/* Product Materials and Sizes */}
                                 {['materials', 'sizes'].map((field) => (
                                     <div key={field} className="grid gap-2">
                                         <Label>{field.charAt(0).toUpperCase() + field.slice(1)}</Label>
-                                        <Input
-                                            placeholder={`Enter ${field}, comma separated`}
-                                            value={(data as any)[field].join(', ')}
-                                            onChange={(e) =>
-                                                setData(
-                                                    field as keyof ProductForm,
-                                                    e.target.value.split(',').map((item: string) => item.trim()),
-                                                )
-                                            }
-                                        />
+
+                                        <div className="flex flex-wrap items-center gap-2 rounded-md border p-2">
+                                            {(data as any)[field].map((item: string, index: number) => (
+                                                <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                                                    {item}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setData(
+                                                                field as keyof ProductForm,
+                                                                (data as any)[field].filter((_: string, i: number) => i !== index),
+                                                            );
+                                                        }}
+                                                        className="ml-1 rounded p-0.5 hover:bg-muted"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
+
+                                            <Input
+                                                className="min-w-[100px] flex-1 border-none focus-visible:ring-0"
+                                                placeholder={`Add ${field}`}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ',') {
+                                                        e.preventDefault();
+                                                        const value = e.currentTarget.value.trim();
+                                                        if (value) {
+                                                            setData(field as keyof ProductForm, [...(data as any)[field], value]);
+                                                            e.currentTarget.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                                tabIndex={field === 'materials' ? 9 : 10}
+                                            />
+                                        </div>
+
                                         <InputError message={(errors as any)[field]} />
                                     </div>
                                 ))}
 
+                                {/* Product Image Input */}
                                 <div className="grid gap-2">
                                     <Label htmlFor="image">Product Image</Label>
-                                    <Input id="image" type="file" ref={fileRef} accept="image/*" onChange={handleImageChange} required />
+                                    <Input
+                                        id="image"
+                                        type="file"
+                                        ref={fileRef}
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        required
+                                        tabIndex={11}
+                                    />
                                     <InputError message={errors.image} />
                                 </div>
 
-                                <Button type="submit" className="mt-4 w-full" disabled={processing}>
+                                <Button type="submit" className="mt-4 w-full" disabled={processing} tabIndex={12}>
                                     Create
                                 </Button>
                             </form>
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Product Image Display */}
                 <div className="flex w-full items-center lg:w-1/2">
                     {imagePreview ? (
                         <div className="group relative mt-2 flex justify-center">

@@ -125,6 +125,7 @@ class HomeController extends Controller
             'title' => 'required|string|max:100',
             'sku' => 'required|string|max:100|unique:products,sku',
             'price' => 'required|numeric|min:0',
+            'price_type' => 'required|in:physical,digital',
 
             'sizes' => 'required|array|min:1',
             'sizes.*' => 'required|string|max:20',
@@ -168,6 +169,7 @@ class HomeController extends Controller
             'slug' => $slug,
             'store_id' => $storeId,
             'price' => $validated['price'],
+            'price_type' => $validated['price_type'],
             'user_id' => auth()->id(),
             'type' => 'simple',
             'image' => $product_image,
