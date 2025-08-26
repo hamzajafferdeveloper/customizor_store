@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::post('/store', [ColorController::class, 'store'])->name('superadmin.color.store');
         Route::put('/{id}', [ColorController::class, 'update'])->name('superadmin.color.update');
         Route::delete('/{id}', [ColorController::class, 'destroy'])->name('superadmin.color.destroy');
+        Route::put('/update-color/{id}', [ColorController::class, 'updateColor'])->name('superadmin.color.updateColorType');
     });
 
     Route::get('/product-create', [ProductController::class, 'create'])->name('superadmin.product.create');

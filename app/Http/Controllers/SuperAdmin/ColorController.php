@@ -33,11 +33,13 @@ class ColorController extends Controller
                 'string',
                 'regex:/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/'
             ],
+            'color_type' => 'required|in:protection,leather',
         ]);
 
         Color::create([
             'name' => $validated['name'],
             'hexCode' => $validated['hexCode'],
+            'color_type' => $validated['color_type']
         ]);
 
         return redirect()->back()->with('success', 'Color created successfully!');
@@ -77,5 +79,20 @@ class ColorController extends Controller
         $category->delete();
 
         return redirect()->route('color.index')->with('success', 'Color deleted successfully!');
+    }
+
+    public function updateColor(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'color_type' => 'required|in:protection,leather',
+        ]);
+
+        $color = Color::findOrFail($id);
+
+        $color->update([
+            'color_type' => $validated['color_type']
+        ]);
+
+        return redirect()->back()->with('success', 'Color type update to ' . $validated['color_type'] . ' successfully!');
     }
 }

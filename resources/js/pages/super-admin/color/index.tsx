@@ -3,7 +3,9 @@ import CustomTableFooter from '@/components/table-footer';
 import TableHeaderCustom from '@/components/table-header';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { Color } from '@/types/data';
 import { ColorPagination } from '@/types/pagination';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -12,14 +14,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import CreateColorModal from './component/create-color';
 import EditColorModal from './component/edit-modal';
-import SuperAdminLayout from '@/layouts/super-admin-layout';
 
 type FlashProps = {
     success?: string;
     error?: string;
 };
 
-export default function Category({ colors }: { colors : ColorPagination }) {
+export default function Category({ colors }: { colors: ColorPagination }) {
     const page = usePage();
     const flash = (page.props as { flash?: FlashProps }).flash;
 
@@ -58,6 +59,12 @@ export default function Category({ colors }: { colors : ColorPagination }) {
         }
     };
 
+    const handleChangeColorType = (id: number, val: 'leather' | 'protection') => {
+        router.put(route('superadmin.color.updateColorType', id), {
+            color_type: val,
+        });
+    };
+
     return (
         <SuperAdminLayout breadcrumbs={[{ title: 'All Color', href: '/color' }]}>
             <Head title="Color" />
@@ -72,9 +79,8 @@ export default function Category({ colors }: { colors : ColorPagination }) {
                             setCreateCategoryModalOpen(!createCategoryModalOpen);
                         }}
                         searchTxt="Search Color by Name..."
-
-                        heading='All Color'
-                        desc='List all Of Color Available'
+                        heading="All Color"
+                        desc="List all Of Color Available"
                         // desc2={`Total No of Color is: ${colors.total}`}
                     />
 
@@ -84,6 +90,7 @@ export default function Category({ colors }: { colors : ColorPagination }) {
                             <TableRow>
                                 <TableHead>Color Name</TableHead>
                                 <TableHead>Color</TableHead>
+                                <TableHead>Type</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -91,7 +98,27 @@ export default function Category({ colors }: { colors : ColorPagination }) {
                             {filterData.map((color) => (
                                 <TableRow key={color.id}>
                                     <TableCell>{color.name}</TableCell>
-                                    <TableCell> <div className='h-8 w-8 rounded-full' style={{ backgroundColor: color.hexCode}} /> </TableCell>
+                                    <TableCell>
+                                        <div className="h-8 w-8 rounded-full" style={{ backgroundColor: color.hexCode }} />{' '}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Select
+                                            defaultValue={color.color_type}
+                                            onValueChange={(val) => handleChangeColorType(color.id, val as 'protection' | 'leather')}
+                                        >
+                                            <SelectTrigger className="w-[115px]">
+                                                <SelectValue placeholder={color.color_type} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem className="cursor-pointer" value="protection">
+                                                    Protection
+                                                </SelectItem>
+                                                <SelectItem className="cursor-pointer" value="leather">
+                                                    Leather
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>
@@ -150,8 +177,16 @@ export default function Category({ colors }: { colors : ColorPagination }) {
                 onConfirm={handleDelete}
             />
 
-            {createCategoryModalOpen && <CreateColorModal open={createCategoryModalOpen} onOpenChange={() => setCreateCategoryModalOpen(!createCategoryModalOpen)} />}
-            {editCategoryModalOpen && selectedColor && <EditColorModal open={editCategoryModalOpen} selectedColor={selectedColor} onOpenChange={() => setEditCategoryModalOpen(!editCategoryModalOpen)} />}
+            {createCategoryModalOpen && (
+                <CreateColorModal open={createCategoryModalOpen} onOpenChange={() => setCreateCategoryModalOpen(!createCategoryModalOpen)} />
+            )}
+            {editCategoryModalOpen && selectedColor && (
+                <EditColorModal
+                    open={editCategoryModalOpen}
+                    selectedColor={selectedColor}
+                    onOpenChange={() => setEditCategoryModalOpen(!editCategoryModalOpen)}
+                />
+            )}
         </SuperAdminLayout>
     );
 }

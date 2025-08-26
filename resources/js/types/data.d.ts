@@ -11,6 +11,7 @@ export interface Color {
     id: number;
     name: string;
     hexCode: string;
+    color_type: 'protection' | 'leather';
     created_at: string;
     updated_at: string;
 }

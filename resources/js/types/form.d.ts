@@ -5,6 +5,7 @@ export type CategoryForm = {
 export type ColorForm = {
     name: string;
     hexCode: string;
+    color_type: 'protection' | 'leather'
 };
 
 export type ProductForm = {
