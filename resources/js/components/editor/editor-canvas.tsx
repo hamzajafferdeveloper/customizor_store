@@ -476,7 +476,7 @@ export default function EditorCanvas({
             {/* Main editor container */}
             <div
                 ref={canvasContainerRef}
-                className="background-container relative w-full overflow-hidden rounded-lg border-2 bg-white p-6 lg:max-w-[700px] xl:max-w-[900px] dark:bg-transparent"
+                className="background-container relative w-full overflow-hidden rounded-lg border-2 bg-white p-6 lg:max-w-[55vw] dark:bg-transparent"
                 onMouseDown={handlePanStart}
                 onTouchStart={handlePanStart}
                 style={{ cursor: isPanning ? 'grabbing' : 'default' }}
