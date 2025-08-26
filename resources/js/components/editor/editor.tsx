@@ -32,7 +32,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
   };
 
   const UploadFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleUploadFile(event, setUploadedItems);
+    handleUploadFile(event, setUploadedItems);
   };
 
   const handleResetCanvas = () => {

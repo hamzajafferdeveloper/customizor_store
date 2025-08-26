@@ -4,6 +4,7 @@ use App\Http\Controllers\home\PaymentController;
 use App\Http\Controllers\home\StoreController;
 use App\Http\Controllers\SuperAdmin\ProductController;
 use App\Http\Controllers\User\HomeController;
+use App\Models\Color;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -27,6 +28,16 @@ Route::get('/product/customizer/template={id}', [HomeController::class, 'customi
 Route::get('/product', [ProductController::class, 'index'])->name('product.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/design-our-own-product', [ProductController::class, 'createOwnProduct'])->name('design.product');
+
+Route::get('/all/colors', function (){
+    $colors = Color::all();
+    if($colors){
+        return response()->json([
+            'colors' => $colors
+        ], 200);
+    }
+    return response()->json(['message', 'No Color Found'], 404);
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Payment Routes

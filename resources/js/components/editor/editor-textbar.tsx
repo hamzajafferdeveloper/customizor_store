@@ -43,7 +43,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
     const [underline, setUnderline] = useState(textLayer?.underline ?? false);
     const [color, setColor] = useState(textLayer?.color ?? '#000000');
     const [fontFamily, setFontFamily] = useState(textLayer?.fontFamily ?? 'Arial');
-    const [fontPath, setFontPath] = useState(textLayer?.fontPath ?? null); // ✅ NEW: store path if custom font
+    const [fontPath, setFontPath] = useState(textLayer?.fontPath ?? null);
     const [openFont, setOpenFont] = useState(false);
     const [italic, setItalic] = useState(textLayer?.italic ?? false);
     const [stroke, setStroke] = useState(textLayer?.stroke ?? 0);

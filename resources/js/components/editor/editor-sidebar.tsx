@@ -112,7 +112,6 @@ export function EditorSidebar({
                         <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
                             <EditorColorBar
                                 parts={parts}
-                                color={color}
                                 openColorMenu={openColorMenu}
                                 paintPart={paintPart}
                                 ChageLayerColor={ChageLayerColor}
