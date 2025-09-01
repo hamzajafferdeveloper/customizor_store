@@ -61,7 +61,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
 
     return (
         <main className="flex flex-col p-2 lg:flex-row">
-            <div className="order-1 flex-1 p-4 lg:order-2">
+            <div className="flex-1 order-1 p-4 lg:order-2">
                 <EditorCanvas
                     downloadRef={downloadRef}
                     svgContainerRef={svgContainerRef}

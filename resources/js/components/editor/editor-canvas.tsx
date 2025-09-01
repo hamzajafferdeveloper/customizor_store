@@ -196,15 +196,26 @@ export default function EditorCanvas({
             const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
             if (!selectedItemId) return;
+
             setUploadedItems((prev) =>
                 prev.map((item) => {
                     if (item.id !== selectedItemId) return item;
+
                     const dx = clientX - resizeStart.current.x;
                     const dy = clientY - resizeStart.current.y;
+
+                    // original aspect ratio
+                    const aspectRatio = resizeStart.current.width / resizeStart.current.height;
+
+                    // find new scale factor (use the larger delta to keep proportional)
+                    const scaleX = (resizeStart.current.width + dx) / resizeStart.current.width;
+                    const scaleY = (resizeStart.current.height + dy) / resizeStart.current.height;
+                    const scale = Math.max(scaleX, scaleY);
+
                     return {
                         ...item,
-                        width: Math.max(20, resizeStart.current.width + dx),
-                        height: Math.max(20, resizeStart.current.height + dy),
+                        width: Math.max(20, resizeStart.current.width * scale),
+                        height: Math.max(20, resizeStart.current.height * scale),
                     };
                 }),
             );
@@ -462,7 +473,7 @@ export default function EditorCanvas({
     }, [isPanning, lastPanPosition]);
 
     return (
-        <main className="relative flex h-full w-full items-center justify-center" ref={editorMianRef}>
+        <main className="relative flex items-center justify-center w-full h-full" ref={editorMianRef}>
             {/* --- ZOOM & PAN CONTROLS --- */}
 
             {/* Hidden file input for uploads */}
@@ -470,7 +481,7 @@ export default function EditorCanvas({
                 <input type="file" accept=".svg,.png,.jpg,.jpeg" multiple className="hidden" ref={fileInputRef} onChange={handleUploadChange} />
             )}
 
-            {/* <button className="cursor-pointer rounded-md bg-gray-300 px-4 py-2" onClick={() => handleDownload()}>
+            {/* <button className="px-4 py-2 bg-gray-300 rounded-md cursor-pointer" onClick={() => handleDownload()}>
                 Save
             </button> */}
             {/* Main editor container */}
@@ -494,7 +505,7 @@ export default function EditorCanvas({
                 >
                     {/* SVG template container */}
                     <div className="" ref={downloadRef}>
-                        <div id="svg-container" className="h-full w-full" ref={svgContainerRef} onClick={handleSvgContainerClick} />
+                        <div id="svg-container" className="w-full h-full" ref={svgContainerRef} onClick={handleSvgContainerClick} />
                     </div>
 
                     {/* Uploaded items container (masked to SVG shape) */}
@@ -547,21 +558,21 @@ export default function EditorCanvas({
                                                     <object
                                                         type="image/svg+xml"
                                                         data={item.src}
-                                                        className="pointer-events-none h-full w-full"
+                                                        className="w-full h-full pointer-events-none"
                                                         style={{ objectFit: 'fill' }}
                                                     />
                                                 ) : item.fileType === 'image' ? (
                                                     <img
                                                         src={item.src}
                                                         alt={item.originalFileName}
-                                                        className="pointer-events-none h-full w-full"
+                                                        className="w-full h-full pointer-events-none"
                                                         style={{ objectFit: 'fill' }}
                                                     />
                                                 ) : (
                                                     <img
                                                         src={item.src}
                                                         alt={item.originalFileName}
-                                                        className="pointer-events-none h-full w-full"
+                                                        className="w-full h-full pointer-events-none"
                                                         style={{ objectFit: 'fill' }}
                                                     />
                                                 )
@@ -621,7 +632,7 @@ export default function EditorCanvas({
                             return (
                                 <div
                                     ref={controllerRef}
-                                    className="controller-overlay border-2 border-dashed border-indigo-500"
+                                    className="border-2 border-indigo-500 border-dashed controller-overlay"
                                     style={{
                                         position: 'absolute',
                                         left: (svgOverlayBox.left ?? 0) + item.x - 16,
@@ -649,7 +660,7 @@ export default function EditorCanvas({
                                     {item.type === 'image' && (
                                         <>
                                             <div
-                                                className="resize-handle absolute bottom-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                                className="absolute bottom-0 left-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer resize-handle h-7 w-7"
                                                 onMouseDown={(e) => {
                                                     e.stopPropagation();
                                                     setIsResizing(true);
@@ -671,7 +682,7 @@ export default function EditorCanvas({
                                     )}
                                     {/* Resize Handle */}
                                     <div
-                                        className="resize-handle absolute right-0 bottom-0 flex h-7 w-7 cursor-nesw-resize items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                        className="absolute bottom-0 right-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow resize-handle h-7 w-7 cursor-nesw-resize"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
                                             setIsResizing(true);
@@ -687,7 +698,7 @@ export default function EditorCanvas({
                                     </div>
                                     {/* Rotate Handle */}
                                     <div
-                                        className="rotate-handle resize-handle absolute flex h-7 w-7 cursor-grab items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                        className="absolute flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow rotate-handle resize-handle h-7 w-7 cursor-grab"
                                         style={{
                                             left: '50%',
                                             top: -32,
@@ -714,11 +725,11 @@ export default function EditorCanvas({
                 </div>
             </div>
             {/* Move the zoom control bar OUTSIDE the canvas area, at the bottom-right of the main editor area */}
-            <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
+            <div className="fixed flex gap-2 p-2 rounded shadow top-2 right-2 z-2 bg-white/80 lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
                 <button
                     onClick={handleZoomOut}
                     disabled={zoom <= MIN_ZOOM}
-                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    className="p-1 transition-all duration-75 rounded hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                 >
                     <Minus size={18} />
                 </button>
@@ -726,11 +737,11 @@ export default function EditorCanvas({
                 <button
                     onClick={handleZoomIn}
                     disabled={zoom >= MAX_ZOOM}
-                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    className="p-1 transition-all duration-75 rounded hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                 >
                     <Plus size={18} />
                 </button>
-                <button onClick={handleResetView} className="rounded p-1 transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <button onClick={handleResetView} className="p-1 transition-all duration-75 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                     <RefreshCw size={18} />
                 </button>
             </div>
