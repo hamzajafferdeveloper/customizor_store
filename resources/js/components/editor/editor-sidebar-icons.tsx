@@ -1,7 +1,8 @@
 import { CanvasItem } from '@/types/editor';
-import { Home } from 'lucide-react';
+import { Home, Redo2, Undo2 } from 'lucide-react';
 import { RefObject } from 'react';
 import CommonSideBarIcons from '../common/sidebar-icons';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 type Props = {
     setShowBar: Function;
@@ -25,9 +26,9 @@ export default function EditorSidebarIcons({
     imageuploadLimit,
 }: Props) {
     return (
-        <div className="flex w-full flex-row justify-evenly lg:flex-col">
+        <div className="flex flex-row w-full justify-evenly lg:flex-col">
             <Home
-                className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'colorbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
+                className={`w-8 h-8 p-2 lg:w-10 lg:h-10 lg:p-3 cursor-pointer rounded-md transition-all duration-500 ${showBar === 'colorbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
                 onClick={() => setShowBar('colorbar')}
             />
             <CommonSideBarIcons

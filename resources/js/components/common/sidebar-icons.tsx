@@ -47,17 +47,17 @@ export default function CommonSideBarIcons({
     };
 
     return (
-        <div className="flex w-full flex-row justify-evenly lg:flex-col">
+        <div className="flex flex-row w-full justify-evenly lg:flex-col">
             <Layers
-                className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'layerbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
+                className={`w-8 h-8 p-2 lg:w-10 lg:h-10 lg:p-3 cursor-pointer rounded-md  transition-all duration-500 ${showBar === 'layerbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
                 onClick={() => setShowBar('layerbar')}
             />
             <Type
-                className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'textbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
+                className={`w-8 h-8 p-2 lg:w-10 lg:h-10 lg:p-3 cursor-pointer rounded-md  transition-all duration-500 ${showBar === 'textbar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
                 onClick={() => setShowBar('textbar')}
             />
             <Image
-                className={`h-10 w-10 cursor-pointer rounded-md p-3 transition-all duration-500 ${showBar === 'logobar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
+                className={`w-8 h-8 p-2 lg:w-10 lg:h-10 lg:p-3 cursor-pointer rounded-md  transition-all duration-500 ${showBar === 'logobar' ? 'bg-gray-200/90 dark:bg-gray-200/20' : 'hover:bg-gray-200/90 dark:hover:bg-gray-200/20'}`}
                 onClick={() => setShowBar('logobar')}
             />
 
@@ -65,7 +65,7 @@ export default function CommonSideBarIcons({
             <Tooltip>
                 <TooltipTrigger>
                     <div onClick={() => setOpenDownloadDialogBox(true)}>
-                        <Download className="h-10 w-10 cursor-pointer rounded-md p-3 hover:bg-gray-200/90 dark:hover:bg-gray-200/20" />
+                        <Download className="w-8 h-8 p-2 rounded-md cursor-pointer lg:w-10 lg:h-10 lg:p-3 hover:bg-gray-200/90 dark:hover:bg-gray-200/20" />
                     </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
@@ -78,7 +78,7 @@ export default function CommonSideBarIcons({
             <Tooltip>
                 <TooltipTrigger>
                     <div onClick={() => handleUploadImage()}>
-                        <Upload className="h-10 w-10 cursor-pointer rounded-md p-3 hover:bg-gray-200/90 dark:hover:bg-gray-200/20" />
+                        <Upload className="w-8 h-8 p-2 rounded-md cursor-pointer lg:w-10 lg:h-10 lg:p-3 hover:bg-gray-200/90 dark:hover:bg-gray-200/20" />
                     </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
@@ -90,7 +90,7 @@ export default function CommonSideBarIcons({
             <Tooltip>
                 <TooltipTrigger>
                     <div onClick={() => setOpenResetDialog(true)}>
-                        <RotateCcw className="h-10 w-10 cursor-pointer rounded-md p-3 hover:bg-gray-200/90 dark:hover:bg-gray-200/20" />
+                        <RotateCcw className="w-8 h-8 p-2 rounded-md cursor-pointer lg:w-10 lg:h-10 lg:p-3 hover:bg-gray-200/90 dark:hover:bg-gray-200/20" />
                     </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
