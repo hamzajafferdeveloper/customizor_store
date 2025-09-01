@@ -74,7 +74,7 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems }: Prop
     }, []);
 
     return (
-        <div className="h-full w-full rounded-lg bg-muted p-3 shadow-sm">
+        <div className="w-full h-full p-3 rounded-lg shadow-sm bg-muted">
             <h2 className="mb-2 text-lg font-semibold">Layers</h2>
             {uploadedItems.length > 0 ? (
                 <>
@@ -131,35 +131,37 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems }: Prop
                                             setDraggedItemIndex(null);
                                         }}
                                     >
-                                        <CardHeader className="flex flex-row items-center justify-between gap-3 px-3 py-2">
-                                            <div className="flex flex-row items-center gap-3">
-                                                <div className="flex h-6 w-6 items-center justify-center rounded bg-muted">
+                                        <CardHeader className="flex flex-row items-center justify-between w-full gap-3 px-3 py-2">
+                                            <div className="flex flex-row items-center w-3/4 gap-3">
+                                                <div className="flex items-center justify-center w-6 h-6 rounded bg-muted">
                                                     {item.type === 'image' ? (
                                                         item.fileType === 'svg' ? (
-                                                            <object type="image/svg+xml" data={item.src} className="h-5 w-5" />
+                                                            <object type="image/svg+xml" data={item.src} className="w-5 h-5" />
                                                         ) : (
-                                                            <img src={item.src} alt={item.originalFileName} className="h-5 w-5 object-contain" />
+                                                            <img src={item.src} alt={item.originalFileName} className="object-contain w-5 h-5" />
                                                         )
                                                     ) : (
-                                                        <TextIcon className="h-5 w-5 text-muted-foreground" />
+                                                        <TextIcon className="w-5 h-5 text-muted-foreground" />
                                                     )}
                                                 </div>
-                                                <CardTitle className="text-sm">{item.name || `Item ${index + 1}`}</CardTitle>
+                                                <CardTitle className="text-sm truncate" title={item.name || `Item ${index + 1}`}>
+                                                    {item.name || `Item ${index + 1}`}
+                                                </CardTitle>
                                             </div>
                                             <div className="p-1 transition-colors hover:text-destructive">
-                                                <Trash2 className="h-4 w-4" onClick={() => handleDeleteItem(item.id, setUploadedItems)} />
+                                                <Trash2 className="w-4 h-4" onClick={() => handleDeleteItem(item.id, setUploadedItems)} />
                                             </div>
                                         </CardHeader>
                                     </Card>
                                 ))
                             ) : (
-                                <div className="py-4 text-center text-xs text-muted-foreground italic">No matching layers found.</div>
+                                <div className="py-4 text-xs italic text-center text-muted-foreground">No matching layers found.</div>
                             )}
                         </div>
                     </ScrollArea>
                 </>
             ) : (
-                <div className="px-2 py-4 text-center text-sm text-muted-foreground italic">No items available</div>
+                <div className="px-2 py-4 text-sm italic text-center text-muted-foreground">No items available</div>
             )}
         </div>
     );
