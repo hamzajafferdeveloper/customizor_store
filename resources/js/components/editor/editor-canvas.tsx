@@ -1,10 +1,10 @@
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import { downloadClippedCanvas } from '@/lib/downloadEditorCanvas';
 import { handleDeleteItem, handleMouseDown } from '@/lib/editor';
 import { onEvent } from '@/lib/event-bus';
 import { CanvasItem } from '@/types/editor';
 import { Maximize2, Minus, Pen, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react';
 import { RefObject, useEffect, useRef, useState } from 'react';
+import RotateAngleModal from './rotate-angle-modal';
 import SvgColorChangeModal from './svg-color-change-modal';
 
 type Props = {
@@ -36,6 +36,7 @@ export default function EditorCanvas({
     const editorMianRef = useRef<HTMLDivElement | null>(null);
     const [openSvgDialog, setOpenSvgDialog] = useState<boolean>(false);
     const [selecetSvgId, setSelectedSvgId] = useState<string | null>(null);
+    const [openRotateDialog, setOpenRotateDialog] = useState(false);
 
     // Stores container position for calculations
     const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
@@ -57,10 +58,7 @@ export default function EditorCanvas({
     // --- MOVE NEW HOOKS HERE ---
     const controllerRef = useRef<HTMLDivElement | null>(null);
     const [isResizing, setIsResizing] = useState(false);
-    const [isRotating, setIsRotating] = useState(false);
     const resizeStart = useRef<{ x: number; y: number; width: number; height: number }>({ x: 0, y: 0, width: 0, height: 0 });
-    // Store initial mouse angle and original rotation
-    const rotateStart = useRef<{ initialAngle: number; originalRotation: number }>({ initialAngle: 0, originalRotation: 0 });
 
     // --- ZOOM & PAN STATE ---
     const [zoom, setZoom] = useState(1);
@@ -235,46 +233,6 @@ export default function EditorCanvas({
             window.removeEventListener('touchend', handleUp);
         };
     }, [isResizing, selectedItemId, setUploadedItems]);
-
-    // Rotate logic
-    useEffect(() => {
-        if (!isRotating) return;
-
-        const handleMove = (e: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-            if (!selectedItemId) return;
-            setUploadedItems((prev) =>
-                prev.map((item) => {
-                    if (item.id !== selectedItemId) return item;
-
-                    const centerX = item.x + item.width / 2;
-                    const centerY = item.y + item.height / 2;
-                    const currentAngle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
-
-                    return {
-                        ...item,
-                        rotation: rotateStart.current.originalRotation + (currentAngle - rotateStart.current.initialAngle),
-                    };
-                }),
-            );
-        };
-
-        const handleUp = () => setIsRotating(false);
-
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchmove', handleMove);
-        window.addEventListener('touchend', handleUp);
-
-        return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleUp);
-            window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('touchend', handleUp);
-        };
-    }, [isRotating, selectedItemId, setUploadedItems]);
 
     /**
      * ✅ Measure the bounding box of the container when mounted
@@ -551,74 +509,65 @@ export default function EditorCanvas({
                                         setSelectedItemId(item.id);
                                     }}
                                 >
-                                    <ContextMenu>
-                                        <ContextMenuTrigger>
-                                            {item.type === 'image' ? (
-                                                item.fileType === 'svg' ? (
-                                                    <object
-                                                        type="image/svg+xml"
-                                                        data={item.src}
-                                                        className="w-full h-full pointer-events-none"
-                                                        style={{ objectFit: 'fill' }}
-                                                    />
-                                                ) : item.fileType === 'image' ? (
-                                                    <img
-                                                        src={item.src}
-                                                        alt={item.originalFileName}
-                                                        className="w-full h-full pointer-events-none"
-                                                        style={{ objectFit: 'fill' }}
-                                                    />
-                                                ) : (
-                                                    <img
-                                                        src={item.src}
-                                                        alt={item.originalFileName}
-                                                        className="w-full h-full pointer-events-none"
-                                                        style={{ objectFit: 'fill' }}
-                                                    />
-                                                )
-                                            ) : (
-                                                <div style={{ position: 'relative', display: 'inline-block' }}>
-                                                    {/* Stroke layer */}
-                                                    <span
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: 0,
-                                                            left: 0,
-                                                            fontSize: item.fontSize,
-                                                            fontFamily: item.fontFamily,
-                                                            fontStyle: item.italic ? 'italic' : 'normal',
-                                                            fontWeight: item.bold ? 'bold' : 'normal',
-                                                            WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
-                                                            color: 'transparent',
-                                                            zIndex: 0,
-                                                        }}
-                                                    >
-                                                        {item.text}
-                                                    </span>
+                                    {item.type === 'image' ? (
+                                        item.fileType === 'svg' ? (
+                                            <object
+                                                type="image/svg+xml"
+                                                data={item.src}
+                                                className="w-full h-full pointer-events-none"
+                                                style={{ objectFit: 'fill' }}
+                                            />
+                                        ) : item.fileType === 'image' ? (
+                                            <img
+                                                src={item.src}
+                                                alt={item.originalFileName}
+                                                className="w-full h-full pointer-events-none"
+                                                style={{ objectFit: 'fill' }}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={item.src}
+                                                alt={item.originalFileName}
+                                                className="w-full h-full pointer-events-none"
+                                                style={{ objectFit: 'fill' }}
+                                            />
+                                        )
+                                    ) : (
+                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                            {/* Stroke layer */}
+                                            <span
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    fontSize: item.fontSize,
+                                                    fontFamily: item.fontFamily,
+                                                    fontStyle: item.italic ? 'italic' : 'normal',
+                                                    fontWeight: item.bold ? 'bold' : 'normal',
+                                                    WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
+                                                    color: 'transparent',
+                                                    zIndex: 0,
+                                                }}
+                                            >
+                                                {item.text}
+                                            </span>
 
-                                                    {/* Fill layer */}
-                                                    <span
-                                                        style={{
-                                                            position: 'relative',
-                                                            color: item.color,
-                                                            fontSize: item.fontSize,
-                                                            fontFamily: item.fontFamily,
-                                                            fontStyle: item.italic ? 'italic' : 'normal',
-                                                            fontWeight: item.bold ? 'bold' : 'normal',
-                                                            zIndex: 1,
-                                                        }}
-                                                    >
-                                                        {item.text}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </ContextMenuTrigger>
-                                        <ContextMenuContent>
-                                            <ContextMenuItem onClick={() => handleDeleteItem(item.id, setUploadedItems)}>
-                                                <Trash2 className="text-red-500" /> Delete
-                                            </ContextMenuItem>
-                                        </ContextMenuContent>
-                                    </ContextMenu>
+                                            {/* Fill layer */}
+                                            <span
+                                                style={{
+                                                    position: 'relative',
+                                                    color: item.color,
+                                                    fontSize: item.fontSize,
+                                                    fontFamily: item.fontFamily,
+                                                    fontStyle: item.italic ? 'italic' : 'normal',
+                                                    fontWeight: item.bold ? 'bold' : 'normal',
+                                                    zIndex: 1,
+                                                }}
+                                            >
+                                                {item.text}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -660,7 +609,7 @@ export default function EditorCanvas({
                                     {item.type === 'image' && (
                                         <>
                                             <div
-                                                className="absolute bottom-0 left-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer resize-handle h-7 w-7"
+                                                className="absolute top-0 left-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer resize-handle h-7 w-7"
                                                 onMouseDown={(e) => {
                                                     e.stopPropagation();
                                                     setIsResizing(true);
@@ -680,9 +629,29 @@ export default function EditorCanvas({
                                             </div>
                                         </>
                                     )}
+                                    {/* Rotate Handle */}
+                                    <div
+                                        className="absolute top-0 right-0 z-50 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer rotate-handle h-7 w-7"
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            setIsResizing(true);
+                                            resizeStart.current = {
+                                                x: e.clientX,
+                                                y: e.clientY,
+                                                width: item.width,
+                                                height: item.height,
+                                            };
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenRotateDialog(true);
+                                        }}
+                                    >
+                                        <RotateCw size={16} className="text-indigo-500" />
+                                    </div>
                                     {/* Resize Handle */}
                                     <div
-                                        className="absolute bottom-0 right-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow resize-handle h-7 w-7 cursor-nesw-resize"
+                                        className="absolute bottom-0 left-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow resize-handle h-7 w-7 cursor-nesw-resize"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
                                             setIsResizing(true);
@@ -696,28 +665,25 @@ export default function EditorCanvas({
                                     >
                                         <Maximize2 size={16} className="text-indigo-500" />
                                     </div>
-                                    {/* Rotate Handle */}
+                                    {/* Delete Handle */}
                                     <div
-                                        className="absolute flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow rotate-handle resize-handle h-7 w-7 cursor-grab"
-                                        style={{
-                                            left: '50%',
-                                            top: -32,
-                                            transform: 'translateX(-50%)',
-                                        }}
+                                        className="absolute bottom-0 right-0 z-50 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer resize-handle h-7 w-7"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
-                                            setIsRotating(true);
-                                            // Calculate initial angle from center to mouse
-                                            const centerX = item.x + item.width / 2;
-                                            const centerY = item.y + item.height / 2;
-                                            const initialAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
-                                            rotateStart.current = {
-                                                initialAngle,
-                                                originalRotation: item.rotation,
+                                            setIsResizing(true);
+                                            resizeStart.current = {
+                                                x: e.clientX,
+                                                y: e.clientY,
+                                                width: item.width,
+                                                height: item.height,
                                             };
                                         }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteItem(selectedItemId, setUploadedItems);
+                                        }}
                                     >
-                                        <RotateCw size={16} className="text-indigo-500" />
+                                        <Trash2 size={16} className="text-indigo-500" />
                                     </div>
                                 </div>
                             );
@@ -746,16 +712,27 @@ export default function EditorCanvas({
                 </button>
             </div>
             {selecetSvgId && (
-                <SvgColorChangeModal
-                    open={openSvgDialog}
-                    onOpenChange={() => {
-                        setOpenSvgDialog(false), setSelectedSvgId(null);
-                    }}
-                    selecetSvgId={selecetSvgId}
-                    setUploadedItems={setUploadedItems}
-                    uploadedItems={uploadedItems}
-                />
+                <>
+                    <SvgColorChangeModal
+                        open={openSvgDialog}
+                        onOpenChange={() => {
+                            setOpenSvgDialog(false), setSelectedSvgId(null);
+                        }}
+                        selecetSvgId={selecetSvgId}
+                        setUploadedItems={setUploadedItems}
+                        uploadedItems={uploadedItems}
+                    />
+                </>
             )}
+            <RotateAngleModal
+                open={openRotateDialog}
+                onOpenChange={setOpenRotateDialog}
+                initialAngle={selectedItemId ? uploadedItems.find((i) => i.id === selectedItemId)?.rotation || 0 : 0}
+                onConfirm={(angle) => {
+                    if (!selectedItemId) return;
+                    setUploadedItems((prev) => prev.map((item) => (item.id === selectedItemId ? { ...item, rotation: angle } : item)));
+                }}
+            />
         </main>
     );
 }
