@@ -1,19 +1,17 @@
-'use client';
-
 import { Bold, ChevronsUpDown, Italic } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Slider } from '../ui/slider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Font } from '@/types/data';
 import { CanvasItem, TextLayer } from '@/types/editor';
 import { HexColorPicker } from 'react-colorful';
-import { Popover as ShadPopover, PopoverContent as ShadPopoverContent, PopoverTrigger as ShadPopoverTrigger } from '../ui/popover';
-import LimitModal from './limit-modal';
+import { Popover as ShadPopover, PopoverContent as ShadPopoverContent, PopoverTrigger as ShadPopoverTrigger } from '@/components/ui/popover';
+import LimitModal from '@/components/editor/limit-modal';
 
 type Props = {
     AddText: () => void;

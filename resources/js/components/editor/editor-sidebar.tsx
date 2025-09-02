@@ -6,10 +6,10 @@ import { CanvasItem } from '@/types/editor';
 import { SvgColorBar, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
 import { RefObject, useEffect, useState } from 'react';
-import EditorColorBar from './editor-colorbar';
-import EditorLayerBar from './editor-layerbar';
-import EditorLogoBar from './editor-logobar';
-import EditorTextBar from './editor-textbar';
+import EditorColorBar from '@/components/editor/editor-colorbar';
+import EditorLayerBar from '@/components/editor/editor-layerbar';
+import EditorLogoBar from '@/components/editor/editor-logobar';
+import EditorTextBar from '@/components/editor/editor-textbar';
 
 type Props = {
     parts: TemplatePart[];

@@ -1,7 +1,7 @@
 import { Color } from '@/types/data';
 import { useEffect, useState } from 'react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
-import { TemplatePart } from '../../types/helper';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { TemplatePart } from '@/types/helper';
 
 type Props = {
   parts: TemplatePart[];

@@ -4,8 +4,8 @@ import { onEvent } from '@/lib/event-bus';
 import { CanvasItem } from '@/types/editor';
 import { Maximize2, Minus, Pen, Plus, Redo2, RefreshCw, RotateCw, Trash2, Undo2 } from 'lucide-react';
 import { RefObject, useEffect, useRef, useState } from 'react';
-import RotateAngleModal from './rotate-angle-modal';
-import SvgColorChangeModal from './svg-color-change-modal';
+import RotateAngleModal from '@/components/editor/rotate-angle-modal';
+import SvgColorChangeModal from '@/components/editor/svg-color-change-modal';
 
 type Props = {
     svgContainerRef: RefObject<HTMLDivElement | null>;

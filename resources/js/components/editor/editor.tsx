@@ -5,9 +5,9 @@ import { CanvasItem } from '@/types/editor';
 import { Template, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useSidebar } from '../ui/sidebar';
-import EditorCanvas from './editor-canvas';
-import { EditorSidebar } from './editor-sidebar';
+import { useSidebar } from '@/components/ui/sidebar';
+import EditorCanvas from '@/components/editor/editor-canvas';
+import { EditorSidebar } from '@/components/editor/editor-sidebar';
 
 /**
  * Generic undo/redo store for a single state object.

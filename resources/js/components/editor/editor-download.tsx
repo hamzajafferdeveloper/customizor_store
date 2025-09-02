@@ -2,8 +2,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { eventBus } from '@/lib/event-bus'; // ✅ Global Event Bus
 import { Crown } from 'lucide-react';
 import { use, useEffect, useState } from 'react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 type Props = {
     open: boolean;

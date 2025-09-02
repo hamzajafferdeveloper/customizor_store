@@ -1,8 +1,7 @@
 import { CanvasItem } from '@/types/editor';
 import { Home, Redo2, Undo2 } from 'lucide-react';
 import { RefObject } from 'react';
-import CommonSideBarIcons from '../common/sidebar-icons';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import CommonSideBarIcons from '@/components/common/sidebar-icons';
 
 type Props = {
     setShowBar: Function;
