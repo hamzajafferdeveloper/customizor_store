@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { eventBus } from '@/lib/event-bus'; // ✅ Global Event Bus
 import { Crown } from 'lucide-react';
-import { useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 

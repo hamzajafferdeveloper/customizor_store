@@ -1,6 +1,7 @@
 /**
  * Export the current canvas (SVG template + uploaded items) as SVG or PNG.
  */
+// ✅ Updated to support text items
 export async function downloadClippedCanvas({
     svgContainerId,
     uploadedItems,
@@ -64,12 +65,12 @@ export async function downloadClippedCanvas({
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
     });
 
-    // ✅ Draw all uploaded items
+    // ✅ Draw all uploaded items (images + text)
     for (const item of uploadedItems) {
-        await new Promise<void>((resolve) => {
-            if (item.type === 'image') {
+        if (item.type === 'image') {
+            await new Promise<void>((resolve) => {
                 const img = new Image();
-                img.crossOrigin = 'anonymous'; // ✅ Handle CORS issues for remote logos
+                img.crossOrigin = 'anonymous';
                 img.onload = () => {
                     ctx.save();
                     ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
@@ -82,22 +83,47 @@ export async function downloadClippedCanvas({
                 if (item.fileType === 'svg') {
                     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src || '');
                 } else if (item.fileType === 'logo') {
-                    // ✅ Detect if the logo is SVG or raster
                     if (item.src?.trim().startsWith('<svg')) {
-                        // Inline SVG content
                         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src);
                     } else if (item.src?.endsWith('.svg')) {
-                        // Logo file is SVG URL
                         img.src = item.src;
                     } else {
-                        // ✅ Assume it's raster (PNG/JPG)
                         img.src = item.src || '';
                     }
                 } else {
                     img.src = item.src || '';
                 }
+            });
+        } else if (item.type === 'text' && item.text) {
+            // ✅ Handle text rendering
+            ctx.save();
+            ctx.translate(item.x, item.y);
+            ctx.rotate((item.rotation * Math.PI) / 180);
+
+            const fontWeight = item.bold ? 'bold' : 'normal';
+            const fontSize = item.fontSize || 20;
+            const fontFamily = item.fontFamily || 'Arial';
+
+            ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = item.color || '#000000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillText(item.text, item.width / 2, item.height / 2);
+
+            if (item.underline) {
+                const textWidth = ctx.measureText(item.text).width;
+                const underlineY = item.height / 2 + fontSize / 2;
+                ctx.beginPath();
+                ctx.moveTo(item.width / 2 - textWidth / 2, underlineY);
+                ctx.lineTo(item.width / 2 + textWidth / 2, underlineY);
+                ctx.lineWidth = Math.max(1, fontSize / 12);
+                ctx.strokeStyle = item.color || '#000000';
+                ctx.stroke();
             }
-        });
+
+            ctx.restore();
+        }
     }
 
     // ✅ Apply mask using template
@@ -123,7 +149,6 @@ export async function downloadClippedCanvas({
             link.href = url;
             link.download = `${fileName}.png`;
 
-            // ✅ Fix for Firefox: Append to DOM
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -141,7 +166,6 @@ export async function downloadClippedCanvas({
         link.href = url;
         link.download = `${fileName}.svg`;
 
-        // ✅ Fix for Firefox: Append to DOM
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -149,6 +173,7 @@ export async function downloadClippedCanvas({
         URL.revokeObjectURL(url);
     }
 }
+
 
 /**
  * Export the current canvas (SVG template + uploaded items + uploaded parts) as SVG or PNG.
