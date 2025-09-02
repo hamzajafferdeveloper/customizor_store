@@ -26,12 +26,16 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems, upload
     // ✅ Always derive layers from uploadedItems & uploadedPart
     useEffect(() => {
         const combinedLayers: CombinedLayer[] = [
-            ...uploadedItems.map((i) => ({ ...i, layerType: 'item' })),
-            ...uploadedPart.map((p) => ({ ...p, layerType: 'part' })),
+            ...uploadedItems.map((i) => ({ ...i, layerType: 'item' as const })),
+            ...uploadedPart.map((p) => ({ ...p, layerType: 'part' as const })),
         ];
 
         // Sort by zIndex for consistent stacking
-        combinedLayers.sort((a, b) => a.zIndex - b.zIndex);
+        combinedLayers.sort((a, b) => {
+            const aIndex = a.zIndex ?? 0;
+            const bIndex = b.zIndex ?? 0;
+            return aIndex - bIndex;
+        });
 
         setLayers(combinedLayers);
     }, [uploadedItems, uploadedPart]);

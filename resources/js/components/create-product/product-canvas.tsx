@@ -341,6 +341,16 @@ export default function CreateProductCanvas({
         }
     };
 
+    // Combine and sort layers by zIndex
+    const combinedLayers = [
+        ...uploadedItems.map((i) => ({ ...i, layerType: 'item' as const })),
+        ...uploadedPart.map((p) => ({ ...p, layerType: 'part' as const })),
+    ].sort((a, b) => {
+            const aIndex = a.zIndex ?? 0;
+            const bIndex = b.zIndex ?? 0;
+            return aIndex - bIndex;
+        });
+
     return (
         <main className="relative flex h-full w-full items-center justify-center" ref={editorMianRef}>
             {/* --- ZOOM & PAN CONTROLS --- */}
@@ -407,98 +417,123 @@ export default function CreateProductCanvas({
                             }}
                             className="p-2"
                         >
-                            {uploadedItems.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="uploaded-item"
-                                    style={{
-                                        position: 'absolute',
-                                        left: item.x,
-                                        top: item.y,
-                                        width: item.width,
-                                        height: item.height,
-                                        transform: `rotate(${item.rotation}deg)`,
-                                        cursor: 'move',
-                                        zIndex: 10,
-                                        pointerEvents: 'auto',
-                                        borderRadius: 8,
-                                    }}
-                                    onMouseDown={(e) => handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef)}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedItemId(item.id);
-                                    }}
-                                >
-                                    <ContextMenu>
-                                        <ContextMenuTrigger>
-                                            {item.type === 'image' ? (
-                                                item.fileType === 'svg' ? (
-                                                    <object
-                                                        type="image/svg+xml"
-                                                        data={item.src}
-                                                        className="pointer-events-none h-full w-full"
-                                                        style={{ objectFit: 'fill' }}
-                                                    />
-                                                ) : item.fileType === 'image' ? (
-                                                    <img
-                                                        src={item.src}
-                                                        alt={item.originalFileName}
-                                                        className="pointer-events-none h-full w-full"
-                                                        style={{ objectFit: 'fill' }}
-                                                    />
-                                                ) : (
-                                                    <img
-                                                        src={item.src}
-                                                        alt={item.originalFileName}
-                                                        className="pointer-events-none h-full w-full"
-                                                        style={{ objectFit: 'fill' }}
-                                                    />
-                                                )
-                                            ) : (
-                                                <div style={{ position: 'relative', display: 'inline-block' }}>
-                                                    {/* Stroke layer */}
-                                                    <span
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: 0,
-                                                            left: 0,
-                                                            fontSize: item.fontSize,
-                                                            fontFamily: item.fontFamily,
-                                                            fontStyle: item.italic ? 'italic' : 'normal',
-                                                            fontWeight: item.bold ? 'bold' : 'normal',
-                                                            WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
-                                                            color: 'transparent',
-                                                            zIndex: 0,
-                                                        }}
-                                                    >
-                                                        {item.text}
-                                                    </span>
+                            {/* Combine and sort layers by zIndex */}
+                            {combinedLayers.map((layer) => {
+                                if (layer.layerType === 'part') {
+                                    // Render part layer as image
+                                    return (
+                                        <img
+                                            key={layer.id}
+                                            src={layer.path}
+                                            alt={layer.name}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'contain',
+                                                pointerEvents: 'none',
+                                                zIndex: layer.zIndex,
+                                            }}
+                                        />
+                                    );
+                                } else {
+                                    // Render uploaded item (logo, text, etc.)
+                                    return (
+                                        <div
+                                            key={layer.id}
+                                            className="uploaded-item"
+                                            style={{
+                                                position: 'absolute',
+                                                left: layer.x,
+                                                top: layer.y,
+                                                width: layer.width,
+                                                height: layer.height,
+                                                transform: `rotate(${layer.rotation}deg)`,
+                                                cursor: 'move',
+                                                zIndex: layer.zIndex,
+                                                pointerEvents: 'auto',
+                                                borderRadius: 8,
+                                            }}
+                                            onMouseDown={(e) => handleMouseDown(e, layer, svgContainerRef, setDraggingId, offsetRef)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedItemId(layer.id);
+                                            }}
+                                        >
+                                            <ContextMenu>
+                                                <ContextMenuTrigger>
+                                                    {layer.type === 'image' ? (
+                                                        layer.fileType === 'svg' ? (
+                                                            <object
+                                                                type="image/svg+xml"
+                                                                data={layer.src}
+                                                                className="pointer-events-none h-full w-full"
+                                                                style={{ objectFit: 'fill' }}
+                                                            />
+                                                        ) : layer.fileType === 'image' ? (
+                                                            <img
+                                                                src={layer.src}
+                                                                alt={layer.originalFileName}
+                                                                className="pointer-events-none h-full w-full"
+                                                                style={{ objectFit: 'fill' }}
+                                                            />
+                                                        ) : (
+                                                            <img
+                                                                src={layer.src}
+                                                                alt={layer.originalFileName}
+                                                                className="pointer-events-none h-full w-full"
+                                                                style={{ objectFit: 'fill' }}
+                                                            />
+                                                        )
+                                                    ) : (
+                                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                            {/* Stroke layer */}
+                                                            <span
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    fontSize: layer.fontSize,
+                                                                    fontFamily: layer.fontFamily,
+                                                                    fontStyle: layer.italic ? 'italic' : 'normal',
+                                                                    fontWeight: layer.bold ? 'bold' : 'normal',
+                                                                    WebkitTextStroke: `${layer.stroke}px ${layer.strokeColor}`,
+                                                                    color: 'transparent',
+                                                                    zIndex: 0,
+                                                                }}
+                                                            >
+                                                                {layer.text}
+                                                            </span>
 
-                                                    {/* Fill layer */}
-                                                    <span
-                                                        style={{
-                                                            position: 'relative',
-                                                            color: item.color,
-                                                            fontSize: item.fontSize,
-                                                            fontFamily: item.fontFamily,
-                                                            fontStyle: item.italic ? 'italic' : 'normal',
-                                                            fontWeight: item.bold ? 'bold' : 'normal',
-                                                            zIndex: 1,
-                                                        }}
-                                                    >
-                                                        {item.text}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </ContextMenuTrigger>
-                                        <ContextMenuContent>
-                                            <ContextMenuItem onClick={() => handleDeleteItem(item.id, setUploadedItems)}>
-                                                <Trash2 className="text-red-500" /> Delete
-                                            </ContextMenuItem>
-                                        </ContextMenuContent>
-                                    </ContextMenu>
-                                </div>
-                            ))}
+                                                            {/* Fill layer */}
+                                                            <span
+                                                                style={{
+                                                                    position: 'relative',
+                                                                    color: layer.color,
+                                                                    fontSize: layer.fontSize,
+                                                                    fontFamily: layer.fontFamily,
+                                                                    fontStyle: layer.italic ? 'italic' : 'normal',
+                                                                    fontWeight: layer.bold ? 'bold' : 'normal',
+                                                                    zIndex: 1,
+                                                                }}
+                                                            >
+                                                                {layer.text}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </ContextMenuTrigger>
+                                                <ContextMenuContent>
+                                                    <ContextMenuItem onClick={() => handleDeleteItem(layer.id, setUploadedItems)}>
+                                                        <Trash2 className="text-red-500" /> Delete
+                                                    </ContextMenuItem>
+                                                </ContextMenuContent>
+                                            </ContextMenu>
+                                        </div>
+                                    );
+                                }
+                            })}
                         </div>
                     )}
 
