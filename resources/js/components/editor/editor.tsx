@@ -4,7 +4,7 @@ import { AllowedPermission, LogoCategory } from '@/types/data';
 import { CanvasItem } from '@/types/editor';
 import { Template, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSidebar } from '../ui/sidebar';
 import EditorCanvas from './editor-canvas';
 import { EditorSidebar } from './editor-sidebar';
@@ -16,32 +16,50 @@ import { EditorSidebar } from './editor-sidebar';
  *  - commit() to snapshot the current present into undo stack
  *  - undo/redo
  */
+function shallowEqual(objA: any, objB: any) {
+    if (Object.is(objA, objB)) return true;
+    if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) return false;
+    const keysA = Object.keys(objA);
+    const keysB = Object.keys(objB);
+    if (keysA.length !== keysB.length) return false;
+    for (let key of keysA) {
+        if (!Object.prototype.hasOwnProperty.call(objB, key) || !Object.is(objA[key], objB[key])) return false;
+    }
+    return true;
+}
+
 function useHistoryState<T>(initial: T) {
     const [present, setPresent] = useState<T>(initial);
     const undoStack = useRef<T[]>([]);
     const redoStack = useRef<T[]>([]);
     const lastCommitted = useRef<T>(initial);
 
-    const setLive = (updater: T | ((prev: T) => T)) => {
+    const setLive = useCallback((updater: T | ((prev: T) => T)) => {
         setPresent((prev) => (typeof updater === 'function' ? (updater as (p: T) => T)(prev) : updater));
-    };
+    }, []);
 
-    const commit = () => {
-        // Avoid pushing identical snapshots
+    const commit = useCallback(() => {
         const prev = lastCommitted.current;
         const now = present;
-        if (prev === now) return;
+        if (shallowEqual(prev, now)) return;
         undoStack.current.push(prev);
         redoStack.current = [];
         lastCommitted.current = now;
-    };
+    }, [present]);
 
-    const setAndCommit = (updater: T | ((prev: T) => T)) => {
-        setLive(updater);
-        commit();
-    };
+    const setAndCommit = useCallback((updater: T | ((prev: T) => T)) => {
+        setPresent((prev) => {
+            const next = typeof updater === 'function' ? (updater as (p: T) => T)(prev) : updater;
+            if (!shallowEqual(lastCommitted.current, next)) {
+                undoStack.current.push(lastCommitted.current);
+                redoStack.current = [];
+                lastCommitted.current = next;
+            }
+            return next;
+        });
+    }, []);
 
-    const undo = () => {
+    const undo = useCallback(() => {
         setPresent((curr) => {
             if (undoStack.current.length === 0) return curr;
             const prev = undoStack.current.pop()!;
@@ -49,9 +67,9 @@ function useHistoryState<T>(initial: T) {
             lastCommitted.current = prev;
             return prev;
         });
-    };
+    }, []);
 
-    const redo = () => {
+    const redo = useCallback(() => {
         setPresent((curr) => {
             if (redoStack.current.length === 0) return curr;
             const next = redoStack.current.pop()!;
@@ -59,17 +77,17 @@ function useHistoryState<T>(initial: T) {
             lastCommitted.current = next;
             return next;
         });
-    };
+    }, []);
 
     const canUndo = undoStack.current.length > 0;
     const canRedo = redoStack.current.length > 0;
 
-    const resetHistory = (state: T) => {
+    const resetHistory = useCallback((state: T) => {
         undoStack.current = [];
         redoStack.current = [];
         lastCommitted.current = state;
         setPresent(state);
-    };
+    }, []);
 
     return { present, setLive, setAndCommit, commit, undo, redo, canUndo, canRedo, resetHistory };
 }
