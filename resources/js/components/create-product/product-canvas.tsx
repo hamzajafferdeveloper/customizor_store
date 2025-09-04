@@ -1,12 +1,12 @@
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
+import RotateAngleModal from '@/components/editor/rotate-angle-modal';
+import SvgColorChangeModal from '@/components/editor/svg-color-change-modal';
 import { downloadCreateProduct } from '@/lib/downloadEditorCanvas';
 import { handleDeleteItem, handleMouseDown } from '@/lib/editor';
 import { onEvent } from '@/lib/event-bus';
 import { PartLayer } from '@/types/createProduct';
 import { CanvasItem } from '@/types/editor';
 import { Maximize2, Minus, Pen, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react';
-import { RefObject, useEffect, useRef, useState } from 'react';
-import SvgColorChangeModal from '../editor/svg-color-change-modal';
+import React, { RefObject, useEffect, useRef, useState } from 'react';
 
 type Props = {
     svgContainerRef: RefObject<HTMLDivElement | null>;
@@ -19,25 +19,36 @@ type Props = {
     setSelectedItemId: React.Dispatch<React.SetStateAction<string | null>>;
     downloadRef: RefObject<HTMLDivElement | null>;
     uploadedPart: PartLayer[];
+    setUploadedPart: React.Dispatch<React.SetStateAction<PartLayer[]>>;
+
+    undo: () => void;
+    redo: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
 };
 
 export default function CreateProductCanvas({
     downloadRef,
     svgContainerRef,
     fileInputRef,
-    // handleSvgContainerClick,
     handleUploadChange,
     uploadedItems,
     setUploadedItems,
     selectedItemId,
     setSelectedItemId,
     uploadedPart,
-}: Props) {
+    setUploadedPart,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+}: Props & { setUploadedPart: React.Dispatch<React.SetStateAction<PartLayer[]>> }) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const offsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
     const editorMianRef = useRef<HTMLDivElement | null>(null);
     const [openSvgDialog, setOpenSvgDialog] = useState<boolean>(false);
     const [selecetSvgId, setSelectedSvgId] = useState<string | null>(null);
+    const [openRotateDialog, setOpenRotateDialog] = useState(false);
 
     // Stores container position for calculations
     const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
@@ -346,10 +357,10 @@ export default function CreateProductCanvas({
         ...uploadedItems.map((i) => ({ ...i, layerType: 'item' as const })),
         ...uploadedPart.map((p) => ({ ...p, layerType: 'part' as const })),
     ].sort((a, b) => {
-            const aIndex = a.zIndex ?? 0;
-            const bIndex = b.zIndex ?? 0;
-            return aIndex - bIndex;
-        });
+        const aIndex = a.zIndex ?? 0;
+        const bIndex = b.zIndex ?? 0;
+        return aIndex - bIndex;
+    });
 
     return (
         <main className="relative flex h-full w-full items-center justify-center" ref={editorMianRef}>
@@ -462,74 +473,65 @@ export default function CreateProductCanvas({
                                                 setSelectedItemId(layer.id);
                                             }}
                                         >
-                                            <ContextMenu>
-                                                <ContextMenuTrigger>
-                                                    {layer.type === 'image' ? (
-                                                        layer.fileType === 'svg' ? (
-                                                            <object
-                                                                type="image/svg+xml"
-                                                                data={layer.src}
-                                                                className="pointer-events-none h-full w-full"
-                                                                style={{ objectFit: 'fill' }}
-                                                            />
-                                                        ) : layer.fileType === 'image' ? (
-                                                            <img
-                                                                src={layer.src}
-                                                                alt={layer.originalFileName}
-                                                                className="pointer-events-none h-full w-full"
-                                                                style={{ objectFit: 'fill' }}
-                                                            />
-                                                        ) : (
-                                                            <img
-                                                                src={layer.src}
-                                                                alt={layer.originalFileName}
-                                                                className="pointer-events-none h-full w-full"
-                                                                style={{ objectFit: 'fill' }}
-                                                            />
-                                                        )
-                                                    ) : (
-                                                        <div style={{ position: 'relative', display: 'inline-block' }}>
-                                                            {/* Stroke layer */}
-                                                            <span
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    top: 0,
-                                                                    left: 0,
-                                                                    fontSize: layer.fontSize,
-                                                                    fontFamily: layer.fontFamily,
-                                                                    fontStyle: layer.italic ? 'italic' : 'normal',
-                                                                    fontWeight: layer.bold ? 'bold' : 'normal',
-                                                                    WebkitTextStroke: `${layer.stroke}px ${layer.strokeColor}`,
-                                                                    color: 'transparent',
-                                                                    zIndex: 0,
-                                                                }}
-                                                            >
-                                                                {layer.text}
-                                                            </span>
+                                            {layer.type === 'image' ? (
+                                                layer.fileType === 'svg' ? (
+                                                    <object
+                                                        type="image/svg+xml"
+                                                        data={layer.src}
+                                                        className="pointer-events-none h-full w-full"
+                                                        style={{ objectFit: 'fill' }}
+                                                    />
+                                                ) : layer.fileType === 'image' ? (
+                                                    <img
+                                                        src={layer.src}
+                                                        alt={layer.originalFileName}
+                                                        className="pointer-events-none h-full w-full"
+                                                        style={{ objectFit: 'fill' }}
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src={layer.src}
+                                                        alt={layer.originalFileName}
+                                                        className="pointer-events-none h-full w-full"
+                                                        style={{ objectFit: 'fill' }}
+                                                    />
+                                                )
+                                            ) : (
+                                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                    {/* Stroke layer */}
+                                                    <span
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 0,
+                                                            left: 0,
+                                                            fontSize: layer.fontSize,
+                                                            fontFamily: layer.fontFamily,
+                                                            fontStyle: layer.italic ? 'italic' : 'normal',
+                                                            fontWeight: layer.bold ? 'bold' : 'normal',
+                                                            WebkitTextStroke: `${layer.stroke}px ${layer.strokeColor}`,
+                                                            color: 'transparent',
+                                                            zIndex: 0,
+                                                        }}
+                                                    >
+                                                        {layer.text}
+                                                    </span>
 
-                                                            {/* Fill layer */}
-                                                            <span
-                                                                style={{
-                                                                    position: 'relative',
-                                                                    color: layer.color,
-                                                                    fontSize: layer.fontSize,
-                                                                    fontFamily: layer.fontFamily,
-                                                                    fontStyle: layer.italic ? 'italic' : 'normal',
-                                                                    fontWeight: layer.bold ? 'bold' : 'normal',
-                                                                    zIndex: 1,
-                                                                }}
-                                                            >
-                                                                {layer.text}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </ContextMenuTrigger>
-                                                <ContextMenuContent>
-                                                    <ContextMenuItem onClick={() => handleDeleteItem(layer.id, setUploadedItems)}>
-                                                        <Trash2 className="text-red-500" /> Delete
-                                                    </ContextMenuItem>
-                                                </ContextMenuContent>
-                                            </ContextMenu>
+                                                    {/* Fill layer */}
+                                                    <span
+                                                        style={{
+                                                            position: 'relative',
+                                                            color: layer.color,
+                                                            fontSize: layer.fontSize,
+                                                            fontFamily: layer.fontFamily,
+                                                            fontStyle: layer.italic ? 'italic' : 'normal',
+                                                            fontWeight: layer.bold ? 'bold' : 'normal',
+                                                            zIndex: 1,
+                                                        }}
+                                                    >
+                                                        {layer.text}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 }
@@ -573,7 +575,7 @@ export default function CreateProductCanvas({
                                     {item.type === 'image' && (
                                         <>
                                             <div
-                                                className="resize-handle absolute bottom-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                                className="resize-handle absolute top-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                                 onMouseDown={(e) => {
                                                     e.stopPropagation();
                                                     setIsResizing(true);
@@ -611,26 +613,38 @@ export default function CreateProductCanvas({
                                     </div>
                                     {/* Rotate Handle */}
                                     <div
-                                        className="rotate-handle resize-handle absolute flex h-7 w-7 cursor-grab items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
-                                        style={{
-                                            left: '50%',
-                                            top: -32,
-                                            transform: 'translateX(-50%)',
-                                        }}
+                                        className="rotate-handle absolute top-0 right-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
-                                            setIsRotating(true);
-                                            // Calculate initial angle from center to mouse
-                                            const centerX = item.x + item.width / 2;
-                                            const centerY = item.y + item.height / 2;
-                                            const initialAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
-                                            rotateStart.current = {
-                                                initialAngle,
-                                                originalRotation: item.rotation,
-                                            };
+                                            setIsResizing(true);
+                                            resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenRotateDialog(true);
                                         }}
                                     >
                                         <RotateCw size={16} className="text-indigo-500" />
+                                    </div>
+                                    <div
+                                        className="resize-handle absolute bottom-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            setIsResizing(true);
+                                            resizeStart.current = {
+                                                x: e.clientX,
+                                                y: e.clientY,
+                                                width: item.width,
+                                                height: item.height,
+                                            };
+                                        }}
+                                        onClick={(e) => {
+                                            // setOpenSvgDialog(true);
+                                            e.stopPropagation();
+                                            handleDeleteItem(selectedItemId, setUploadedItems);
+                                        }}
+                                    >
+                                        <Trash2 size={16} className="text-indigo-500" />
                                     </div>
                                 </div>
                             );
@@ -658,6 +672,22 @@ export default function CreateProductCanvas({
                 <button onClick={handleResetView} className="rounded p-1 transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-700">
                     <RefreshCw size={18} />
                 </button>
+                <button
+                    onClick={undo}
+                    disabled={!canUndo}
+                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    title="Undo"
+                >
+                    ⎌
+                </button>
+                <button
+                    onClick={redo}
+                    disabled={!canRedo}
+                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    title="Redo"
+                >
+                    ↻
+                </button>
             </div>
 
             {selecetSvgId && (
@@ -671,6 +701,15 @@ export default function CreateProductCanvas({
                     uploadedItems={uploadedItems}
                 />
             )}
+            <RotateAngleModal
+                open={openRotateDialog}
+                onOpenChange={setOpenRotateDialog}
+                initialAngle={selectedItemId ? uploadedItems.find((i) => i.id === selectedItemId)?.rotation || 0 : 0}
+                onConfirm={(angle) => {
+                    if (!selectedItemId) return;
+                    setUploadedItems((prev) => prev.map((item) => (item.id === selectedItemId ? { ...item, rotation: angle } : item)));
+                }}
+            />
         </main>
     );
 }

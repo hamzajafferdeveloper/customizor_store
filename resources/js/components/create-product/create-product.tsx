@@ -4,10 +4,83 @@ import { PartLayer } from '@/types/createProduct';
 import { AllowedPermission, LogoCategory, Part, PartCategroyWithPart } from '@/types/data';
 import { CanvasItem } from '@/types/editor';
 import { Template } from '@/types/helper';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import CreateProductCanvas from './product-canvas';
 import { CreateProductSidebar } from './product-sidebar';
 import { generateUniqueId } from '@/lib/utils';
+
+// Generic shallowEqual helper for undo/redo
+function shallowEqual(objA: any, objB: any) {
+    if (Object.is(objA, objB)) return true;
+    if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) return false;
+    const keysA = Object.keys(objA);
+    const keysB = Object.keys(objB);
+    if (keysA.length !== keysB.length) return false;
+    for (let key of keysA) {
+        if (!Object.prototype.hasOwnProperty.call(objB, key) || !Object.is(objA[key], objB[key])) return false;
+    }
+    return true;
+}
+
+// Undo/Redo Hook
+function useHistoryState<T>(initial: T) {
+    const [present, setPresent] = useState<T>(initial);
+    const undoStack = useRef<T[]>([]);
+    const redoStack = useRef<T[]>([]);
+    const lastCommitted = useRef<T>(initial);
+
+    const setLive = useCallback((updater: T | ((prev: T) => T)) => {
+        setPresent((prev) => (typeof updater === 'function' ? (updater as (p: T) => T)(prev) : updater));
+    }, []);
+
+    const setAndCommit = useCallback((updater: T | ((prev: T) => T)) => {
+        setPresent((prev) => {
+            const next = typeof updater === 'function' ? (updater as (p: T) => T)(prev) : updater;
+            if (!shallowEqual(lastCommitted.current, next)) {
+                undoStack.current.push(lastCommitted.current);
+                redoStack.current = [];
+                lastCommitted.current = next;
+            }
+            return next;
+        });
+    }, []);
+
+    const undo = useCallback(() => {
+        setPresent((curr) => {
+            if (undoStack.current.length === 0) return curr;
+            const prev = undoStack.current.pop()!;
+            redoStack.current.push(curr);
+            lastCommitted.current = prev;
+            return prev;
+        });
+    }, []);
+
+    const redo = useCallback(() => {
+        setPresent((curr) => {
+            if (redoStack.current.length === 0) return curr;
+            const next = redoStack.current.pop()!;
+            undoStack.current.push(curr);
+            lastCommitted.current = next;
+            return next;
+        });
+    }, []);
+
+    const canUndo = undoStack.current.length > 0;
+    const canRedo = redoStack.current.length > 0;
+
+    const resetHistory = useCallback((state: T) => {
+        undoStack.current = [];
+        redoStack.current = [];
+        lastCommitted.current = state;
+        setPresent(state);
+    }, []);
+
+    const commit = useCallback(() => {
+        lastCommitted.current = present;
+    }, [present]);
+
+    return { present, setLive, setAndCommit, undo, redo, canUndo, canRedo, resetHistory, commit };
+}
 
 type Props = {
     template: Template;
@@ -16,44 +89,71 @@ type Props = {
     parts: PartCategroyWithPart[];
 };
 
+type EditorState = {
+    uploadedItems: CanvasItem[];
+    uploadedPart: PartLayer[];
+};
+
 export default function CreateProductEditor({ template, logoGallery, permissions, parts }: Props) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const svgContainerRef = useRef<HTMLDivElement | null>(null);
     const downloadRef = useRef<HTMLDivElement | null>(null);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-    const [uploadedItems, setUploadedItems] = useState<CanvasItem[]>([]);
-    const [uploadedPart, setUploadedPart] = useState<PartLayer[]>([]);
 
+    // --- History state for items + parts ---
+    const { present, setLive, setAndCommit, undo, redo, canUndo, canRedo, resetHistory } =
+        useHistoryState<EditorState>({ uploadedItems: [], uploadedPart: [] });
+
+    const uploadedItems = present.uploadedItems;
+    const uploadedPart = present.uploadedPart;
+
+    const setUploadedItemsLive = (updater: React.SetStateAction<CanvasItem[]>) => {
+        setLive((prev) => ({
+            ...prev,
+            uploadedItems: typeof updater === 'function' ? (updater as (p: CanvasItem[]) => CanvasItem[])(prev.uploadedItems) : updater,
+        }));
+    };
+
+    const setUploadedItemsCommit = (updater: React.SetStateAction<CanvasItem[]>) => {
+        setAndCommit((prev) => ({
+            ...prev,
+            uploadedItems: typeof updater === 'function' ? (updater as (p: CanvasItem[]) => CanvasItem[])(prev.uploadedItems) : updater,
+        }));
+    };
+
+    const setUploadedPartCommit = (updater: React.SetStateAction<PartLayer[]>) => {
+        setAndCommit((prev) => ({
+            ...prev,
+            uploadedPart: typeof updater === 'function' ? (updater as (p: PartLayer[]) => PartLayer[])(prev.uploadedPart) : updater,
+        }));
+    };
+
+    // --- Handlers with commit ---
     const UploadFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleUploadFile(event, setUploadedItems);
+        handleUploadFile(event, setUploadedItemsCommit);
     };
 
     const handleResetCanvas = () => {
-        setUploadedItems([]);
-        setUploadedPart([]);
+        resetHistory({ uploadedItems: [], uploadedPart: [] });
         loadSvgMasktemplate(template);
     };
 
     const AddText = () => {
-        handleAddText(setUploadedItems);
+        handleAddText(setUploadedItemsCommit);
     };
 
     const AddPart = ({ part }: { part: Part }) => {
-        setUploadedPart((prevParts) => {
-            // ✅ Remove any part with the same category_id from state
+        setUploadedPartCommit((prevParts) => {
             const filtered = prevParts.filter((p) => p.category_id !== String(part.parts_category_id));
-
-            const imageUrl = `${window.location.origin}/storage/${part.path}`; // ✅ Ensure full URL
-
+            const imageUrl = `${window.location.origin}/storage/${part.path}`;
             const newPart: PartLayer = {
                 id: generateUniqueId(),
                 name: part.name,
                 color: '#000000',
                 zIndex: 10,
                 category_id: String(part.parts_category_id),
-                path: imageUrl, // ✅ Use normalized full URL
+                path: imageUrl,
             };
-
             return [...filtered, newPart];
         });
     };
@@ -69,20 +169,25 @@ export default function CreateProductEditor({ template, logoGallery, permissions
                     downloadRef={downloadRef}
                     svgContainerRef={svgContainerRef}
                     fileInputRef={fileInputRef}
-                    // handleSvgContainerClick={handleSvgContainerClick}
                     handleUploadChange={UploadFile}
                     uploadedItems={uploadedItems}
-                    setUploadedItems={setUploadedItems}
+                    setUploadedItems={setUploadedItemsCommit}
                     selectedItemId={selectedItemId}
                     setSelectedItemId={setSelectedItemId}
                     uploadedPart={uploadedPart}
+                    setUploadedPart={setUploadedPartCommit} // pass setUploadedPart for parts management
+                    // pass undo/redo
+                    undo={undo}
+                    redo={redo}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
                 />
             </div>
 
             <div className="order-2 w-full p-4 lg:order-1 lg:w-1/3 lg:p-0 xl:w-1/4">
                 <CreateProductSidebar
                     uploadedItems={uploadedItems}
-                    setUploadedItems={setUploadedItems}
+                    setUploadedItems={setUploadedItemsCommit}
                     logoGallery={logoGallery}
                     fileInputRef={fileInputRef}
                     handleResetCanvas={handleResetCanvas}
@@ -90,9 +195,14 @@ export default function CreateProductEditor({ template, logoGallery, permissions
                     selectedItemId={selectedItemId}
                     Allowedpermissions={permissions}
                     uploadedPart={uploadedPart}
-                    setUploadedPart={setUploadedPart}
+                    setUploadedPart={setUploadedPartCommit}
                     parts={parts}
                     addPart={AddPart}
+                    // optional: expose undo/redo buttons on sidebar
+                    // undo={undo}
+                    // redo={redo}
+                    // canUndo={canUndo}
+                    // canRedo={canRedo}
                 />
             </div>
         </main>
