@@ -5,7 +5,7 @@ import { handleDeleteItem, handleMouseDown } from '@/lib/editor';
 import { onEvent } from '@/lib/event-bus';
 import { PartLayer } from '@/types/createProduct';
 import { CanvasItem } from '@/types/editor';
-import { Maximize2, Minus, Pen, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react';
+import { Maximize2, Minus, Pen, Plus, Redo2, RefreshCw, RotateCw, Trash2, Undo2 } from 'lucide-react';
 import React, { RefObject, useEffect, useRef, useState } from 'react';
 
 type Props = {
@@ -655,6 +655,22 @@ export default function CreateProductCanvas({
             {/* Move the zoom control bar OUTSIDE the canvas area, at the bottom-right of the main editor area */}
             <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
                 <button
+                    onClick={undo}
+                    disabled={!canUndo}
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    title="Undo (Ctrl/Cmd+Z)"
+                >
+                    <Undo2 size={18} />
+                </button>
+                <button
+                    onClick={redo}
+                    disabled={!canRedo}
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
+                >
+                    <Redo2 size={18} />
+                </button>
+                <button
                     onClick={handleZoomOut}
                     disabled={zoom <= MIN_ZOOM}
                     className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
@@ -671,22 +687,6 @@ export default function CreateProductCanvas({
                 </button>
                 <button onClick={handleResetView} className="rounded p-1 transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-700">
                     <RefreshCw size={18} />
-                </button>
-                <button
-                    onClick={undo}
-                    disabled={!canUndo}
-                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
-                    title="Undo"
-                >
-                    ⎌
-                </button>
-                <button
-                    onClick={redo}
-                    disabled={!canRedo}
-                    className="rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
-                    title="Redo"
-                >
-                    ↻
                 </button>
             </div>
 
