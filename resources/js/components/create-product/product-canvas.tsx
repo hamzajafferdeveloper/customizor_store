@@ -327,10 +327,8 @@ export default function CreateProductCanvas({
     /**
      * ✅ Store initial click offset for dragging
      */
-
     useEffect(() => {
         const unsubscribe = onEvent<{ name: string; format: 'png' | 'svg' }>('download', ({ name, format }) => {
-            console.log('Download triggered:', name, format);
             handleDownload({ format, fileName: name });
         });
 
@@ -351,7 +349,7 @@ export default function CreateProductCanvas({
             });
         }
     };
-
+    
     // Combine and sort layers by zIndex
     const combinedLayers = [
         ...uploadedItems.map((i) => ({ ...i, layerType: 'item' as const })),
@@ -359,7 +357,7 @@ export default function CreateProductCanvas({
     ].sort((a, b) => {
         const aIndex = a.zIndex ?? 0;
         const bIndex = b.zIndex ?? 0;
-        return aIndex - bIndex;
+        return bIndex - aIndex;
     });
 
     return (

@@ -92,11 +92,13 @@ export const handlePaintPart = (part: TemplatePart, color: string, svgContainer:
 export const handleUploadFile = (
     e: React.ChangeEvent<HTMLInputElement>,
     setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void,
+    maxZ?: number,
 ) => {
     const files = e.target.files;
     if (!files) return;
 
     const newItems: CanvasItem[] = [];
+    
 
     Array.from(files).forEach((file) => {
         const src = URL.createObjectURL(file);
@@ -114,7 +116,7 @@ export const handleUploadFile = (
             width: 200,
             height: 200,
             rotation: 0,
-            zIndex: 10,
+            zIndex: maxZ ? maxZ + 1 : 10,
         };
 
         newItems.push(newItem);
@@ -124,7 +126,7 @@ export const handleUploadFile = (
 };
 
 // Handle Upload Logo
-export const handleUploadLogo = async (logo: LogoGallery, setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>) => {
+export const handleUploadLogo = async (logo: LogoGallery, setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>, maxZ?: number) => {
     const base64Logo = await toBase64(`/storage/${logo.source}`);
 
     const newItem: CanvasItem = {
@@ -139,13 +141,13 @@ export const handleUploadLogo = async (logo: LogoGallery, setUploadedItems: Reac
         width: 200,
         height: 200,
         rotation: 0,
-        zIndex: 10,
+        zIndex: maxZ ? maxZ + 1 : 10,
     };
 
     setUploadedItems((prev) => [...prev, newItem]);
 };
 // Handle Add Text
-export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void) => {
+export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void, maxZ?: number) => {
     const newItems: CanvasItem[] = [];
 
     const newItem: CanvasItem = {
@@ -160,7 +162,7 @@ export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[
         width: 100,
         height: 20,
         rotation: 0,
-        zIndex: 10,
+        zIndex: maxZ ? maxZ + 1 : 10,
         bold: false,
         underline: false,
         stroke: 0,

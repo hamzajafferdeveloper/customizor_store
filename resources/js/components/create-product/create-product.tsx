@@ -1,13 +1,13 @@
 import { loadSvgMasktemplate } from '@/lib/create-product';
 import { handleAddText, handleUploadFile } from '@/lib/editor';
+import { generateUniqueId } from '@/lib/utils';
 import { PartLayer } from '@/types/createProduct';
 import { AllowedPermission, LogoCategory, Part, PartCategroyWithPart } from '@/types/data';
 import { CanvasItem } from '@/types/editor';
 import { Template } from '@/types/helper';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import CreateProductCanvas from './product-canvas';
 import { CreateProductSidebar } from './product-sidebar';
-import { generateUniqueId } from '@/lib/utils';
 
 // Generic shallowEqual helper for undo/redo
 function shallowEqual(objA: any, objB: any) {
@@ -101,8 +101,10 @@ export default function CreateProductEditor({ template, logoGallery, permissions
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
     // --- History state for items + parts ---
-    const { present, setLive, setAndCommit, undo, redo, canUndo, canRedo, resetHistory } =
-        useHistoryState<EditorState>({ uploadedItems: [], uploadedPart: [] });
+    const { present, setLive, setAndCommit, undo, redo, canUndo, canRedo, resetHistory } = useHistoryState<EditorState>({
+        uploadedItems: [],
+        uploadedPart: [],
+    });
 
     const uploadedItems = present.uploadedItems;
     const uploadedPart = present.uploadedPart;
@@ -130,7 +132,9 @@ export default function CreateProductEditor({ template, logoGallery, permissions
 
     // --- Handlers with commit ---
     const UploadFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleUploadFile(event, setUploadedItemsCommit);
+        const allZ = [...uploadedItems, ...uploadedPart].map((l) => l.zIndex ?? 0);
+        const maxZ = allZ.length ? Math.max(...allZ) : 0;
+        handleUploadFile(event, setUploadedItemsCommit, maxZ);
     };
 
     const handleResetCanvas = () => {
@@ -139,18 +143,22 @@ export default function CreateProductEditor({ template, logoGallery, permissions
     };
 
     const AddText = () => {
-        handleAddText(setUploadedItemsCommit);
+        const allZ = [...uploadedItems, ...uploadedPart].map((l) => l.zIndex ?? 0);
+        const maxZ = allZ.length ? Math.max(...allZ) : 0;
+        handleAddText(setUploadedItemsCommit, maxZ);
     };
 
     const AddPart = ({ part }: { part: Part }) => {
         setUploadedPartCommit((prevParts) => {
             const filtered = prevParts.filter((p) => p.category_id !== String(part.parts_category_id));
             const imageUrl = `${window.location.origin}/storage/${part.path}`;
+            const allZ = [...uploadedItems, ...prevParts].map((l) => l.zIndex ?? 0);
+            const maxZ = allZ.length ? Math.max(...allZ) : 0;
             const newPart: PartLayer = {
                 id: generateUniqueId(),
                 name: part.name,
                 color: '#000000',
-                zIndex: 10,
+                zIndex: maxZ + 1,
                 category_id: String(part.parts_category_id),
                 path: imageUrl,
             };

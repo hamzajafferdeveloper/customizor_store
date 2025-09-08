@@ -34,7 +34,7 @@ export default function EditorLayerBar({ uploadedItems, setUploadedItems, upload
         combinedLayers.sort((a, b) => {
             const aIndex = a.zIndex ?? 0;
             const bIndex = b.zIndex ?? 0;
-            return aIndex - bIndex;
+            return bIndex - aIndex;
         });
 
         setLayers(combinedLayers);

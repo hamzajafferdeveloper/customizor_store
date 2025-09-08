@@ -1,6 +1,10 @@
 /**
  * Export the current canvas (SVG template + uploaded items) as SVG or PNG.
  */
+
+import { PartLayer } from '@/types/createProduct';
+import { CanvasItem } from '@/types/editor';
+
 // ✅ Updated to support text items
 export async function downloadClippedCanvas({
     svgContainerId,
@@ -174,7 +178,6 @@ export async function downloadClippedCanvas({
     }
 }
 
-
 /**
  * Export the current canvas (SVG template + uploaded items + uploaded parts) as SVG or PNG.
  */
@@ -189,24 +192,8 @@ export async function downloadCreateProduct({
     fileName = 'canvas',
 }: {
     svgContainerId: string;
-    uploadedItems: {
-        id: string;
-        type: 'image' | 'text';
-        src?: string;
-        text?: string;
-        fileType?: string;
-        width: number;
-        height: number;
-        x: number;
-        y: number;
-        rotation: number;
-        fontSize?: number;
-        fontFamily?: string;
-        bold?: boolean;
-        underline?: boolean;
-        color?: string;
-    }[];
-    uploadedPart: { id: string; name: string; category_id: string; path: string }[];
+    uploadedItems: CanvasItem[];
+    uploadedPart: PartLayer[];
     svgOverlayBox: { width: number; height: number };
     zoom: number;
     pan: { x: number; y: number };
@@ -219,10 +206,22 @@ export async function downloadCreateProduct({
     const svgEl = svgContainer.querySelector('svg');
     if (!svgEl) return;
 
+    // --- Ensure part color changes are reflected in SVG before serialization ---
+    uploadedPart.forEach((part) => {
+        if (part.color) {
+            const el = svgEl.querySelector(`[part-id="${part.id}"], [data-category-id="${part.category_id}"]`);
+            if (el) {
+                el.setAttribute('fill', part.color);
+                // @ts-ignore
+                el.style.fill = part.color;
+            }
+        }
+    });
+
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svgEl);
 
-    // ✅ Create canvas
+    // --- Create canvas ---
     const canvas = document.createElement('canvas');
     canvas.width = width * zoom;
     canvas.height = height * zoom;
@@ -233,7 +232,7 @@ export async function downloadCreateProduct({
     ctx.scale(zoom, zoom);
     ctx.translate(pan.x, pan.y);
 
-    // ✅ Draw SVG template
+    // --- Draw SVG template ---
     await new Promise<void>((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -243,22 +242,25 @@ export async function downloadCreateProduct({
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
     });
 
-    // ✅ Draw uploaded parts
+    // --- Draw uploaded parts as images (with color if needed) ---
     for (const part of uploadedPart) {
-        await new Promise<void>((resolve) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous'; // Avoid tainting if possible
-            img.onload = () => {
-                ctx.save();
-                ctx.drawImage(img, 0, 0, width, height); // Fill template size
-                ctx.restore();
-                resolve();
-            };
-            img.src =  part.path;
-        });
+        if (part.path) {
+            await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    ctx.save();
+                    ctx.globalAlpha = 1;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    ctx.restore();
+                    resolve();
+                };
+                img.src = part.path;
+            });
+        }
     }
 
-    // ✅ Draw uploaded items
+    // --- Draw uploaded items (images + text as SVG) ---
     for (const item of uploadedItems) {
         await new Promise<void>((resolve) => {
             if (item.type === 'image') {
@@ -272,29 +274,49 @@ export async function downloadCreateProduct({
                     ctx.restore();
                     resolve();
                 };
-
                 if (item.fileType === 'svg' || item.src?.trim().startsWith('<svg')) {
                     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src || '');
                 } else {
                     img.src = item.src || '';
                 }
             } else if (item.type === 'text' && item.text) {
-                // @ts-ignore
-                const textSvg = generateTextSVG(item);
-                const img = new Image();
-                img.onload = () => {
-                    ctx.save();
-                    ctx.translate(item.x, item.y);
-                    ctx.drawImage(img, 0, 0);
-                    ctx.restore();
-                    resolve();
-                };
-                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(textSvg);
+                            // --- Draw text using canvas API for perfect positioning ---
+            ctx.save();
+            ctx.translate(item.x, item.y);
+            ctx.rotate((item.rotation * Math.PI) / 180);
+
+            const fontWeight = item.bold ? 'bold' : 'normal';
+            const fontStyle = item.italic ? 'italic' : 'normal';
+            const fontSize = item.fontSize || 20;
+            const fontFamily = item.fontFamily || 'Arial';
+
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = item.color || '#000000';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            ctx.fillText(item.text, 0, 0);
+
+            if (item.underline) {
+                const textWidth = ctx.measureText(item.text).width;
+                const underlineY = fontSize + 2;
+                ctx.beginPath();
+                ctx.moveTo(0, underlineY);
+                ctx.lineTo(textWidth, underlineY);
+                ctx.lineWidth = Math.max(1, fontSize / 12);
+                ctx.strokeStyle = item.color || '#000000';
+                ctx.stroke();
+            }
+
+            ctx.restore();
+            resolve();
+            } else {
+                resolve();
             }
         });
     }
 
-    // ✅ Apply mask (so output matches visible template)
+    // --- Apply mask (so output matches visible template) ---
     await new Promise<void>((resolve) => {
         const maskImg = new Image();
         maskImg.onload = () => {
@@ -308,7 +330,7 @@ export async function downloadCreateProduct({
 
     ctx.restore();
 
-    // ✅ Export
+    // --- Export ---
     if (format === 'png') {
         canvas.toBlob((blob) => {
             if (!blob) return;
@@ -336,6 +358,26 @@ export async function downloadCreateProduct({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
+}
+
+// --- Helper to escape XML special characters in text ---
+function escapeXML(str: string) {
+    return str.replace(/[<>&'"]/g, function (c) {
+        switch (c) {
+            case '<':
+                return '&lt;';
+            case '>':
+                return '&gt;';
+            case '&':
+                return '&amp;';
+            case "'":
+                return '&apos;';
+            case '"':
+                return '&quot;';
+            default:
+                return c;
+        }
+    });
 }
 
 // ✅ Generate text as SVG
