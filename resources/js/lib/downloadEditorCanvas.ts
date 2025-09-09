@@ -280,36 +280,43 @@ export async function downloadCreateProduct({
                     img.src = item.src || '';
                 }
             } else if (item.type === 'text' && item.text) {
-                            // --- Draw text using canvas API for perfect positioning ---
-            ctx.save();
-            ctx.translate(item.x, item.y);
-            ctx.rotate((item.rotation * Math.PI) / 180);
+                ctx.save();
+                ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
+                ctx.rotate((item.rotation * Math.PI) / 180);
 
-            const fontWeight = item.bold ? 'bold' : 'normal';
-            const fontStyle = item.italic ? 'italic' : 'normal';
-            const fontSize = item.fontSize || 20;
-            const fontFamily = item.fontFamily || 'Arial';
+                const fontWeight = item.bold ? 'bold' : 'normal';
+                const fontStyle = item.italic ? 'italic' : 'normal';
+                const fontSize = item.fontSize || 20;
+                const fontFamily = item.fontFamily || 'Arial';
 
-            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-            ctx.fillStyle = item.color || '#000000';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
+                ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+                ctx.fillStyle = item.color || '#000000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
 
-            ctx.fillText(item.text, 0, 0);
+                // Optional: Draw stroke (outline) for better visibility
+                if (item.strokeColor && item.stroke) {
+                    ctx.lineWidth = item.stroke;
+                    ctx.strokeStyle = item.strokeColor;
+                    ctx.strokeText(item.text, 0, 0);
+                }
 
-            if (item.underline) {
-                const textWidth = ctx.measureText(item.text).width;
-                const underlineY = fontSize + 2;
-                ctx.beginPath();
-                ctx.moveTo(0, underlineY);
-                ctx.lineTo(textWidth, underlineY);
-                ctx.lineWidth = Math.max(1, fontSize / 12);
-                ctx.strokeStyle = item.color || '#000000';
-                ctx.stroke();
-            }
+                ctx.fillText(item.text, 0, 0);
 
-            ctx.restore();
-            resolve();
+                // Underline
+                if (item.underline) {
+                    const textWidth = ctx.measureText(item.text).width;
+                    const underlineY = fontSize / 2 + 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-textWidth / 2, underlineY);
+                    ctx.lineTo(textWidth / 2, underlineY);
+                    ctx.lineWidth = Math.max(1, fontSize / 12);
+                    ctx.strokeStyle = item.color || '#000000';
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+                resolve();
             } else {
                 resolve();
             }
