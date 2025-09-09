@@ -333,7 +333,7 @@ export default function CreateProductCanvas({
         });
 
         return unsubscribe; // ✅ Cleanup listener
-    }, [uploadedItems, svgOverlayBox, zoom, pan]);
+    }, [uploadedItems, uploadedPart, svgOverlayBox, zoom, pan]);
 
     const handleDownload = ({ format, fileName }: { format: 'svg' | 'png'; fileName: string }) => {
         if (svgOverlayBox) {
