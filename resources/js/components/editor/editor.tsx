@@ -5,7 +5,7 @@ import { CanvasItem } from '@/types/editor';
 import { Template, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import EditorCanvas from '@/components/editor/editor-canvas';
 import { EditorSidebar } from '@/components/editor/editor-sidebar';
 
@@ -104,13 +104,23 @@ type EditorState = {
 };
 
 export default function Editor({ template, logoGallery, permissions }: Props) {
-    const { toggleSidebar } = useSidebar();
-    const sharedData = usePage<SharedData>();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const svgContainerRef = useRef<HTMLDivElement | null>(null);
     const downloadRef = useRef<HTMLDivElement | null>(null);
     const [openColorMenu, setOpenColorMenu] = useState<string>('');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+    const sharedData = usePage<SharedData>();
+    if(sharedData.props.auth.user != null){
+        const { toggleSidebar } = useSidebar();
+
+        // Keep sidebar state in sync
+        useEffect(() => {
+            if (sharedData.props.sidebarOpen === true) {
+                toggleSidebar();
+            }
+        }, []);
+    }
 
     // --- History store over combined state (parts + uploadedItems) ---
     const { present, setLive, setAndCommit, commit, undo, redo, canUndo, canRedo, resetHistory } = useHistoryState<EditorState>({
@@ -193,13 +203,6 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [template]);
 
-    // Keep sidebar state in sync
-    useEffect(() => {
-        if (sharedData.props.sidebarOpen === true) {
-            toggleSidebar();
-        }
-    }, []);
-
     // Keyboard shortcuts for undo / redo
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -249,7 +252,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     }, [parts]);
 
     return (
-        <main className="flex flex-col p-2 lg:flex-row">
+            <main className="flex flex-col p-2 lg:flex-row">
             <div className="order-1 flex-1 p-4 lg:order-2">
                 <EditorCanvas
                     downloadRef={downloadRef}
