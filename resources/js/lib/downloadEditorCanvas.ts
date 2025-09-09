@@ -16,23 +16,7 @@ export async function downloadClippedCanvas({
     fileName = 'canvas',
 }: {
     svgContainerId: string;
-    uploadedItems: {
-        id: string;
-        type: 'image' | 'text';
-        src?: string;
-        text?: string;
-        fileType?: string; // svg, image, logo
-        width: number;
-        height: number;
-        x: number;
-        y: number;
-        rotation: number;
-        fontSize?: number;
-        fontFamily?: string;
-        bold?: boolean;
-        underline?: boolean;
-        color?: string;
-    }[];
+    uploadedItems: CanvasItem[];
     svgOverlayBox: { width: number; height: number };
     zoom: number;
     pan: { x: number; y: number };
@@ -112,6 +96,13 @@ export async function downloadClippedCanvas({
             ctx.fillStyle = item.color || '#000000';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+
+            // Optional: Draw stroke (outline) for better visibility
+            if (item.strokeColor && item.stroke) {
+                ctx.lineWidth = item.stroke;
+                ctx.strokeStyle = item.strokeColor;
+                ctx.strokeText(item.text, 0, 0);
+            }
 
             ctx.fillText(item.text, item.width / 2, item.height / 2);
 
