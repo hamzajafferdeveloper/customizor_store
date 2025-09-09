@@ -83,35 +83,35 @@ export async function downloadClippedCanvas({
                 }
             });
         } else if (item.type === 'text' && item.text) {
-            // ✅ Handle text rendering
             ctx.save();
-            ctx.translate(item.x, item.y);
+            ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
             ctx.rotate((item.rotation * Math.PI) / 180);
 
             const fontWeight = item.bold ? 'bold' : 'normal';
+            const fontStyle = item.italic ? 'italic' : 'normal';
             const fontSize = item.fontSize || 20;
             const fontFamily = item.fontFamily || 'Arial';
-
-            ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
             ctx.fillStyle = item.color || '#000000';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Optional: Draw stroke (outline) for better visibility
-            if (item.strokeColor && item.stroke) {
-                ctx.lineWidth = item.stroke;
+            // Draw stroke (outline) if present
+            if (item.strokeColor && (item.stroke || item.stroke)) {
+                ctx.lineWidth = item.stroke || item.stroke;
                 ctx.strokeStyle = item.strokeColor;
                 ctx.strokeText(item.text, 0, 0);
             }
 
-            ctx.fillText(item.text, item.width / 2, item.height / 2);
+            ctx.fillText(item.text, 0, 0);
 
+            // Underline
             if (item.underline) {
                 const textWidth = ctx.measureText(item.text).width;
-                const underlineY = item.height / 2 + fontSize / 2;
+                const underlineY = fontSize / 2 + 2;
                 ctx.beginPath();
-                ctx.moveTo(item.width / 2 - textWidth / 2, underlineY);
-                ctx.lineTo(item.width / 2 + textWidth / 2, underlineY);
+                ctx.moveTo(-textWidth / 2, underlineY);
+                ctx.lineTo(textWidth / 2, underlineY);
                 ctx.lineWidth = Math.max(1, fontSize / 12);
                 ctx.strokeStyle = item.color || '#000000';
                 ctx.stroke();
@@ -153,8 +153,8 @@ export async function downloadClippedCanvas({
     } else {
         const dataUrl = canvas.toDataURL('image/png');
         const svgWrapped = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-        <image href="${dataUrl}" width="${width}" height="${height}" />
-    </svg>`;
+            <image href="${dataUrl}" width="${width}" height="${height}" />
+        </svg>`;
         const blob = new Blob([svgWrapped], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
