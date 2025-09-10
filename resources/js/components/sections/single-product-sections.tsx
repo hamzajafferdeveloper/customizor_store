@@ -90,10 +90,15 @@ const SingleProductSection = ({
                                     setConfirmOpen(true);
                                 }}
                             />
-                            {!product.template && (
+                            {!product.template ? (
                                 <Link href={route('superadmin.product.add.template', product.slug)}>
                                     <Layers className="h-5 w-5" />
                                 </Link>
+                            ) : (
+                                <Link href={route('superadmin.product.edit.template', { id: product.template.id })}>
+                                    <Layers className="h-5 w-5" />
+                                </Link>
+
                             )}
                         </>
                     ) : (
@@ -109,8 +114,12 @@ const SingleProductSection = ({
                                         setConfirmOpen(true);
                                     }}
                                 />
-                                {!product.template && (
+                                {!product.template ? (
                                     <Link href={route('store.product.add.template', { storeId: store.id, slug: product.slug })}>
+                                        <Layers className="h-5 w-5" />
+                                    </Link>
+                                ): (
+                                    <Link href={route('store.product.edit.template', { storeId: store.id, id: product.template.id })}>
                                         <Layers className="h-5 w-5" />
                                     </Link>
                                 )}

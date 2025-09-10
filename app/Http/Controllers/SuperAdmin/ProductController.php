@@ -293,6 +293,53 @@ class ProductController extends Controller
         return redirect()->route('product.index')->with('success', 'Product SVG template added successfully!');
     }
 
+    public function editTemplate(string $id)
+    {
+        $template = SvgTemplate::where('id', $id)->with('part')->first();
+        if ($template) {
+
+            return Inertia::render('super-admin/product/edit-template', [
+                'template' => $template
+            ]);
+        } else {
+            abort(404);
+        }
+    }
+
+    public function updateTemplate(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'svg' => 'required|string', // assuming raw SVG string
+            'parts' => 'required|array',
+            'parts.*.part_id' => 'required|string',
+            'parts.*.name' => 'required|string',
+            'parts.*.type' => 'required|string|in:leather,protection',
+            'parts.*.is_group' => 'required|boolean',
+            'parts.*.color' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/'],
+        ]);
+
+        $template = SvgTemplate::findOrFail($id);
+        $template->name = $validated['name'];
+        $template->template = $validated['svg'];
+        $template->save();
+
+        // Update or create parts
+        foreach ($validated['parts'] as $part) {
+            SvgTemplatePart::updateOrCreate(
+                ['part_id' => $part['part_id'], 'template_id' => $template->id],
+                [
+                    'type' => $part['type'],
+                    'name' => $part['name'],
+                    'color' => $part['color'],
+                    'is_group' => $part['is_group'],
+                ]
+            );
+        }
+
+        return redirect()->route('product.index')->with('success', 'Product SVG template updated successfully!');
+    }
+
     /**
      * Remove the specified resource from storage.
      */

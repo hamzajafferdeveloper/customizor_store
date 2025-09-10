@@ -63,6 +63,8 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::delete('/{id}', [ProductController::class, 'destroy'])->name('superadmin.product.destroy');
         Route::get('/add/template/product-slug={slug}', [ProductController::class, 'template'])->name('superadmin.product.add.template');
         Route::post('/store/template/product-id={id}', [ProductController::class, 'storeTemplate'])->name('superadmin.product.store.template');
+        Route::get('/edit/template/template-id={id}', [ProductController::class, 'editTemplate'])->name('superadmin.product.edit.template');
+        Route::put('/update/template/template-id={id}', [ProductController::class, 'updateTemplate'])->name('superadmin.product.update.template');
     });
 
     Route::prefix('/font')->group(function () {

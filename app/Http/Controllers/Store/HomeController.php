@@ -169,7 +169,8 @@ class HomeController extends Controller
             'slug' => $slug,
             'store_id' => $storeId,
             'price' => $validated['price'],
-            'price_type' => $validated['price_type'],
+            
+            
             'user_id' => auth()->id(),
             'type' => 'simple',
             'image' => $product_image,
@@ -335,6 +336,58 @@ class HomeController extends Controller
 
         return redirect()->route('product.index')->with('success', 'Product SVG template added successfully!');
     }
+
+    public function editTemplate(string $storeId, string $id)
+    {
+        $store = Store::findOrFail($storeId);
+        $template = SvgTemplate::with('part')->findOrFail($id);
+        $product = Product::where('id', $template->product_id)->where('store_id', $storeId)->firstOrFail();
+
+        if ($product->user_id !== auth()->id()) {
+            return redirect()->route('store.products', $storeId)->with('error', 'You do not have permission to edit this template.');
+        }
+
+        // Render the edit template view
+        return Inertia::render('store/product/edit-template', [
+            'store' => $store,
+            'template' => $template,
+        ]);
+    }
+
+    public function updateTemplate(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'svg' => 'required|string', // assuming raw SVG string
+            'parts' => 'required|array',
+            'parts.*.part_id' => 'required|string',
+            'parts.*.name' => 'required|string',
+            'parts.*.type' => 'required|string|in:leather,protection',
+            'parts.*.is_group' => 'required|boolean',
+            'parts.*.color' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/'],
+        ]);
+
+        $template = SvgTemplate::findOrFail($id);
+        $template->name = $validated['name'];
+        $template->template = $validated['svg'];
+        $template->save();
+
+        // Update or create parts
+        foreach ($validated['parts'] as $part) {
+            SvgTemplatePart::updateOrCreate(
+                ['part_id' => $part['part_id'], 'template_id' => $template->id],
+                [
+                    'type' => $part['type'],
+                    'name' => $part['name'],
+                    'color' => $part['color'],
+                    'is_group' => $part['is_group'],
+                ]
+            );
+        }
+
+        return redirect()->route('product.index')->with('success', 'Product SVG template updated successfully!');
+    }
+
 
     public function customizeProduct(string $storeId, string $id)
     {
