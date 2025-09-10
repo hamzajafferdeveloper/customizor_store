@@ -256,7 +256,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                 </div>
 
                 {/* Sidebar: Template Details + Parts */}
-                <aside className="my-2 max-h-[80vh] rounded-md border-2 p-2 xl:w-2/5">
+                <aside className="my-2 rounded-md border-2 p-2 xl:w-2/5">
                     <div className="flex w-full gap-2">
                         <Input
                             className="w-4/5"
@@ -269,8 +269,8 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                         </Button>
                     </div>
 
-                    <div className="mt-4 overflow-y-auto">
-                        <div className="flex justify-between border-b border-gray-300 p-3">
+                    <div className="mt-4 max-h-[75vh] overflow-y-auto">
+                        <div className="flex justify-between border-b border-gray-300 h-full p-3">
                             <h1 className="text-xl">Selected Parts ({selectedParts.length})</h1>
                             <div className={`flex items-center gap-1 text-gray-500 ${selectedParts.length === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <p>Show Color</p>
@@ -281,7 +281,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                         {selectedParts.length === 0 ? (
                             <p className="p-2 text-sm text-gray-500">Click on SVG parts to select them</p>
                         ) : (
-                            <div className="max-h-[67vh] space-y-2">
+                            <div className="my-2 h-full space-y-2">
                                 {selectedParts.map((part) => (
                                     <div key={part.id} className="flex w-full items-center gap-2 rounded-md border border-gray-300 p-2">
                                         <Input
