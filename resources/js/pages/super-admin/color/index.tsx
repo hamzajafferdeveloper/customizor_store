@@ -3,7 +3,6 @@ import CustomTableFooter from '@/components/table-footer';
 import TableHeaderCustom from '@/components/table-header';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { Color } from '@/types/data';
@@ -14,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import CreateColorModal from './component/create-color';
 import EditColorModal from './component/edit-modal';
+import { Switch } from '@/components/ui/switch';
 
 type FlashProps = {
     success?: string;
@@ -90,7 +90,7 @@ export default function Category({ colors }: { colors: ColorPagination }) {
                             <TableRow>
                                 <TableHead>Color Name</TableHead>
                                 <TableHead>Color</TableHead>
-                                <TableHead>Type</TableHead>
+                                <TableHead>Is Protection</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -102,22 +102,10 @@ export default function Category({ colors }: { colors: ColorPagination }) {
                                         <div className="h-8 w-8 rounded-full" style={{ backgroundColor: color.hexCode }} />{' '}
                                     </TableCell>
                                     <TableCell>
-                                        <Select
-                                            defaultValue={color.color_type}
-                                            onValueChange={(val) => handleChangeColorType(color.id, val as 'protection' | 'leather')}
-                                        >
-                                            <SelectTrigger className="w-[115px]">
-                                                <SelectValue placeholder={color.color_type} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem className="cursor-pointer" value="protection">
-                                                    Protection
-                                                </SelectItem>
-                                                <SelectItem className="cursor-pointer" value="leather">
-                                                    Leather
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Switch
+                                            checked={color.color_type === 'protection'}
+                                            onCheckedChange={(checked) => handleChangeColorType(color.id, checked ? 'protection' : 'leather')}
+                                        />
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>

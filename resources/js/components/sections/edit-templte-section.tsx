@@ -176,6 +176,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
             svg: svgContent,
             parts: selectedParts,
         };
+        
         if (store) {
             router.put(route('store.product.update.template', { storeId: store.id, id: template.id }), payload);
         } else {
