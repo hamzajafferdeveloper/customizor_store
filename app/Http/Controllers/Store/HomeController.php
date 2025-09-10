@@ -334,7 +334,7 @@ class HomeController extends Controller
             ]);
         }
 
-        return redirect()->route('product.index')->with('success', 'Product SVG template added successfully!');
+        return redirect()->route('store.products', $storeId)->with('success', 'Product SVG template added successfully!');
     }
 
     public function editTemplate(string $storeId, string $id)
@@ -343,7 +343,7 @@ class HomeController extends Controller
         $template = SvgTemplate::with('part')->findOrFail($id);
         $product = Product::where('id', $template->product_id)->where('store_id', $storeId)->firstOrFail();
 
-        if ($product->user_id !== auth()->id()) {
+        if ((int) $product->store_id !== (int) $storeId) {
             return redirect()->route('store.products', $storeId)->with('error', 'You do not have permission to edit this template.');
         }
 
@@ -354,7 +354,7 @@ class HomeController extends Controller
         ]);
     }
 
-    public function updateTemplate(Request $request, string $id)
+    public function updateTemplate(Request $request, string $storeId, string $id)
     {
         $validated = $request->validate([
             'name' => 'required|string',
@@ -385,7 +385,7 @@ class HomeController extends Controller
             );
         }
 
-        return redirect()->route('product.index')->with('success', 'Product SVG template updated successfully!');
+        return redirect()->route('store.products', $storeId)->with('success', 'Product SVG template updated successfully!');
     }
 
 

@@ -79,53 +79,63 @@ const SingleProductSection = ({
                             );
                         }}
                     />
-                    {auth?.user?.type === 'admin' ? (
-                        <>
-                            <Link href={route('superadmin.product.edit', product.slug)}>
-                                <Pen className="h-5 w-5" />
-                            </Link>
-                            <Trash2
-                                className="h-5 w-5 text-red-500"
-                                onClick={() => {
-                                    setConfirmOpen(true);
-                                }}
-                            />
-                            {!product.template ? (
-                                <Link href={route('superadmin.product.add.template', product.slug)}>
-                                    <Layers className="h-5 w-5" />
-                                </Link>
-                            ) : (
-                                <Link href={route('superadmin.product.edit.template', { id: product.template.id })}>
-                                    <Layers className="h-5 w-5" />
-                                </Link>
+                    {/* Store owner has priority over admin */}
+                    {store?.id === product.store_id ? (
+                    <>
+                        {/* Edit Product */}
+                        
+                        <Link
+                        href={route('store.product.edit', { storeId: store.id, slug: product.slug })}
+                        >
+                        <Pen className="h-5 w-5" />
+                        </Link>
 
-                            )}
-                        </>
-                    ) : (
-                        store &&
-                        store?.id === product.store_id && (
-                            <>
-                                <Link href={route('store.product.edit', { storeId: store?.id, slug: product.slug })}>
-                                    <Pen className="h-5 w-5" />
-                                </Link>
-                                <Trash2
-                                    className="h-5 w-5 text-red-500"
-                                    onClick={() => {
-                                        setConfirmOpen(true);
-                                    }}
-                                />
-                                {!product.template ? (
-                                    <Link href={route('store.product.add.template', { storeId: store.id, slug: product.slug })}>
-                                        <Layers className="h-5 w-5" />
-                                    </Link>
-                                ): (
-                                    <Link href={route('store.product.edit.template', { storeId: store.id, id: product.template.id })}>
-                                        <Layers className="h-5 w-5" />
-                                    </Link>
-                                )}
-                            </>
-                        )
-                    )}
+                        {/* Delete Product */}
+                        <Trash2
+                        className="h-5 w-5 text-red-500"
+                        onClick={() => setConfirmOpen(true)}
+                        />
+
+                        {/* Add / Edit Template */}
+                        {!product.template ? (
+                        <Link
+                            href={route('store.product.add.template', { storeId: store.id, slug: product.slug })}
+                        >
+                            <Layers className="h-5 w-5" />
+                        </Link>
+                        ) : (
+                        <Link
+                            href={route('store.product.edit.template', { storeId: store.id, id: product.template.id })}
+                        >
+                            <Layers className="h-5 w-5" />
+                        </Link>
+                        )}
+                    </>
+                    ) : auth?.user?.type === 'admin' ? (
+                    <>
+                        {/* Edit Product */}
+                        <Link href={route('superadmin.product.edit', product.slug)}>
+                        <Pen className="h-5 w-5" />
+                        </Link>
+
+                        {/* Delete Product */}
+                        <Trash2
+                        className="h-5 w-5 text-red-500"
+                        onClick={() => setConfirmOpen(true)}
+                        />
+
+                        {/* Add / Edit Template */}
+                        {!product.template ? (
+                        <Link href={route('superadmin.product.add.template', product.slug)}>
+                            <Layers className="h-5 w-5" />
+                        </Link>
+                        ) : (
+                        <Link href={route('superadmin.product.edit.template', { id: product.template.id })}>
+                            <Layers className="h-5 w-5" />
+                        </Link>
+                        )}
+                    </>
+                    ) : null}
                 </div>
             </div>
             <div className="lg:flex">
@@ -135,7 +145,7 @@ const SingleProductSection = ({
                 <div className="ml-10 space-y-2 p-5 lg:mr-0 lg:p-10 xl:p-14">
                     <h1 className="text-5xl font-bold">{product.title}</h1>
                     <p className="text-xs">SKU: {product.sku}</p>
-                    <div className="sm:flex space-y-2 sm:space-y-0 gap-2">
+                    <div className="gap-2 space-y-2 sm:flex sm:space-y-0">
                         <p className="w-fit rounded-full border-2 p-3 text-sm shadow-2xs">
                             Product Type: <b>{product.type}</b>{' '}
                         </p>
