@@ -1,11 +1,11 @@
+import RotateAngleModal from '@/components/editor/rotate-angle-modal';
+import SvgColorChangeModal from '@/components/editor/svg-color-change-modal';
 import { downloadClippedCanvas } from '@/lib/downloadEditorCanvas';
 import { handleDeleteItem, handleMouseDown } from '@/lib/editor';
 import { onEvent } from '@/lib/event-bus';
 import { CanvasItem } from '@/types/editor';
 import { Maximize2, Minus, Pen, Plus, Redo2, RefreshCw, RotateCw, Trash2, Undo2 } from 'lucide-react';
 import { RefObject, useEffect, useRef, useState } from 'react';
-import RotateAngleModal from '@/components/editor/rotate-angle-modal';
-import SvgColorChangeModal from '@/components/editor/svg-color-change-modal';
 
 type Props = {
     svgContainerRef: RefObject<HTMLDivElement | null>;
@@ -74,21 +74,37 @@ export default function EditorCanvas({
     const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
     const [lastPanPosition, setLastPanPosition] = useState<{ x: number; y: number } | null>(null);
 
-    // --- PAN EVENTS ---
+    // --- PAN EVENTS (MOBILE + DESKTOP) ---
     useEffect(() => {
         if (!isPanning) return;
+
         const handleMouseMove = (e: MouseEvent) => {
             setPan((prev) => ({
                 x: panStart.current.panX + (e.clientX - panStart.current.x),
                 y: panStart.current.panY + (e.clientY - panStart.current.y),
             }));
         };
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            setPan((prev) => ({
+                x: panStart.current.panX + (e.touches[0].clientX - panStart.current.x),
+                y: panStart.current.panY + (e.touches[0].clientY - panStart.current.y),
+            }));
+        };
         const handleMouseUp = () => setIsPanning(false);
+        const handleTouchEnd = () => setIsPanning(false);
+
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
+        window.addEventListener('touchmove', handleTouchMove, { passive: false });
+        window.addEventListener('touchend', handleTouchEnd);
+
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
         };
     }, [isPanning]);
 
@@ -137,11 +153,18 @@ export default function EditorCanvas({
         setLastPanPosition(null);
     };
 
-    // --- DRAGGING uploaded items (LIVE updates, commit on mouseup) ---
+    // --- DRAGGING uploaded items (LIVE updates, commit on mouseup/touchend) ---
     useEffect(() => {
         const handleMove = (e: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-            const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+            let clientX: number, clientY: number;
+            if ('touches' in e) {
+                if (e.touches.length !== 1) return;
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
             if (!draggingId || !svgContainerRef.current) return;
             const container = svgContainerRef.current.getBoundingClientRect();
             const newX = clientX - container.left - offsetRef.current.offsetX;
@@ -152,7 +175,7 @@ export default function EditorCanvas({
 
         const handleUp = () => {
             if (draggingId) {
-                finalizeGesture(); // push a single history snapshot
+                finalizeGesture();
             }
             setDraggingId(null);
         };
@@ -180,13 +203,20 @@ export default function EditorCanvas({
         return () => window.removeEventListener('mousedown', handleClick);
     }, []);
 
-    // --- RESIZE (LIVE), commit on end ---
+    // --- RESIZE (LIVE), commit on end (MOBILE + DESKTOP) ---
     useEffect(() => {
         if (!isResizing) return;
 
         const handleMove = (e: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-            const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+            let clientX: number, clientY: number;
+            if ('touches' in e) {
+                if (e.touches.length !== 1) return;
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
             if (!selectedItemId) return;
 
             setUploadedItemsLive((prev) =>
@@ -359,7 +389,7 @@ export default function EditorCanvas({
     }, [isPanning, lastPanPosition]);
 
     return (
-        <main className="relative flex items-center justify-center w-full h-full" ref={editorMianRef}>
+        <main className="relative flex h-full min-h-0 w-full min-w-0 items-center justify-center" ref={editorMianRef}>
             {/* Hidden file input for uploads */}
             {fileInputRef && (
                 <input type="file" accept=".svg,.png,.jpg,.jpeg" multiple className="hidden" ref={fileInputRef} onChange={handleUploadChange} />
@@ -367,24 +397,57 @@ export default function EditorCanvas({
 
             <div
                 ref={canvasContainerRef}
-                className="background-container relative w-full overflow-hidden rounded-lg border-2 bg-white p-6 lg:max-w-[55vw] dark:bg-transparent"
+                className="background-container relative flex h-full max-h-[90vh] w-full max-w-full items-center justify-center overflow-hidden rounded-lg border-2 bg-white p-2 dark:bg-transparent"
                 onMouseDown={handlePanStart}
                 onTouchStart={handlePanStart}
-                style={{ cursor: isPanning ? 'grabbing' : 'default' }}
+                style={{
+                    cursor: isPanning ? 'grabbing' : 'default',
+                    minHeight: 0,
+                    minWidth: 0,
+                }}
             >
                 <div
                     style={{
                         width: '100%',
                         height: '100%',
+                        maxWidth: '100vw',
+                        maxHeight: '80vh',
+                        aspectRatio: svgOverlayBox ? `${svgOverlayBox.width} / ${svgOverlayBox.height}` : undefined,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
                         transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                         transformOrigin: '0 0',
                         transition: isPanning ? 'none' : 'transform 0.1s',
-                        position: 'relative',
                     }}
                 >
                     {/* SVG template container */}
-                    <div ref={downloadRef}>
-                        <div id="svg-container" className="w-full h-full" ref={svgContainerRef} onClick={handleSvgContainerClick} />
+                    <div
+                        ref={downloadRef}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <div
+                            id="svg-container"
+                            className="h-full w-full"
+                            ref={svgContainerRef}
+                            onClick={handleSvgContainerClick}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                minWidth: 0,
+                                minHeight: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        />
                     </div>
 
                     {/* Uploaded items (masked) */}
@@ -404,6 +467,8 @@ export default function EditorCanvas({
                                 WebkitMaskSize: '100% 100%',
                                 maskSize: '100% 100%',
                                 zIndex: 20,
+                                minWidth: 0,
+                                minHeight: 0,
                             }}
                             className="p-2"
                         >
@@ -440,14 +505,14 @@ export default function EditorCanvas({
                                             <object
                                                 type="image/svg+xml"
                                                 data={item.src}
-                                                className="w-full h-full pointer-events-none"
+                                                className="pointer-events-none h-full w-full"
                                                 style={{ objectFit: 'fill' }}
                                             />
                                         ) : (
                                             <img
                                                 src={item.src}
                                                 alt={item.originalFileName}
-                                                className="w-full h-full pointer-events-none"
+                                                className="pointer-events-none h-full w-full"
                                                 style={{ objectFit: 'fill' }}
                                             />
                                         )
@@ -499,7 +564,7 @@ export default function EditorCanvas({
                             return (
                                 <div
                                     ref={controllerRef}
-                                    className="border-2 border-indigo-500 border-dashed controller-overlay"
+                                    className="controller-overlay border-2 border-dashed border-indigo-500"
                                     style={{
                                         position: 'absolute',
                                         left: (svgOverlayBox.left ?? 0) + item.x - 16,
@@ -522,7 +587,7 @@ export default function EditorCanvas({
                                     {/* SVG Color Change (opens modal) */}
                                     {item.type === 'image' && (
                                         <div
-                                            className="absolute top-0 left-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer resize-handle h-7 w-7"
+                                            className="resize-handle absolute top-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                             onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setIsResizing(true);
@@ -539,7 +604,7 @@ export default function EditorCanvas({
 
                                     {/* Rotate Handle - opens angle modal (commit on confirm) */}
                                     <div
-                                        className="absolute top-0 right-0 z-50 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer rotate-handle h-7 w-7"
+                                        className="rotate-handle absolute top-0 right-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
                                             setIsResizing(true);
@@ -555,7 +620,7 @@ export default function EditorCanvas({
 
                                     {/* Resize Handle (live updates, commit on mouseup) */}
                                     <div
-                                        className="absolute bottom-0 right-0 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow resize-handle h-7 w-7 cursor-nesw-resize"
+                                        className="resize-handle absolute right-0 bottom-0 flex h-7 w-7 cursor-nesw-resize items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
                                             setIsResizing(true);
@@ -567,7 +632,7 @@ export default function EditorCanvas({
 
                                     {/* Delete Handle (commit) */}
                                     <div
-                                        className="absolute bottom-0 left-0 z-50 flex items-center justify-center bg-white border-2 border-indigo-500 rounded-full shadow cursor-pointer resize-handle h-7 w-7"
+                                        className="resize-handle absolute bottom-0 left-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
                                             setIsResizing(true);
@@ -589,11 +654,11 @@ export default function EditorCanvas({
             </div>
 
             {/* Zoom / Pan / Undo-Redo bar */}
-            <div className="fixed flex gap-2 p-2 rounded shadow top-2 right-2 z-2 bg-white/80 lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
+            <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
                 <button
                     onClick={onUndo}
                     disabled={!canUndo}
-                    className="p-1 transition-all duration-75 rounded cursor-pointer hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                     title="Undo (Ctrl/Cmd+Z)"
                 >
                     <Undo2 size={18} />
@@ -601,18 +666,18 @@ export default function EditorCanvas({
                 <button
                     onClick={onRedo}
                     disabled={!canRedo}
-                    className="p-1 transition-all duration-75 rounded cursor-pointer hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                     title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
                 >
                     <Redo2 size={18} />
                 </button>
 
-                <div className="w-px h-6 mx-1 bg-gray-200" />
+                <div className="mx-1 h-6 w-px bg-gray-200" />
 
                 <button
                     onClick={handleZoomOut}
                     disabled={zoom <= MIN_ZOOM}
-                    className="p-1 transition-all duration-75 rounded cursor-pointer hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                 >
                     <Minus size={18} />
                 </button>
@@ -620,13 +685,13 @@ export default function EditorCanvas({
                 <button
                     onClick={handleZoomIn}
                     disabled={zoom >= MAX_ZOOM}
-                    className="p-1 transition-all duration-75 rounded cursor-pointer hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                 >
                     <Plus size={18} />
                 </button>
                 <button
                     onClick={handleResetView}
-                    className="p-1 transition-all duration-75 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                     <RefreshCw size={18} />
                 </button>

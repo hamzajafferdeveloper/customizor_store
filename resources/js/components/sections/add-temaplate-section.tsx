@@ -107,7 +107,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
             const newId = existingId ?? `part-${Math.random().toString(36).slice(2, 9)}`;
             target.setAttribute('part-id', newId);
 
-            const defaultColor = target.getAttribute('fill') || '#000000';
+            const defaultColor = target.getAttribute('fill') || '#1C175C';
 
             setSelectedParts((prev) => [...prev, { id: newId, name: '', color: defaultColor, defaultColor, isGroup: false, protection: false }]);
 
@@ -201,7 +201,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                 const el = svgEl.querySelector<SVGGraphicsElement>(`[part-id="${part.id}"]`);
                 if (el) {
                     // use user color if present, else fallback to defaultColor
-                    const color = part.color || part.defaultColor || '#000000';
+                    const color = part.color || part.defaultColor || '#1C175C';
                     el.style.setProperty('--part-fill', color);
                 }
             });
@@ -243,8 +243,14 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                             <p>No SVG Template Selected. Click me to select Template</p>
                         </div>
                     ) : (
-                        <div className="h-auto w-full rounded-md border-3 p-4 lg:w-[calc(100%-10rem)]">
-                            <div className="h-full w-full overflow-hidden" ref={svgContainerRef} dangerouslySetInnerHTML={{ __html: svgContent }} />
+                        <div className="flex w-full items-center justify-center p-4 lg:w-[calc(100%-10rem)]">
+                            <div className="flex aspect-square max-h-[80vh] w-full items-center justify-center overflow-hidden rounded-md border">
+                                <div
+                                    ref={svgContainerRef}
+                                    className="h-full w-full object-contain"
+                                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
@@ -266,7 +272,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                     <div className="mt-4 overflow-y-auto">
                         <div className="flex justify-between border-b border-gray-300 p-3">
                             <h1 className="text-xl">Selected Parts ({selectedParts.length})</h1>
-                            <div className="flex items-center gap-1 text-gray-500">
+                            <div className={`flex items-center gap-1 text-gray-500 ${selectedParts.length === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <p>Show Color</p>
                                 <Switch checked={showHoverColor} onCheckedChange={handleShowHoverColor} />
                             </div>
@@ -275,57 +281,59 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                         {selectedParts.length === 0 ? (
                             <p className="p-2 text-sm text-gray-500">Click on SVG parts to select them</p>
                         ) : (
-                            <div className=' space-y-2 max-h-[68vh]'>
+                            <div className="max-h-[67vh] space-y-2">
                                 {selectedParts.map((part) => (
-                                <div key={part.id} className="flex w-full items-center gap-2 rounded-md border border-gray-300 p-2">
-                                    <Input
-                                        placeholder={`Name for ${part.isGroup ? 'Group' : 'Part'} ${part.id}`}
-                                        value={part.name}
-                                        onChange={(e) =>
-                                            setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, name: e.target.value } : p)))
-                                        }
-                                    />
+                                    <div key={part.id} className="flex w-full items-center gap-2 rounded-md border border-gray-300 p-2">
+                                        <Input
+                                            placeholder={`Name for ${part.isGroup ? 'Group' : 'Part'} ${part.id}`}
+                                            value={part.name}
+                                            onChange={(e) =>
+                                                setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, name: e.target.value } : p)))
+                                            }
+                                        />
 
-                                    <input
-                                        type="color"
-                                        className="h-10 w-10 rounded border"
-                                        value={part.color || '#000000'}
-                                        onChange={(e) => handleColorChange(part.id, e.target.value)}
-                                    />
+                                        <input
+                                            type="color"
+                                            className="h-10 w-10 rounded border"
+                                            value={part.color || '#1C175C'}
+                                            onChange={(e) => handleColorChange(part.id, e.target.value)}
+                                        />
 
-                                    <Trash2 className="cursor-pointer text-red-500" onClick={() => handleRemovePart(part.id)} />
+                                        <Trash2 className="cursor-pointer text-red-500" onClick={() => handleRemovePart(part.id)} />
 
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Switch
-                                                checked={part.protection || false}
-                                                onCheckedChange={(checked) =>
-                                                    setSelectedParts((prev) =>
-                                                        prev.map((p) => (p.id === part.id ? { ...p, protection: checked } : p)),
-                                                    )
-                                                }
-                                            />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Protection</p>
-                                        </TooltipContent>
-                                    </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Switch
+                                                    checked={part.protection || false}
+                                                    onCheckedChange={(checked) =>
+                                                        setSelectedParts((prev) =>
+                                                            prev.map((p) => (p.id === part.id ? { ...p, protection: checked } : p)),
+                                                        )
+                                                    }
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Protection</p>
+                                            </TooltipContent>
+                                        </Tooltip>
 
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Switch
-                                                checked={part.isGroup || false}
-                                                onCheckedChange={(checked) =>
-                                                    setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, isGroup: checked } : p)))
-                                                }
-                                            />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Group</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            ))}
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Switch
+                                                    checked={part.isGroup || false}
+                                                    onCheckedChange={(checked) =>
+                                                        setSelectedParts((prev) =>
+                                                            prev.map((p) => (p.id === part.id ? { ...p, isGroup: checked } : p)),
+                                                        )
+                                                    }
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Group</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>

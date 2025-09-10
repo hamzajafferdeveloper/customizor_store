@@ -111,7 +111,8 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
     const sharedData = usePage<SharedData>();
-    if(sharedData.props.auth.user != null){
+    // --- Sidebar state sync for non-users (admins, designers) --- 
+    if(sharedData.props.auth.user === null || sharedData.props.auth.user?.type != 'user'){
         const { toggleSidebar } = useSidebar();
 
         // Keep sidebar state in sync
@@ -252,7 +253,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     }, [parts]);
 
     return (
-            <main className="flex flex-col p-2 lg:flex-row">
+        <main className="flex flex-col p-2 lg:flex-row">
             <div className="order-1 flex-1 p-4 lg:order-2">
                 <EditorCanvas
                     downloadRef={downloadRef}
