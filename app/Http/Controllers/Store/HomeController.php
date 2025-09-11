@@ -169,8 +169,8 @@ class HomeController extends Controller
             'slug' => $slug,
             'store_id' => $storeId,
             'price' => $validated['price'],
-            
-            
+
+
             'user_id' => auth()->id(),
             'type' => 'simple',
             'image' => $product_image,
@@ -310,7 +310,7 @@ class HomeController extends Controller
             'parts' => 'required|array',
             'parts.*.id' => 'required|string',
             'parts.*.name' => 'required|string',
-            'parts.*.protection' => 'required|boolean',
+            'parts.*.type' => 'required|string|in:leather,protection',
             'parts.*.isGroup' => 'required|boolean',
             'parts.*.color' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/'],
         ]);
@@ -322,12 +322,11 @@ class HomeController extends Controller
         ]);
 
         foreach ($validated['parts'] as $part) {
-            $type = $part['protection'] ? 'protection' : 'leather';
 
             SvgTemplatePart::create([
                 'part_id' => $part['id'],
                 'template_id' => $svgtemplate->id,
-                'type' => $type,
+                'type' => $part['type'],
                 'name' => $part['name'],
                 'color' => $part['color'],
                 'is_group' => $part['isGroup'],
@@ -374,10 +373,11 @@ class HomeController extends Controller
 
         // Update or create parts
         foreach ($validated['parts'] as $part) {
+            $type = $part['protection'] ? 'protection' : 'leather';$type = $part['protection'] ? 'protection' : 'leather';
             SvgTemplatePart::updateOrCreate(
                 ['part_id' => $part['part_id'], 'template_id' => $template->id],
                 [
-                    'type' => $part['type'],
+                    'type' => $type,
                     'name' => $part['name'],
                     'color' => $part['color'],
                     'is_group' => $part['is_group'],

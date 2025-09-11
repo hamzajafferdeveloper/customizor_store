@@ -112,7 +112,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
             const newId = existingId ?? `part-${Math.random().toString(36).slice(2, 9)}`;
             target.setAttribute('part-id', newId);
 
-            const defaultColor = target.getAttribute('fill') || '#1C175C';
+            const defaultColor = target.getAttribute('fill') || '#000000';
 
             setSelectedParts((prev) => [...prev, { id: newId, name: '', color: defaultColor, defaultColor, isGroup: false, protection: false }]);
 
@@ -311,7 +311,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                                 <input
                                     type="color"
                                     className="h-10 w-10 rounded border"
-                                    value={part.color || '#1C175C'}
+                                    value={part.color || '#000000'}
                                     onChange={(e) => handleColorChange(part.id, e.target.value)}
                                 />
 

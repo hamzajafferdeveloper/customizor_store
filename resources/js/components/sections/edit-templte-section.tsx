@@ -118,7 +118,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
             target.setAttribute('part-id', newId);
 
             const is_group = target.tagName.toLowerCase() === 'g';
-            const defaultColor = target.getAttribute('fill') || '#1C175C';
+            const defaultColor = target.getAttribute('fill') || '#000000';
 
             setSelectedParts((prev) => [
                 ...prev,
@@ -322,7 +322,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
                                         <input
                                             type="color"
                                             className="h-10 w-10 rounded border"
-                                            value={part.color || '#1C175C'}
+                                            value={part.color || '#000000'}
                                             onChange={(e) => handleColorChange(part.part_id, e.target.value)}
                                         />
 
