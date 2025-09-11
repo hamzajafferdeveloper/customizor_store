@@ -31,8 +31,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
     const [selectedParts, setSelectedParts] = useState<SelectedPart[]>(template?.part || []);
     const [templateName, setTemplateName] = useState<string>(template?.name || '');
     const [showHoverColor, setShowHoverColor] = useState<boolean>(false);
-
-    console.log(selectedParts);
+    const [hoverColor, setHoverColor] = useState<string>('#1C175C');
 
     const selectedPartsRef = useRef<SelectedPart[]>([]);
     useEffect(() => {
@@ -228,7 +227,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
             selectedParts.forEach((p) => {
                 const el = svgEl.querySelector<SVGGraphicsElement>(`[part-id="${p.part_id}"]`);
                 if (el) {
-                    el.style.setProperty('--part-fill', p.color || p.defaultColor || '#1C175C');
+                    el.style.setProperty('--part-fill', hoverColor);
                 }
             });
         } else {
@@ -298,6 +297,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
                                     selectedParts.length === 0 ? 'pointer-events-none opacity-50' : ''
                                 }`}
                             >
+                                <input type="color" value={hoverColor} onChange={(e) => setHoverColor(e.target.value)} className="h-6 w-6 rounded border" />
                                 <p>Show Color</p>
                                 <Switch checked={showHoverColor} onCheckedChange={setShowHoverColor} />
                             </div>

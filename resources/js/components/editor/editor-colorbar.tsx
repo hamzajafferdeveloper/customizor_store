@@ -76,23 +76,46 @@ export default function EditorColorBar({ parts, openColorMenu, paintPart, ChageL
       {ChageLayerColor ? (
         sortedParts.map((part) => (
           <AccordionItem key={part.id} value={`item-${part.id}`}>
-            <AccordionTrigger>{part.name}</AccordionTrigger>
+            <AccordionTrigger>
+              {/* Color preview */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="h-4 w-4 rounded-md shadow-sm"
+                  style={{ backgroundColor: part.color }}
+                />
+
+                {/* Part name */}
+                <p className="text-sm font-medium text-gray-800">{part.name}</p>
+              </div>
+            </AccordionTrigger>
             <AccordionContent className="flex flex-wrap gap-2 text-balance">
               {loading ? (
                 <p>Loading colors...</p>
-              ) : (
+              ) : part.type === 'protection' ? (
+              colors
+                .filter((c) => c.color_type === 'protection')
+                .map((c) => (
+                  <div key={c.id}>
+                    <div
+                      className="h-5 w-5 cursor-pointer rounded-md border border-black"
+                      style={{ backgroundColor: c.hexCode }}
+                      title={c.name}
+                      onClick={() => paintPart(part, c.hexCode)}
+                    />
+                  </div>
+                ))
+              ): (
                 colors
-                  .filter((c) => c.color_type === part.type) // 👈 filter by part type
-                  .map((c) => (
-                    <div key={c.id}>
-                      <div
-                        className="h-5 w-5 cursor-pointer rounded-md border border-black"
-                        style={{ backgroundColor: c.hexCode }}
-                        title={c.name}
-                        onClick={() => paintPart(part, c.hexCode)}
-                      />
-                    </div>
-                  ))
+                .map((c) => (
+                  <div key={c.id}>
+                    <div
+                      className="h-5 w-5 cursor-pointer rounded-md border border-black"
+                      style={{ backgroundColor: c.hexCode }}
+                      title={c.name}
+                      onClick={() => paintPart(part, c.hexCode)}
+                    />
+                  </div>
+                ))
               )}
             </AccordionContent>
           </AccordionItem>
