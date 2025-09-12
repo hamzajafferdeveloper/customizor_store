@@ -83,7 +83,7 @@ const SingleProductSection = ({
                     {store?.id === product.store_id ? (
                     <>
                         {/* Edit Product */}
-                        
+
                         <Link
                         href={route('store.product.edit', { storeId: store.id, slug: product.slug })}
                         >
