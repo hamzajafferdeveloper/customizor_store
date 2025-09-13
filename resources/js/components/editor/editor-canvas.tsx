@@ -337,7 +337,7 @@ export default function EditorCanvas({
         downloadClippedCanvas({
             svgContainerId: 'svg-container',
             uploadedItems,
-            svgOverlayBox: { width: svgOverlayBox.width, height: svgOverlayBox.height },
+            svgOverlayBox: svgOverlayBox,
             zoom,
             pan,
             format,

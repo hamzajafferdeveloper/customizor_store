@@ -323,7 +323,6 @@ class ProductController extends Controller
         $template->name = $validated['name'];
         $template->template = $validated['svg'];
         $template->save();
-
         // Update or create parts
         foreach ($validated['parts'] as $part) {
             SvgTemplatePart::updateOrCreate(

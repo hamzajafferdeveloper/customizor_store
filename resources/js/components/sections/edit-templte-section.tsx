@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 type SelectedPart = {
     part_id: string;
     name?: string;
-    type?: 'protection' | 'leather';
+    type: 'protection' | 'leather';
     is_group?: boolean;
     color?: string;
     defaultColor?: string;
@@ -28,7 +28,12 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
 
     const [svgContent, setSvgContent] = useState<string | null>(template?.template || null);
     //@ts-ignore
-    const [selectedParts, setSelectedParts] = useState<SelectedPart[]>(template?.part || []);
+    const [selectedParts, setSelectedParts] = useState<SelectedPart[]>(
+        (template?.part || []).map((p: any) => ({
+            ...p,
+            type: p.type || 'leather', // 👈 fallback if backend missed type
+        })),
+    );
     const [templateName, setTemplateName] = useState<string>(template?.name || '');
     const [showHoverColor, setShowHoverColor] = useState<boolean>(false);
     const [hoverColor, setHoverColor] = useState<string>('#1C175C');
@@ -128,7 +133,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
                     color: defaultColor,
                     defaultColor,
                     is_group,
-                    protection: false,
+                    type: 'leather',
                 },
             ]);
 
@@ -175,7 +180,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
             svg: svgContent,
             parts: selectedParts,
         };
-        
+
         if (store) {
             router.put(route('store.product.update.template', { storeId: store.id, id: template.id }), payload);
         } else {
@@ -297,7 +302,12 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
                                     selectedParts.length === 0 ? 'pointer-events-none opacity-50' : ''
                                 }`}
                             >
-                                <input type="color" value={hoverColor} onChange={(e) => setHoverColor(e.target.value)} className="h-6 w-6 rounded border" />
+                                <input
+                                    type="color"
+                                    value={hoverColor}
+                                    onChange={(e) => setHoverColor(e.target.value)}
+                                    className="h-6 w-6 rounded border"
+                                />
                                 <p>Show Color</p>
                                 <Switch checked={showHoverColor} onCheckedChange={setShowHoverColor} />
                             </div>
