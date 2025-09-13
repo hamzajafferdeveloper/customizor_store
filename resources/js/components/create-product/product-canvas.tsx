@@ -349,7 +349,7 @@ export default function CreateProductCanvas({
             });
         }
     };
-    
+
     // Combine and sort layers by zIndex
     const combinedLayers = [
         ...uploadedItems.map((i) => ({ ...i, layerType: 'item' as const })),
@@ -495,7 +495,20 @@ export default function CreateProductCanvas({
                                                     />
                                                 )
                                             ) : (
-                                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                <div
+                                                    style={{
+                                                        position: 'relative',
+                                                        display: 'flex',
+                                                        justifyContent:
+                                                            layer.textAlignment === 'center'
+                                                                ? 'center'
+                                                                : layer.textAlignment === 'right'
+                                                                  ? 'flex-end'
+                                                                  : 'flex-start',
+                                                        width: '100%',
+                                                        height: '100%',
+                                                    }}
+                                                >
                                                     {/* Stroke layer */}
                                                     <span
                                                         style={{
