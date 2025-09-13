@@ -10,6 +10,7 @@ import { Input } from '../ui/input';
 import { useSidebar } from '../ui/sidebar';
 import { Switch } from '../ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { extractFillMap } from '@/lib/utils';
 
 type SelectedPart = {
     part_id: string;
@@ -37,6 +38,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
     const [templateName, setTemplateName] = useState<string>(template?.name || '');
     const [showHoverColor, setShowHoverColor] = useState<boolean>(false);
     const [hoverColor, setHoverColor] = useState<string>('#1C175C');
+    const [fillMap, setFillMap] = useState<Record<string, string>>({});
 
     const selectedPartsRef = useRef<SelectedPart[]>([]);
     useEffect(() => {
@@ -53,6 +55,8 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
         if (svgNode) {
             svgContainerRef.current.innerHTML = '';
             svgContainerRef.current.appendChild(svgNode);
+
+            setFillMap(extractFillMap(svgContent));
         }
     }, [svgContent]);
 
@@ -123,7 +127,15 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
             target.setAttribute('part-id', newId);
 
             const is_group = target.tagName.toLowerCase() === 'g';
-            const defaultColor = target.getAttribute('fill') || '#000000';
+
+            let defaultColor = target.getAttribute('fill');
+            if (!defaultColor) {
+                const className = Array.from(target.classList).find((c) => fillMap[c]);
+                if (className) {
+                    defaultColor = fillMap[className];
+                }
+            }
+            if (!defaultColor) defaultColor = '#000000';
 
             setSelectedParts((prev) => [
                 ...prev,

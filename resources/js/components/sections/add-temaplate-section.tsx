@@ -1,3 +1,4 @@
+import { extractFillMap } from '@/lib/utils';
 import { type SharedData } from '@/types';
 import { Product } from '@/types/data';
 import { StoreData } from '@/types/store';
@@ -5,9 +6,9 @@ import { router, usePage } from '@inertiajs/react';
 import { CircleSlash2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { useSidebar } from '../ui/sidebar';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useSidebar } from '../ui/sidebar';
 import { Switch } from '../ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
@@ -20,10 +21,6 @@ export type SelectedPart = {
     defaultColor?: string; // original SVG color
 };
 
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
-
-/*******  74de3467-9ec8-403f-a135-b1586d2a7843  *******/
 const AddTemplateSection = ({ product, store }: { product: Product; store?: StoreData }) => {
     const { toggleSidebar } = useSidebar();
     const sharedData = usePage<SharedData>();
@@ -35,6 +32,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
     const [templateName, setTemplateName] = useState<string>('');
     const [showHoverColor, setShowHoverColor] = useState<boolean>(false);
     const [hoverColor, setHoverColor] = useState<string>('#1C175C');
+    const [fillMap, setFillMap] = useState<Record<string, string>>({});
 
     // 🔑 store latest selectedParts for handlers (so we don’t rebind)
     const selectedPartsRef = useRef<SelectedPart[]>([]);
@@ -60,6 +58,10 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
         reader.onload = () => {
             const text = reader.result as string;
             setSvgContent(text);
+
+            // ✅ extract default colors from <style>
+            const map = extractFillMap(text);
+            setFillMap(map);
         };
         reader.readAsText(file);
     };
@@ -112,7 +114,14 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
             const newId = existingId ?? `part-${Math.random().toString(36).slice(2, 9)}`;
             target.setAttribute('part-id', newId);
 
-            const defaultColor = target.getAttribute('fill') || '#000000';
+            let defaultColor = target.getAttribute('fill');
+            if (!defaultColor) {
+                const className = Array.from(target.classList).find((c) => fillMap[c]);
+                if (className) {
+                    defaultColor = fillMap[className];
+                }
+            }
+            if (!defaultColor) defaultColor = '#000000';
 
             setSelectedParts((prev) => [...prev, { id: newId, name: '', color: defaultColor, defaultColor, isGroup: false, protection: false }]);
 
@@ -148,16 +157,16 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
         }
 
         if (!templateName.trim()) {
-        toast.error('Template name is required.');
-        return;
+            toast.error('Template name is required.');
+            return;
         }
-    
+
         const invalidParts = selectedParts.filter((p) => !p.name || !p.name.trim());
         if (invalidParts.length > 0) {
-        toast.error('Each part must have a name.');
-        return;
+            toast.error('Each part must have a name.');
+            return;
         }
-        
+
         const payload = {
             product_id: product.id,
             name: templateName,
@@ -272,85 +281,95 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
 
                 {/* Sidebar: Template Details + Parts */}
                 <aside className="my-2 rounded-md border-2 p-2 xl:w-2/5">
-            <div className="flex w-full gap-2">
-                <Input
-                    className="w-4/5"
-                    placeholder="Enter Template Name Here..."
-                    value={templateName}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                />
-                <Button className="w-1/5" onClick={handleSubmit}>
-                    Save
-                </Button>
-            </div>
-
-            <div className="mt-4 max-h-[75vh] overflow-y-auto">
-                <div className="flex h-full justify-between border-b border-gray-300 p-3">
-                    <h1 className="text-xl">Selected Parts ({selectedParts.length})</h1>
-                    <div className={`flex items-center gap-1 text-gray-500 ${selectedParts.length === 0 ? 'pointer-events-none opacity-50' : ''}`}>
-                        <input type="color" value={hoverColor} onChange={(e) => setHoverColor(e.target.value)} className="h-6 w-6 rounded border" />
-                        <p>Show Color</p>
-                        <Switch checked={showHoverColor} onCheckedChange={handleShowHoverColor} />
+                    <div className="flex w-full gap-2">
+                        <Input
+                            className="w-4/5"
+                            placeholder="Enter Template Name Here..."
+                            value={templateName}
+                            onChange={(e) => setTemplateName(e.target.value)}
+                        />
+                        <Button className="w-1/5" onClick={handleSubmit}>
+                            Save
+                        </Button>
                     </div>
-                </div>
 
-                {selectedParts.length === 0 ? (
-                    <p className="p-2 text-sm text-gray-500">Click on SVG parts to select them</p>
-                ) : (
-                    <div className="my-2 h-full space-y-2">
-                        {selectedParts.map((part) => (
-                            <div key={part.id} className="flex w-full items-center gap-2 rounded-md border border-gray-300 p-2">
-                                <Input
-                                    placeholder={`Name for ${part.isGroup ? 'Group' : 'Part'} ${part.id}`}
-                                    value={part.name}
-                                    onChange={(e) =>
-                                        setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, name: e.target.value } : p)))
-                                    }
-                                />
-
+                    <div className="mt-4 max-h-[75vh] overflow-y-auto">
+                        <div className="flex h-full justify-between border-b border-gray-300 p-3">
+                            <h1 className="text-xl">Selected Parts ({selectedParts.length})</h1>
+                            <div
+                                className={`flex items-center gap-1 text-gray-500 ${selectedParts.length === 0 ? 'pointer-events-none opacity-50' : ''}`}
+                            >
                                 <input
                                     type="color"
-                                    className="h-10 w-10 rounded border"
-                                    value={part.color || '#000000'}
-                                    onChange={(e) => handleColorChange(part.id, e.target.value)}
+                                    value={hoverColor}
+                                    onChange={(e) => setHoverColor(e.target.value)}
+                                    className="h-6 w-6 rounded border"
                                 />
-
-                                <Trash2 className="cursor-pointer text-red-500" onClick={() => handleRemovePart(part.id)} />
-
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <Switch
-                                            checked={part.protection || false}
-                                            onCheckedChange={(checked) =>
-                                                setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, protection: checked } : p)))
-                                            }
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Protection</p>
-                                    </TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <Switch
-                                            checked={part.isGroup || false}
-                                            onCheckedChange={(checked) =>
-                                                setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, isGroup: checked } : p)))
-                                            }
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Group</p>
-                                    </TooltipContent>
-                                </Tooltip>
+                                <p>Show Color</p>
+                                <Switch checked={showHoverColor} onCheckedChange={handleShowHoverColor} />
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </aside>
+                        </div>
 
+                        {selectedParts.length === 0 ? (
+                            <p className="p-2 text-sm text-gray-500">Click on SVG parts to select them</p>
+                        ) : (
+                            <div className="my-2 h-full space-y-2">
+                                {selectedParts.map((part) => (
+                                    <div key={part.id} className="flex w-full items-center gap-2 rounded-md border border-gray-300 p-2">
+                                        <Input
+                                            placeholder={`Name for ${part.isGroup ? 'Group' : 'Part'} ${part.id}`}
+                                            value={part.name}
+                                            onChange={(e) =>
+                                                setSelectedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, name: e.target.value } : p)))
+                                            }
+                                        />
+
+                                        <input
+                                            type="color"
+                                            className="h-10 w-10 rounded border"
+                                            value={part.color || '#000000'}
+                                            onChange={(e) => handleColorChange(part.id, e.target.value)}
+                                        />
+
+                                        <Trash2 className="cursor-pointer text-red-500" onClick={() => handleRemovePart(part.id)} />
+
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Switch
+                                                    checked={part.protection || false}
+                                                    onCheckedChange={(checked) =>
+                                                        setSelectedParts((prev) =>
+                                                            prev.map((p) => (p.id === part.id ? { ...p, protection: checked } : p)),
+                                                        )
+                                                    }
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Protection</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Switch
+                                                    checked={part.isGroup || false}
+                                                    onCheckedChange={(checked) =>
+                                                        setSelectedParts((prev) =>
+                                                            prev.map((p) => (p.id === part.id ? { ...p, isGroup: checked } : p)),
+                                                        )
+                                                    }
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Group</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </aside>
             </div>
         </div>
     );

@@ -323,17 +323,18 @@ class ProductController extends Controller
         $template->name = $validated['name'];
         $template->template = $validated['svg'];
         $template->save();
-        // Update or create parts
+
+        SvgTemplatePart::where('template_id', $template->id)->delete();
+
         foreach ($validated['parts'] as $part) {
-            SvgTemplatePart::updateOrCreate(
-                ['part_id' => $part['part_id'], 'template_id' => $template->id],
-                [
-                    'type' => $part['type'],
-                    'name' => $part['name'],
-                    'color' => $part['color'],
-                    'is_group' => $part['is_group'],
-                ]
-            );
+            SvgTemplatePart::create([
+                'template_id' => $template->id,
+                'part_id' => $part['part_id'],
+                'type' => $part['type'],
+                'name' => $part['name'],
+                'color' => $part['color'],
+                'is_group' => $part['is_group'],
+            ]);
         }
 
         return redirect()->route('product.index')->with('success', 'Product SVG template updated successfully!');

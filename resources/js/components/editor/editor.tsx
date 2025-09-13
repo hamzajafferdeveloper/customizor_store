@@ -111,16 +111,19 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
     const sharedData = usePage<SharedData>();
-    // --- Sidebar state sync for non-users (admins, designers) --- 
-    if(sharedData.props.auth.user === null || sharedData.props.auth.user?.type != 'user'){
-        const { toggleSidebar } = useSidebar();
+    // --- Sidebar state sync for non-users (admins, designers) ---
+    if(sharedData.props.auth.user?.type === 'user'){
+        if(sharedData.props.auth.user != null){
+            console.log('non-user sidebar sync');
+            const { toggleSidebar } = useSidebar();
 
-        // Keep sidebar state in sync
-        useEffect(() => {
-            if (sharedData.props.sidebarOpen === true) {
-                toggleSidebar();
-            }
-        }, []);
+            // Keep sidebar state in sync
+            useEffect(() => {
+                if (sharedData.props.sidebarOpen === true) {
+                    toggleSidebar();
+                }
+            }, []);
+        }
     }
 
     // --- History store over combined state (parts + uploadedItems) ---
