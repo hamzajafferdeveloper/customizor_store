@@ -40,6 +40,7 @@ export type TextLayer = CanvasItemBase & {
     isCurved?: boolean;
     curveValue?: number; // Degree or arc amount
     curveOrigin?: 'center' | 'left' | 'right';
+    textAlignment: 'left' | 'center' | 'right';
 };
 
 // Discriminated union of all possible canvas items

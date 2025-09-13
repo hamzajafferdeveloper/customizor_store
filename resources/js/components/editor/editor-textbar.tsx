@@ -1,17 +1,18 @@
-import { Bold, ChevronsUpDown, Italic } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AlignCenter, AlignLeft, AlignRight, Bold, ChevronsUpDown, Italic } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import LimitModal from '@/components/editor/limit-modal';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover as ShadPopover, PopoverContent as ShadPopoverContent, PopoverTrigger as ShadPopoverTrigger } from '@/components/ui/popover';
 import { Font } from '@/types/data';
 import { CanvasItem, TextLayer } from '@/types/editor';
 import { HexColorPicker } from 'react-colorful';
-import { Popover as ShadPopover, PopoverContent as ShadPopoverContent, PopoverTrigger as ShadPopoverTrigger } from '@/components/ui/popover';
-import LimitModal from '@/components/editor/limit-modal';
+import { defaultFonts } from '@/constant/fonts';
 
 type Props = {
     AddText: () => void;
@@ -28,13 +29,6 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
             ? (uploadedItems.find((item) => item.id === selectedItemId) as TextLayer)
             : null;
 
-    const defaultFonts = [
-        'Arial', 'Verdana', 'Helvetica', 'Tahoma', 'Trebuchet MS',
-        'Georgia', 'Times New Roman', 'Courier New', 'Lucida Console',
-        'Impact', 'Comic Sans MS', 'Garamond', 'Palatino', 'Bookman',
-        'Arial Black', 'Candara', 'Segoe UI', 'Roboto', 'Open Sans', 'Montserrat',
-    ];
-
     const [textValue, setTextValue] = useState(textLayer?.text ?? '');
     const [fontSize, setFontSize] = useState(textLayer?.fontSize ?? 32);
     const [bold, setBold] = useState(textLayer?.bold ?? false);
@@ -47,6 +41,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
     const [stroke, setStroke] = useState(textLayer?.stroke ?? 0);
     const [strokeColor, setStrokeColor] = useState(textLayer?.strokeColor ?? '#000000');
     const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [textAlignment, setTextAlignment] = useState<'left' | 'center' | 'right'>('left');
 
     const textCount = uploadedItems.filter((item) => item.type === 'text').length;
 
@@ -62,7 +57,8 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
     useEffect(() => {
         allowedfonts.forEach((font) => {
             const fontFace = new FontFace(font.name, `url(/storage/${font.path})`);
-            fontFace.load()
+            fontFace
+                .load()
                 .then((loadedFace) => document.fonts.add(loadedFace))
                 .catch((err) => console.error(`Error loading font ${font.name}:`, err));
         });
@@ -92,8 +88,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
 
             {selectedItemId && uploadedItems.find((item) => item.id === selectedItemId)?.type === 'text' && (
                 <div className="flex flex-col gap-4">
-                    
-                    {/* ✅ Text Input */}
+                    {/* Text Input */}
                     <div className="flex flex-col gap-2">
                         <Label className="text-sm font-medium">Text</Label>
                         <Input
@@ -107,7 +102,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                         />
                     </div>
 
-                    {/* ✅ Font Selector */}
+                    {/* Font Selector */}
                     <div className="flex flex-col gap-2">
                         <Label className="text-sm font-medium">Font Family</Label>
                         <ShadPopover open={openFont} onOpenChange={setOpenFont}>
@@ -154,7 +149,10 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                                                             setFontPath(`/storage/${font.path}`);
                                                             setOpenFont(false);
                                                             if (textLayer) {
-                                                                onUpdateTextLayer(textLayer.id, { fontFamily: font.name, fontPath: `/storage/${font.path}` });
+                                                                onUpdateTextLayer(textLayer.id, {
+                                                                    fontFamily: font.name,
+                                                                    fontPath: `/storage/${font.path}`,
+                                                                });
                                                             }
                                                         }}
                                                         className="cursor-pointer"
@@ -170,7 +168,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                         </ShadPopover>
                     </div>
 
-                    {/* ✅ Color Picker */}
+                    {/* Color Picker */}
                     <div className="flex flex-col gap-2">
                         <Label className="text-sm font-medium">Text Color</Label>
                         <HexColorPicker
@@ -182,7 +180,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                         />
                     </div>
 
-                    {/* ✅ Font Settings */}
+                    {/* Font Settings */}
                     <div className="flex flex-col gap-3">
                         <div className="flex gap-2">
                             {/* Bold */}
@@ -220,6 +218,58 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Italic</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+
+                        {/* Text Alignment */}
+                        <div className="flex gap-2">
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant={'outline'}
+                                            onClick={() => {
+                                                setTextAlignment('left');
+                                                if (textLayer) onUpdateTextLayer(textLayer.id, { textAlignment: 'left' });
+                                            }}
+                                        >
+                                            <AlignLeft size={18} />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Align</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant={'outline'}
+                                            onClick={() => {
+                                                setTextAlignment('center');
+                                                if (textLayer) onUpdateTextLayer(textLayer.id, { textAlignment: 'center' });
+                                            }}
+                                        >
+                                            <AlignCenter size={18} />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Algin Center</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant={'outline'}
+                                            onClick={() => {
+                                                setTextAlignment('right');
+                                                if (textLayer) onUpdateTextLayer(textLayer.id, { textAlignment: 'right' });
+                                            }}
+                                        >
+                                            <AlignRight size={18} />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Align Right</TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         </div>

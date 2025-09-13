@@ -84,38 +84,70 @@ export async function downloadClippedCanvas({
             });
         } else if (item.type === 'text' && item.text) {
             ctx.save();
-            ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
-            ctx.rotate((item.rotation * Math.PI) / 180);
 
             const fontWeight = item.bold ? 'bold' : 'normal';
             const fontStyle = item.italic ? 'italic' : 'normal';
             const fontSize = item.fontSize || 20;
             const fontFamily = item.fontFamily || 'Arial';
+
             ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
             ctx.fillStyle = item.color || '#000000';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Draw stroke (outline) if present
-            if (item.strokeColor && (item.stroke || item.stroke)) {
-                ctx.lineWidth = item.stroke || item.stroke;
-                ctx.strokeStyle = item.strokeColor;
-                ctx.strokeText(item.text, 0, 0);
+            const maxTextWidth = item.width || 200;
+
+            // ✅ word wrap
+            const wrapText = (text: string, maxWidth: number): string[] => {
+                const words = text.split(' ');
+                const lines: string[] = [];
+                let current = '';
+
+                words.forEach((word) => {
+                    const testLine = current ? current + ' ' + word : word;
+                    if (ctx.measureText(testLine).width > maxWidth && current) {
+                        lines.push(current);
+                        current = word;
+                    } else {
+                        current = testLine;
+                    }
+                });
+                if (current) lines.push(current);
+                return lines;
+            };
+
+            const lines = wrapText(item.text, maxTextWidth);
+            const lineHeight = fontSize * 1.2;
+            const totalHeight = lines.length * lineHeight;
+
+            // ✅ move to center of the box
+            ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
+
+            if (item.rotation && item.rotation !== 0) {
+                ctx.rotate((item.rotation * Math.PI) / 180);
             }
 
-            ctx.fillText(item.text, 0, 0);
+            lines.forEach((line, i) => {
+                const y = i * lineHeight - totalHeight / 2 + lineHeight / 2;
 
-            // Underline
-            if (item.underline) {
-                const textWidth = ctx.measureText(item.text).width;
-                const underlineY = fontSize / 2 + 2;
-                ctx.beginPath();
-                ctx.moveTo(-textWidth / 2, underlineY);
-                ctx.lineTo(textWidth / 2, underlineY);
-                ctx.lineWidth = Math.max(1, fontSize / 12);
-                ctx.strokeStyle = item.color || '#000000';
-                ctx.stroke();
-            }
+                if (item.strokeColor && item.stroke) {
+                    ctx.lineWidth = item.stroke;
+                    ctx.strokeStyle = item.strokeColor;
+                    ctx.strokeText(line, 0, y);
+                }
+                ctx.fillText(line, 0, y);
+
+                if (item.underline) {
+                    const textWidth = ctx.measureText(line).width;
+                    const underlineY = y + fontSize / 2 + 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-textWidth / 2, underlineY);
+                    ctx.lineTo(textWidth / 2, underlineY);
+                    ctx.lineWidth = Math.max(1, fontSize / 12);
+                    ctx.strokeStyle = item.color || '#000000';
+                    ctx.stroke();
+                }
+            });
 
             ctx.restore();
         }
@@ -282,7 +314,7 @@ export async function downloadCreateProduct({
 
                 ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
                 ctx.fillStyle = item.color || '#000000';
-                ctx.textAlign = 'center';
+                ctx.textAlign = item.textAlignment;
                 ctx.textBaseline = 'middle';
 
                 // Optional: Draw stroke (outline) for better visibility
@@ -386,4 +418,23 @@ function generateTextSVG(item: { text: string; fontSize?: number; fontFamily?: s
         font-weight="${item.bold ? 'bold' : 'normal'}"
         text-decoration="${item.underline ? 'underline' : 'none'}">${item.text}</text>
     </svg>`;
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, fontSize: number) {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const width = ctx.measureText(currentLine + ' ' + word).width;
+        if (width < maxWidth) {
+            currentLine += ' ' + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    lines.push(currentLine);
+    return lines;
 }

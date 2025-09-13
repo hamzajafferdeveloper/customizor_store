@@ -4,8 +4,9 @@ import { downloadClippedCanvas } from '@/lib/downloadEditorCanvas';
 import { handleDeleteItem, handleMouseDown } from '@/lib/editor';
 import { onEvent } from '@/lib/event-bus';
 import { CanvasItem } from '@/types/editor';
-import { Maximize2, Minus, Pen, Plus, Redo2, RefreshCw, RotateCw, Trash2, Undo2 } from 'lucide-react';
+import { Maximize2, Pen, RotateCw, Trash2 } from 'lucide-react';
 import { RefObject, useEffect, useRef, useState } from 'react';
+import ZoomUndoRedo from './zoom-undo-redo';
 
 type Props = {
     svgContainerRef: RefObject<HTMLDivElement | null>;
@@ -107,18 +108,6 @@ export default function EditorCanvas({
             window.removeEventListener('touchend', handleTouchEnd);
         };
     }, [isPanning]);
-
-    const MIN_ZOOM = 0.2;
-    const MAX_ZOOM = 3;
-    const ZOOM_STEP = 0.1;
-
-    const handleResetView = () => {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-    };
-
-    const handleZoomIn = () => setZoom((z) => Math.min(z + ZOOM_STEP, MAX_ZOOM));
-    const handleZoomOut = () => setZoom((z) => Math.max(z - ZOOM_STEP, MIN_ZOOM));
 
     const handlePanStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
@@ -517,28 +506,38 @@ export default function EditorCanvas({
                                             />
                                         )
                                     ) : (
-                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                        <div
+                                            style={{
+                                                position: 'relative',
+                                                display: 'flex',
+                                                justifyContent:
+                                                    item.textAlignment === 'center'
+                                                        ? 'center'
+                                                        : item.textAlignment === 'right'
+                                                          ? 'flex-end'
+                                                          : 'flex-start',
+                                                width: '100%',
+                                                height: '100%',
+                                            }}
+                                        >
                                             {/* Stroke layer */}
                                             <span
                                                 style={{
                                                     position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
                                                     fontSize: item.fontSize,
                                                     fontFamily: item.fontFamily,
                                                     fontStyle: item.italic ? 'italic' : 'normal',
                                                     fontWeight: item.bold ? 'bold' : 'normal',
                                                     WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
                                                     color: 'transparent',
-                                                    zIndex: 0,
                                                 }}
                                             >
                                                 {item.text}
                                             </span>
+
                                             {/* Fill layer */}
                                             <span
                                                 style={{
-                                                    position: 'relative',
                                                     color: item.color,
                                                     fontSize: item.fontSize,
                                                     fontFamily: item.fontFamily,
@@ -654,48 +653,7 @@ export default function EditorCanvas({
             </div>
 
             {/* Zoom / Pan / Undo-Redo bar */}
-            <div className="fixed top-2 right-2 z-2 flex gap-2 rounded bg-white/80 p-2 shadow lg:top-auto lg:right-8 lg:bottom-8 lg:left-auto dark:bg-gray-800/50">
-                <button
-                    onClick={onUndo}
-                    disabled={!canUndo}
-                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
-                    title="Undo (Ctrl/Cmd+Z)"
-                >
-                    <Undo2 size={18} />
-                </button>
-                <button
-                    onClick={onRedo}
-                    disabled={!canRedo}
-                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
-                    title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
-                >
-                    <Redo2 size={18} />
-                </button>
-
-                <div className="mx-1 h-6 w-px bg-gray-200" />
-
-                <button
-                    onClick={handleZoomOut}
-                    disabled={zoom <= MIN_ZOOM}
-                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
-                >
-                    <Minus size={18} />
-                </button>
-                <span className="px-2 font-mono">{(zoom * 100).toFixed(0)}%</span>
-                <button
-                    onClick={handleZoomIn}
-                    disabled={zoom >= MAX_ZOOM}
-                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
-                >
-                    <Plus size={18} />
-                </button>
-                <button
-                    onClick={handleResetView}
-                    className="cursor-pointer rounded p-1 transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                    <RefreshCw size={18} />
-                </button>
-            </div>
+            <ZoomUndoRedo onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} setZoom={setZoom} setPan={setPan} zoom={zoom} />
 
             {selecetSvgId && (
                 <SvgColorChangeModal

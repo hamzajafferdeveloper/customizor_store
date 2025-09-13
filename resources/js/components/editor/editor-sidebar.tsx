@@ -87,6 +87,8 @@ export function EditorSidebar({
         setShowBar('colorbar');
     }, [openColorMenu]);
 
+    console.log(uploadedItems);
+
     return (
         <aside className="mt-2 h-full w-full space-y-2 lg:flex">
             <div className="h-fit rounded-md border shadow">

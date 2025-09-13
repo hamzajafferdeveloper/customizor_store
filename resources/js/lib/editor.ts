@@ -233,6 +233,7 @@ export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[
         stroke: 0,
         strokeColor: '#000000',
         italic: false,
+        textAlignment: 'center',
     };
 
     newItems.push(newItem);
