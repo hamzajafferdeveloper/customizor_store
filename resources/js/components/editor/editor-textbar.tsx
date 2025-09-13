@@ -228,7 +228,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
-                                            variant={'outline'}
+                                            variant={textAlignment === 'left' ? 'default' : 'outline'}
                                             onClick={() => {
                                                 setTextAlignment('left');
                                                 if (textLayer) onUpdateTextLayer(textLayer.id, { textAlignment: 'left' });
@@ -237,14 +237,14 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                                             <AlignLeft size={18} />
                                         </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Align</TooltipContent>
+                                    <TooltipContent>Align Left</TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
-                                            variant={'outline'}
+                                            variant={textAlignment === 'center' ? 'default' : 'outline'}
                                             onClick={() => {
                                                 setTextAlignment('center');
                                                 if (textLayer) onUpdateTextLayer(textLayer.id, { textAlignment: 'center' });
@@ -260,7 +260,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
-                                            variant={'outline'}
+                                            variant={textAlignment === 'right' ? 'default' : 'outline'}
                                             onClick={() => {
                                                 setTextAlignment('right');
                                                 if (textLayer) onUpdateTextLayer(textLayer.id, { textAlignment: 'right' });
