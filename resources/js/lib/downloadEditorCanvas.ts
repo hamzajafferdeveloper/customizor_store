@@ -1,7 +1,3 @@
-/**
- * Export the current canvas (SVG template + uploaded items) as SVG or PNG.
- */
-
 import { PartLayer } from '@/types/createProduct';
 import { CanvasItem, TextLayer } from '@/types/editor';
 
@@ -17,7 +13,7 @@ export async function downloadClippedCanvas({
 }: {
     svgContainerId: string;
     uploadedItems: CanvasItem[];
-    svgOverlayBox: { left: number; top: number; width: number; height: number; };
+    svgOverlayBox: { left: number; top: number; width: number; height: number };
     zoom: number;
     pan: { x: number; y: number };
     format: 'png' | 'svg';
@@ -28,6 +24,7 @@ export async function downloadClippedCanvas({
     if (!svgContainer) return;
     const svgEl = svgContainer.querySelector('svg');
     if (!svgEl) return;
+
 
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svgEl);
@@ -57,30 +54,7 @@ export async function downloadClippedCanvas({
     for (const item of uploadedItems) {
         if (item.type === 'image') {
             await new Promise<void>((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    ctx.save();
-                    ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
-                    ctx.rotate((item.rotation * Math.PI) / 180);
-                    ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
-                    ctx.restore();
-                    resolve();
-                };
-
-                if (item.fileType === 'svg') {
-                    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src || '');
-                } else if (item.fileType === 'logo') {
-                    if (item.src?.trim().startsWith('<svg')) {
-                        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src);
-                    } else if (item.src?.endsWith('.svg')) {
-                        img.src = item.src;
-                    } else {
-                        img.src = item.src || '';
-                    }
-                } else {
-                    img.src = item.src || '';
-                }
+                formatImageForDownlaod(item, ctx, svgOverlayBox, resolve);
             });
         } else if (item.type === 'text' && item.text) {
             // ✅ Draw text with styles, rotation, and alignment
@@ -104,35 +78,9 @@ export async function downloadClippedCanvas({
 
     // ✅ Export file
     if (format === 'png') {
-        canvas.toBlob((blob) => {
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${fileName}.png`;
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            URL.revokeObjectURL(url);
-        }, 'image/png');
+        formatPngForDownload(canvas, fileName);
     } else {
-        const dataUrl = canvas.toDataURL('image/png');
-        const svgWrapped = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-            <image href="${dataUrl}" width="${width}" height="${height}" />
-        </svg>`;
-        const blob = new Blob([svgWrapped], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${fileName}.svg`;
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        URL.revokeObjectURL(url);
+        formatSVGForDownload(svgEl, uploadedItems, fileName, width, height);
     }
 }
 
@@ -152,7 +100,7 @@ export async function downloadCreateProduct({
     svgContainerId: string;
     uploadedItems: CanvasItem[];
     uploadedPart: PartLayer[];
-    svgOverlayBox: { left: number; top: number; width: number; height: number; };
+    svgOverlayBox: { left: number; top: number; width: number; height: number };
     zoom: number;
     pan: { x: number; y: number };
     format: 'png' | 'svg';
@@ -222,21 +170,7 @@ export async function downloadCreateProduct({
     for (const item of uploadedItems) {
         await new Promise<void>((resolve) => {
             if (item.type === 'image') {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    ctx.save();
-                    ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
-                    ctx.rotate((item.rotation * Math.PI) / 180);
-                    ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
-                    ctx.restore();
-                    resolve();
-                };
-                if (item.fileType === 'svg' || item.src?.trim().startsWith('<svg')) {
-                    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src || '');
-                } else {
-                    img.src = item.src || '';
-                }
+                formatImageForDownlaod(item, ctx, svgOverlayBox, resolve);
             } else if (item.type === 'text' && item.text) {
                 // ✅ Draw text with styles, rotation, and alignment
                 formatTextForDownload(item, ctx, svgOverlayBox);
@@ -259,137 +193,195 @@ export async function downloadCreateProduct({
     });
 
     ctx.restore();
-
-    // --- Export ---
+    formatPngForDownload(canvas, fileName);
     if (format === 'png') {
-        canvas.toBlob((blob) => {
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${fileName}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 'image/png');
     } else {
-        const dataUrl = canvas.toDataURL('image/png');
-        const svgWrapped = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-            <image href="${dataUrl}" width="${width}" height="${height}" />
-        </svg>`;
-        const blob = new Blob([svgWrapped], { type: 'image/svg+xml' });
+        formatSVGForDownload(svgEl, uploadedItems, fileName, width, height);
+    }
+}
+
+const formatTextForDownload = (item: TextLayer, ctx: CanvasRenderingContext2D, svgOverlayBox: { left: number; top: number }) => {
+    ctx.save();
+
+    const fontWeight = item.bold ? 'bold' : 'normal';
+    const fontStyle = item.italic ? 'italic' : 'normal';
+    const fontSize = item.fontSize || 20;
+    const fontFamily = item.fontFamily || 'Arial';
+
+    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+    ctx.fillStyle = item.color || '#000000';
+
+    // --- text alignment ---
+    if (item.textAlignment === 'left') ctx.textAlign = 'left';
+    else if (item.textAlignment === 'right') ctx.textAlign = 'right';
+    else ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const maxTextWidth = item.width || 200;
+
+    // --- word wrap ---
+    const wrapText = (text: string, maxWidth: number): string[] => {
+        const words = text.split(' ');
+        const lines: string[] = [];
+        let current = '';
+        words.forEach((word) => {
+            const testLine = current ? current + ' ' + word : word;
+            if (ctx.measureText(testLine).width > maxWidth && current) {
+                lines.push(current);
+                current = word;
+            } else {
+                current = testLine;
+            }
+        });
+        if (current) lines.push(current);
+        return lines;
+    };
+
+    const lines = wrapText(item.text, maxTextWidth);
+    const lineHeight = fontSize * 1.2;
+    const totalHeight = lines.length * lineHeight;
+
+    // 🔥 FIX: normalize coords relative to overlayBox, and center box
+    const baseX = item.x;
+    const baseY = item.y;
+
+    ctx.translate(baseX, baseY);
+
+    if (item.rotation && item.rotation !== 0) {
+        ctx.rotate((item.rotation * Math.PI) / 180);
+    }
+
+    // --- draw relative to box ---
+    const startY = -(totalHeight / 2) + lineHeight / 2;
+
+    lines.forEach((line, i) => {
+        const y = startY + i * lineHeight;
+
+        let x: number;
+        if (item.textAlignment === 'left') {
+            x = -item.width / 2; // left edge
+        } else if (item.textAlignment === 'right') {
+            x = item.width / 2; // right edge
+        } else {
+            x = 0; // center
+        }
+
+        // stroke
+        if (item.strokeColor && item.stroke) {
+            ctx.lineWidth = item.stroke;
+            ctx.strokeStyle = item.strokeColor;
+            ctx.strokeText(line, x, y);
+        }
+        // fill
+        ctx.fillText(line, x, y);
+
+        // underline
+        if (item.underline) {
+            const textWidth = ctx.measureText(line).width;
+            const underlineY = y + fontSize / 2 + 2;
+
+            ctx.beginPath();
+            if (item.textAlignment === 'left') {
+                ctx.moveTo(x, underlineY);
+                ctx.lineTo(x + textWidth, underlineY);
+            } else if (item.textAlignment === 'right') {
+                ctx.moveTo(x - textWidth, underlineY);
+                ctx.lineTo(x, underlineY);
+            } else {
+                ctx.moveTo(x - textWidth / 2, underlineY);
+                ctx.lineTo(x + textWidth / 2, underlineY);
+            }
+            ctx.lineWidth = Math.max(1, fontSize / 12);
+            ctx.strokeStyle = item.color || '#000000';
+            ctx.stroke();
+        }
+    });
+
+    ctx.restore();
+};
+
+const formatImageForDownlaod = (item: any, ctx: CanvasRenderingContext2D, svgOverlayBox: { left: number; top: number }, resolve: () => void) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        ctx.save();
+        ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
+        ctx.rotate((item.rotation * Math.PI) / 180);
+        ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
+        ctx.restore();
+        resolve();
+    };
+    if (item.fileType === 'svg' || item.src?.trim().startsWith('<svg')) {
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src || '');
+    } else {
+        img.src = item.src || '';
+    }
+};
+
+const formatSVGForDownload = (svgEl: SVGSVGElement, uploadedItems: CanvasItem[], fileName: string, width: number, height: number) => {
+    const serializer = new XMLSerializer();
+    const baseSvg = serializer.serializeToString(svgEl);
+
+    // Build uploaded items as SVG
+    const itemSvgs = uploadedItems
+        .map((item) => {
+            if (item.type === 'image') {
+                const transform = `translate(${item.x + item.width / 2},${item.y + item.height / 2}) rotate(${item.rotation}) translate(${-item.width / 2},${-item.height / 2})`;
+                return `<image href="${item.src}" width="${item.width}" height="${item.height}" transform="${transform}" />`;
+            } else if (item.type === 'text' && item.text) {
+                const fontWeight = item.bold ? 'bold' : 'normal';
+                const fontStyle = item.italic ? 'italic' : 'normal';
+                const fontSize = item.fontSize || 20;
+                const fontFamily = item.fontFamily || 'Arial';
+                const textAnchor = item.textAlignment === 'left' ? 'start' : item.textAlignment === 'right' ? 'end' : 'middle';
+
+                const transform = `translate(${item.x},${item.y}) rotate(${item.rotation || 0})`;
+
+                return `<text
+                x="0" y="0"
+                font-family="${fontFamily}"
+                font-size="${fontSize}"
+                font-style="${fontStyle}"
+                font-weight="${fontWeight}"
+                fill="${item.color || '#000'}"
+                text-anchor="${textAnchor}"
+                transform="${transform}">
+                ${item.text}
+            </text>`;
+            }
+            return '';
+        })
+        .join('\n');
+
+    // Wrap everything into a new SVG root
+    const svgOutput = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+            ${baseSvg}
+            ${itemSvgs}
+        </svg>
+    `;
+
+    const blob = new Blob([svgOutput], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+const formatPngForDownload = (canvas: HTMLCanvasElement, fileName: string) => {
+    canvas.toBlob((blob) => {
+        if (!blob) return;
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${fileName}.svg`;
+        link.download = `${fileName}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-    }
-}
-
-const formatTextForDownload = (
-  item: TextLayer,
-  ctx: CanvasRenderingContext2D,
-  svgOverlayBox: { left: number; top: number }
-) => {
-  ctx.save();
-
-  const fontWeight = item.bold ? "bold" : "normal";
-  const fontStyle = item.italic ? "italic" : "normal";
-  const fontSize = item.fontSize || 20;
-  const fontFamily = item.fontFamily || "Arial";
-
-  ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-  ctx.fillStyle = item.color || "#000000";
-
-  // --- text alignment ---
-  if (item.textAlignment === "left") ctx.textAlign = "left";
-  else if (item.textAlignment === "right") ctx.textAlign = "right";
-  else ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  const maxTextWidth = item.width || 200;
-
-  // --- word wrap ---
-  const wrapText = (text: string, maxWidth: number): string[] => {
-    const words = text.split(" ");
-    const lines: string[] = [];
-    let current = "";
-    words.forEach((word) => {
-      const testLine = current ? current + " " + word : word;
-      if (ctx.measureText(testLine).width > maxWidth && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = testLine;
-      }
-    });
-    if (current) lines.push(current);
-    return lines;
-  };
-
-  const lines = wrapText(item.text, maxTextWidth);
-  const lineHeight = fontSize * 1.2;
-  const totalHeight = lines.length * lineHeight;
-
-  // 🔥 FIX: normalize coords relative to overlayBox, and center box
-  const baseX = item.x;
-  const baseY = item.y;
-
-  ctx.translate(baseX, baseY);
-
-  if (item.rotation && item.rotation !== 0) {
-    ctx.rotate((item.rotation * Math.PI) / 180);
-  }
-
-  // --- draw relative to box ---
-  const startY = -(totalHeight / 2) + lineHeight / 2;
-
-  lines.forEach((line, i) => {
-    const y = startY + i * lineHeight;
-
-    let x: number;
-    if (item.textAlignment === "left") {
-      x = -item.width / 2; // left edge
-    } else if (item.textAlignment === "right") {
-      x = item.width / 2; // right edge
-    } else {
-      x = 0; // center
-    }
-
-    // stroke
-    if (item.strokeColor && item.stroke) {
-      ctx.lineWidth = item.stroke;
-      ctx.strokeStyle = item.strokeColor;
-      ctx.strokeText(line, x, y);
-    }
-    // fill
-    ctx.fillText(line, x, y);
-
-    // underline
-    if (item.underline) {
-      const textWidth = ctx.measureText(line).width;
-      const underlineY = y + fontSize / 2 + 2;
-
-      ctx.beginPath();
-      if (item.textAlignment === "left") {
-        ctx.moveTo(x, underlineY);
-        ctx.lineTo(x + textWidth, underlineY);
-      } else if (item.textAlignment === "right") {
-        ctx.moveTo(x - textWidth, underlineY);
-        ctx.lineTo(x, underlineY);
-      } else {
-        ctx.moveTo(x - textWidth / 2, underlineY);
-        ctx.lineTo(x + textWidth / 2, underlineY);
-      }
-      ctx.lineWidth = Math.max(1, fontSize / 12);
-      ctx.strokeStyle = item.color || "#000000";
-      ctx.stroke();
-    }
-  });
-
-  ctx.restore();
+    }, 'image/png');
 };

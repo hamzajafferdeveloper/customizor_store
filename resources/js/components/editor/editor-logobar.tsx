@@ -9,9 +9,11 @@ type Props = {
     setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>;
     showLogo: boolean;
     useLogo: boolean;
+    setSelectedItemId: React.Dispatch<React.SetStateAction<string | null>>;
+    uploadedItems: CanvasItem[];
 };
 
-export default function EditorLogoBar({ logoGallery, setUploadedItems, showLogo, useLogo }: Props) {
+export default function EditorLogoBar({ logoGallery, setUploadedItems, setSelectedItemId, uploadedItems, showLogo, useLogo }: Props) {
     const [displayType, setDisplayType] = useState<'categories' | 'logos'>('categories');
     const [selectedCategory, setSelectedCategory] = useState<LogoCategory | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -21,7 +23,9 @@ export default function EditorLogoBar({ logoGallery, setUploadedItems, showLogo,
     const filteredLogos = selectedCategory?.logos.filter((logo) => logo.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const uploadLogo = (logo: LogoGallery) => {
-        handleUploadLogo(logo, setUploadedItems);
+        const allZ = [...uploadedItems].map((l) => l.zIndex ?? 0);
+        const maxZ = allZ.length ? Math.max(...allZ) : 0;
+        handleUploadLogo(logo, setUploadedItems, maxZ, setSelectedItemId);
     };
 
     return (
@@ -68,15 +72,12 @@ export default function EditorLogoBar({ logoGallery, setUploadedItems, showLogo,
                         ← Back to categories
                     </button>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 lg:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-5 lg:grid-cols-2">
                         {filteredLogos && filteredLogos.length > 0 ? (
                             filteredLogos.map((logo) => (
                                 <div
                                     key={logo.id}
-                                    className={
-                                        `flex cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md dark:border-gray-800
-                                        ${!showLogo ? 'pointer-events-none opacity-50' : useLogo ? '' : 'pointer-events-none opacity-50'}`
-                                    }
+                                    className={`flex cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md dark:border-gray-800 ${!showLogo ? 'pointer-events-none opacity-50' : useLogo ? '' : 'pointer-events-none opacity-50'}`}
                                 >
                                     <div className="aspect-square flex-1 bg-white">
                                         <img

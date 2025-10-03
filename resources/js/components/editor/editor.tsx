@@ -1,13 +1,13 @@
+import EditorCanvas from '@/components/editor/editor-canvas';
+import { EditorSidebar } from '@/components/editor/editor-sidebar';
+import { useSidebar } from '@/components/ui/sidebar';
 import { handleAddText, handleClickonSvgContainer, handlePaintPart, handleUploadFile, loadSvgtemplate } from '@/lib/editor';
 import { SharedData } from '@/types';
 import { AllowedPermission, LogoCategory } from '@/types/data';
 import { CanvasItem } from '@/types/editor';
 import { Template, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
-import EditorCanvas from '@/components/editor/editor-canvas';
-import { EditorSidebar } from '@/components/editor/editor-sidebar';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Generic undo/redo store for a single state object.
@@ -112,8 +112,8 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
 
     const sharedData = usePage<SharedData>();
     // --- Sidebar state sync for non-users (admins, designers) ---
-    if(sharedData.props.auth.user?.type !== 'user'){
-        if(sharedData.props.auth.user != null){
+    if (sharedData.props.auth.user?.type !== 'user') {
+        if (sharedData.props.auth.user != null) {
             const { toggleSidebar } = useSidebar();
 
             // Keep sidebar state in sync
@@ -175,9 +175,16 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
 
     // Upload handler — commit
     const UploadFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleUploadFile(event, (items: CanvasItem[] | ((prev: CanvasItem[]) => CanvasItem[])) => {
-            setUploadedItemsCommit(items);
-        });
+        const allZ = [...uploadedItems].map((l) => l.zIndex ?? 0);
+        const maxZ = allZ.length ? Math.max(...allZ) : 0;
+        handleUploadFile(
+            event,
+            (items: CanvasItem[] | ((prev: CanvasItem[]) => CanvasItem[])) => {
+                setUploadedItemsCommit(items);
+            },
+            maxZ,
+            setSelectedItemId,
+        );
     };
 
     const handleSvgContainerClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -193,9 +200,15 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     };
 
     const AddText = () => {
-        handleAddText((updater: React.SetStateAction<CanvasItem[]>) => {
-            setUploadedItemsCommit(updater);
-        });
+        const allZ = [...uploadedItems].map((l) => l.zIndex ?? 0);
+        const maxZ = allZ.length ? Math.max(...allZ) : 0;
+        handleAddText(
+            (updater: React.SetStateAction<CanvasItem[]>) => {
+                setUploadedItemsCommit(updater);
+            },
+            maxZ,
+            setSelectedItemId,
+        );
     };
 
     // Initial load of template into history "present" and commit as baseline
@@ -291,6 +304,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
                     AddText={AddText}
                     selectedItemId={selectedItemId}
                     Allowedpermissions={permissions}
+                    setSelectedItemId={setSelectedItemId}
                 />
             </div>
         </main>

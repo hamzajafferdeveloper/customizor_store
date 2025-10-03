@@ -1,4 +1,8 @@
+import EditorColorBar from '@/components/editor/editor-colorbar';
+import EditorLayerBar from '@/components/editor/editor-layerbar';
+import EditorLogoBar from '@/components/editor/editor-logobar';
 import EditorSidebarIcons from '@/components/editor/editor-sidebar-icons';
+import EditorTextBar from '@/components/editor/editor-textbar';
 import { leatherColors, protectionColors } from '@/constant/editorcolor';
 import { SharedData } from '@/types';
 import { AllowedPermission, LogoCategory } from '@/types/data';
@@ -6,10 +10,6 @@ import { CanvasItem } from '@/types/editor';
 import { SvgColorBar, TemplatePart } from '@/types/helper';
 import { usePage } from '@inertiajs/react';
 import { RefObject, useEffect, useState } from 'react';
-import EditorColorBar from '@/components/editor/editor-colorbar';
-import EditorLayerBar from '@/components/editor/editor-layerbar';
-import EditorLogoBar from '@/components/editor/editor-logobar';
-import EditorTextBar from '@/components/editor/editor-textbar';
 
 type Props = {
     parts: TemplatePart[];
@@ -23,6 +23,7 @@ type Props = {
     AddText: () => void;
     selectedItemId: string | null;
     Allowedpermissions: AllowedPermission;
+    setSelectedItemId: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
 export function EditorSidebar({
@@ -37,6 +38,7 @@ export function EditorSidebar({
     AddText,
     selectedItemId,
     Allowedpermissions,
+    setSelectedItemId,
 }: Props) {
     const { auth } = usePage<SharedData>().props;
 
@@ -112,12 +114,7 @@ export function EditorSidebar({
 
                         {/* Make EditorColorBar grow + scroll if it overflows */}
                         <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-                            <EditorColorBar
-                                parts={parts}
-                                openColorMenu={openColorMenu}
-                                paintPart={paintPart}
-                                ChageLayerColor={ChageLayerColor}
-                            />
+                            <EditorColorBar parts={parts} openColorMenu={openColorMenu} paintPart={paintPart} ChageLayerColor={ChageLayerColor} />
                         </div>
                     </>
                 ) : showBar === 'layerbar' ? (
@@ -140,6 +137,8 @@ export function EditorSidebar({
                                 setUploadedItems={setUploadedItems}
                                 showLogo={ShowLogoGallery}
                                 useLogo={UseLogoGallery}
+                                uploadedItems={uploadedItems}
+                                setSelectedItemId={setSelectedItemId}
                             />
                         </div>
                     </>

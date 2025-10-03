@@ -90,129 +90,144 @@ export const handlePaintPart = (part: TemplatePart, color: string, svgContainer:
 
 // Handle Upload File
 export const handleUploadFile = (
-  e: React.ChangeEvent<HTMLInputElement>,
-  setUploadedItems: (
-    value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]
-  ) => void,
-  maxZ?: number
+    e: React.ChangeEvent<HTMLInputElement>,
+    setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void,
+    maxZ?: number,
+
+    setSelectedItemId?: React.Dispatch<React.SetStateAction<string | null>>,
 ) => {
-  const files = e.target.files;
-  if (!files) return;
+    const files = e.target.files;
+    if (!files) return;
 
-  const newItems: CanvasItem[] = [];
+    const newItems: CanvasItem[] = [];
 
-  Array.from(files).forEach((file) => {
-    const src = URL.createObjectURL(file);
-    const isSvg = file.type === "image/svg+xml";
+    Array.from(files).forEach((file) => {
+        const src = URL.createObjectURL(file);
+        const isSvg = file.type === 'image/svg+xml';
 
-    if (isSvg) {
-      // For SVG we can keep default size
-      const newItem: CanvasItem = {
-        id: generateUniqueId(),
-        type: "image",
-        fileType: "svg",
-        src,
-        name: file.name,
-        originalFileName: file.name,
-        x: 100,
-        y: 100,
-        width: 200,
-        height: 200,
-        rotation: 0,
-        zIndex: maxZ ? maxZ + 1 : 10,
-      };
-      newItems.push(newItem);
-    } else {
-      // For raster images, keep aspect ratio
-      const img = new Image();
-      img.onload = () => {
+        if (isSvg) {
+            // For SVG we can keep default size
+            const newItem: CanvasItem = {
+                id: generateUniqueId(),
+                type: 'image',
+                fileType: 'svg',
+                src,
+                name: file.name,
+                originalFileName: file.name,
+                x: 100,
+                y: 100,
+                width: 200,
+                height: 200,
+                rotation: 0,
+                zIndex: maxZ ? maxZ + 1 : 10,
+            };
+            newItems.push(newItem);
+        } else {
+            // For raster images, keep aspect ratio
+            const img = new Image();
+            img.onload = () => {
+                const maxSize = 200; // target size for longest edge
+                let width = img.naturalWidth;
+                let height = img.naturalHeight;
+
+                if (width > height) {
+                    const ratio = maxSize / width;
+                    width = maxSize;
+                    height = height * ratio;
+                } else {
+                    const ratio = maxSize / height;
+                    height = maxSize;
+                    width = width * ratio;
+                }
+
+                const newItem: CanvasItem = {
+                    id: generateUniqueId(),
+                    type: 'image',
+                    fileType: 'image',
+                    src,
+                    name: file.name,
+                    originalFileName: file.name,
+                    isSelected: true,
+                    x: 100,
+                    y: 100,
+                    width,
+                    height,
+                    rotation: 0,
+                    zIndex: maxZ ? maxZ + 1 : 10,
+                };
+
+                if (setSelectedItemId) {
+                    setSelectedItemId(newItem.id);
+                }
+
+                setUploadedItems((prev) => [...prev, newItem]);
+            };
+            img.src = src;
+        }
+    });
+
+    // Push only SVGs immediately (raster images are added in onload)
+    if (newItems.length > 0) {
+        setUploadedItems((prev) => [...prev, ...newItems]);
+    }
+};
+
+// Handle Upload Logo
+export const handleUploadLogo = async (
+    logo: LogoGallery,
+    setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>,
+    maxZ?: number,
+    setSelectedItemId?: React.Dispatch<React.SetStateAction<string | null>>,
+) => {
+    const base64Logo = await toBase64(`/storage/${logo.source}`);
+
+    const img = new Image();
+    img.onload = () => {
         const maxSize = 200; // target size for longest edge
         let width = img.naturalWidth;
         let height = img.naturalHeight;
 
         if (width > height) {
-          const ratio = maxSize / width;
-          width = maxSize;
-          height = height * ratio;
+            const ratio = maxSize / width;
+            width = maxSize;
+            height = height * ratio;
         } else {
-          const ratio = maxSize / height;
-          height = maxSize;
-          width = width * ratio;
+            const ratio = maxSize / height;
+            height = maxSize;
+            width = width * ratio;
         }
 
         const newItem: CanvasItem = {
-          id: generateUniqueId(),
-          type: "image",
-          fileType: "image",
-          src,
-          name: file.name,
-          originalFileName: file.name,
-          x: 100,
-          y: 100,
-          width,
-          height,
-          rotation: 0,
-          zIndex: maxZ ? maxZ + 1 : 10,
+            id: generateUniqueId(),
+            type: 'image',
+            fileType: 'logo',
+            src: base64Logo, // ✅ Base64 logo
+            name: logo.name,
+            originalFileName: logo.name,
+            x: 100,
+            y: 100,
+            isSelected: true,
+            width,
+            height,
+            rotation: 0,
+            zIndex: maxZ ? maxZ + 1 : 10,
         };
 
+        if (setSelectedItemId) {
+            setSelectedItemId(newItem.id);
+        }
+
         setUploadedItems((prev) => [...prev, newItem]);
-      };
-      img.src = src;
-    }
-  });
-
-  // Push only SVGs immediately (raster images are added in onload)
-  if (newItems.length > 0) {
-    setUploadedItems((prev) => [...prev, ...newItems]);
-  }
-};
-
-// Handle Upload Logo
-export const handleUploadLogo = async (
-  logo: LogoGallery,
-  setUploadedItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>,
-  maxZ?: number
-) => {
-  const base64Logo = await toBase64(`/storage/${logo.source}`);
-
-  const img = new Image();
-  img.onload = () => {
-    const maxSize = 200; // target size for longest edge
-    let width = img.naturalWidth;
-    let height = img.naturalHeight;
-
-    if (width > height) {
-      const ratio = maxSize / width;
-      width = maxSize;
-      height = height * ratio;
-    } else {
-      const ratio = maxSize / height;
-      height = maxSize;
-      width = width * ratio;
-    }
-
-    const newItem: CanvasItem = {
-      id: generateUniqueId(),
-      type: "image",
-      fileType: "logo",
-      src: base64Logo, // ✅ Base64 logo
-      name: logo.name,
-      originalFileName: logo.name,
-      x: 100,
-      y: 100,
-      width,
-      height,
-      rotation: 0,
-      zIndex: maxZ ? maxZ + 1 : 10,
     };
 
-    setUploadedItems((prev) => [...prev, newItem]);
-  };
-
-  img.src = base64Logo;
+    img.src = base64Logo;
 };
 // Handle Add Text
-export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void, maxZ?: number) => {
+export const handleAddText = (
+    setUploadedItems: (value: ((prevState: CanvasItem[]) => CanvasItem[]) | CanvasItem[]) => void,
+    maxZ?: number,
+    setSelectedItemId?: React.Dispatch<React.SetStateAction<string | null>>,
+) => {
     const newItems: CanvasItem[] = [];
 
     const newItem: CanvasItem = {
@@ -227,6 +242,7 @@ export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[
         width: 100,
         height: 20,
         rotation: 0,
+        isSelected: true,
         zIndex: maxZ ? maxZ + 1 : 10,
         bold: false,
         underline: false,
@@ -235,6 +251,10 @@ export const handleAddText = (setUploadedItems: (value: ((prevState: CanvasItem[
         italic: false,
         textAlignment: 'center',
     };
+
+    if (setSelectedItemId) {
+        setSelectedItemId(newItem.id);
+    }
 
     newItems.push(newItem);
 

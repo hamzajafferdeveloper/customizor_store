@@ -1,0 +1,19 @@
+- admin can create:
+    - users with specific products, giving option of selecting particular user.
+    - ✅ "Design your own products" with categories.
+
+    - ✅ customize option not working with user login.
+    - error message should revert to 404 page
+    - ✅ when add text. no outline. user is unable to identify where to add text
+    - ✅ SVG not downloading proper svg. converts png to svg/. not fine
+    - ✅ Remove Slug on product page. and the page must not be scrollable
+    - Display relevant products under product, open with collapse button "view relevant products"
+    - Color picker option on Text area
+    - Fix product view in all screens small to x-large
+    - Also Fix Mobile issues
+
+- Create new product generate SKU like this:
+    - Start with my brand name ANB
+    - I will select a brand from dropdown like 2A, SIXX, JL that I already added in the backend choose a short name 2A will be A SIXX will be SX that I will be set from backend
+    - I will select category like Motorbike Suit from dropdown that will be added as MS short as I mention on backend Auto increment number
+    - At the end the SKU will be like this   ANB-AA-MS-001  OR Combine brand name + category ANB-AAMS-001
