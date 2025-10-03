@@ -3,6 +3,7 @@ import type { productColors, Template } from './helper';
 export interface Category {
     id: number;
     name: string;
+    own_product_image: CreateOwnProductType;
     created_at: string;
     updated_at: string;
 }
@@ -98,6 +99,16 @@ export interface Part {
     name: string;
     path: string;
     parts_category_id: number;
+    created_at: string;
+    updated_at: string;
+}
+
+
+export interface CreateOwnProductType {
+    id: number;
+    category_id: number;
+    image: string;
+    category? : Category
     created_at: string;
     updated_at: string;
 }

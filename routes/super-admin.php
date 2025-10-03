@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SuperAdmin\CategoryController;
+use App\Http\Controllers\SuperAdmin\CreateYourOwnProduct;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\SuperAdmin\FontController;
 use App\Http\Controllers\SuperAdmin\LogoGalleryController;
@@ -85,6 +86,14 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::get('/category={id}', [PartController::class, 'parts'])->name('superadmin.parts.index');
         Route::post('/create/categroy={id}', [PartController::class, 'createParts'])->name('superadmin.parts.create');
         Route::delete('/delete/categroy={id}', [PartController::class, 'destroyPart'])->name('superadmin.parts.destroy');
+    });
+
+
+    Route::prefix('/create-your-own-product')->name('superadmin.create-your-own-product.')->group(function () {
+        Route::get('/index', [CreateYourOwnProduct::class, 'index'])->name('index');
+        Route::post('/store', [CreateYourOwnProduct::class,'store'])->name('store');
+        Route::post('/update/{id}', [CreateYourOwnProduct::class,'update'])->name('update');
+        Route::delete('/destroy/{id}', [CreateYourOwnProduct::class,'destroy'])->name('destroy');
     });
 });
 

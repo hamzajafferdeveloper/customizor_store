@@ -10,7 +10,7 @@ import { StoreData } from '@/types/store';
 import { Link, router } from '@inertiajs/react';
 
 import { Crown, Rabbit, SlidersHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Props = {
     products: ProductPagination;
@@ -33,10 +33,21 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
         const matchesCategory = selectedCategoryId ? product.categories_id === selectedCategoryId : true;
         return matchesSearch && matchesCategory;
     });
+    const [createOwnProductImage, setCreateOwnProductImage] = useState<string>('/storage/create-your-own-product-base.png');
 
     const clearFilters = () => {
         router.get(baseUrl, {}, { preserveScroll: true });
     };
+
+    useEffect(() => {
+        const category = categories.find((c) => c.id === selectedCategoryId);
+        if (category?.own_product_image?.image) {
+            console.log(category.own_product_image.image)
+            setCreateOwnProductImage(`/storage/${category.own_product_image.image}`);
+        } else {
+            setCreateOwnProductImage('/storage/create-your-own-product-base.png');
+        }
+    }, [selectedCategoryId]);
 
     return (
         <div>
@@ -116,7 +127,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                     className="flex min-w-0 cursor-pointer flex-col justify-between transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
                 >
                     <CardHeader className="p-2">
-                        <img src="/storage/create-your-own-product-base.png" alt="create-your-own-product-base" className="rounded-md object-cover" />
+                        <img src={createOwnProductImage} alt={createOwnProductImage} className="rounded-md object-cover" />
                     </CardHeader>
                     <CardContent className="flex flex-col">
                         <h1 className="font-semibold">Design your own product</h1>

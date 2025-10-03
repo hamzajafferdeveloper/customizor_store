@@ -3,7 +3,7 @@ import { type SharedData } from '@/types';
 import { Product } from '@/types/data';
 import { StoreData } from '@/types/store';
 import { router, usePage } from '@inertiajs/react';
-import { CircleSlash2, Trash2 } from 'lucide-react';
+import { CircleSlash2, RefreshCw, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/button';
@@ -33,6 +33,56 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
     const [showHoverColor, setShowHoverColor] = useState<boolean>(false);
     const [hoverColor, setHoverColor] = useState<string>('#1C175C');
     const [fillMap, setFillMap] = useState<Record<string, string>>({});
+
+    // 🆕 Zoom & Pan
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const isPanning = useRef(false);
+    const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+    const handleZoomIn = () => setZoom((z) => Math.min(z + 0.2, 5));
+    const handleZoomOut = () => setZoom((z) => Math.max(z - 0.2, 0.2));
+    const handleResetView = () => {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+    };
+
+    const startPan = (e: React.MouseEvent | React.TouchEvent) => {
+        isPanning.current = true;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        lastPos.current = { x: clientX, y: clientY };
+    };
+
+    const movePan = (e: MouseEvent | TouchEvent) => {
+        if (!isPanning.current || !lastPos.current) return;
+        const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX;
+        const clientY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
+
+        const dx = clientX - lastPos.current.x;
+        const dy = clientY - lastPos.current.y;
+
+        setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+        lastPos.current = { x: clientX, y: clientY };
+    };
+
+    const endPan = () => {
+        isPanning.current = false;
+        lastPos.current = null;
+    };
+
+    useEffect(() => {
+        window.addEventListener('mousemove', movePan);
+        window.addEventListener('mouseup', endPan);
+        window.addEventListener('touchmove', movePan);
+        window.addEventListener('touchend', endPan);
+        return () => {
+            window.removeEventListener('mousemove', movePan);
+            window.removeEventListener('mouseup', endPan);
+            window.removeEventListener('touchmove', movePan);
+            window.removeEventListener('touchend', endPan);
+        };
+    }, []);
 
     // 🔑 store latest selectedParts for handlers (so we don’t rebind)
     const selectedPartsRef = useRef<SelectedPart[]>([]);
@@ -267,20 +317,43 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
                             <p>No SVG Template Selected. Click me to select Template</p>
                         </div>
                     ) : (
-                        <div className="flex w-full items-center justify-center p-4 lg:w-[calc(100%-10rem)]">
-                            <div className="flex aspect-square max-h-[80vh] w-full items-center justify-center overflow-hidden rounded-md border">
-                                <div
-                                    ref={svgContainerRef}
-                                    className="h-full w-full object-contain"
-                                    dangerouslySetInnerHTML={{ __html: svgContent }}
-                                />
+                        <>
+                            <div className="flex w-full items-center justify-center p-4 lg:w-[calc(100%-10rem)]">
+                                <div className="flex aspect-square max-h-[80vh] w-full items-center justify-center overflow-hidden rounded-md border">
+                                    <div
+                                        ref={svgContainerRef}
+                                        className="h-full w-full touch-none object-contain"
+                                        style={{
+                                            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                                            transformOrigin: 'center center',
+                                            transition: isPanning.current ? 'none' : 'transform 0.1s ease-out',
+                                            cursor: isPanning.current ? 'grabbing' : 'grab',
+                                        }}
+                                        onMouseDown={startPan}
+                                        onTouchStart={startPan}
+                                        dangerouslySetInnerHTML={{ __html: svgContent }}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
 
                 {/* Sidebar: Template Details + Parts */}
                 <aside className="my-2 rounded-md border-2 p-2 xl:w-2/5">
+                    {svgContent && (
+                        <div className="bottom-2 left-2 mb-2 flex gap-2">
+                            <Button variant="outline" onClick={handleZoomOut}>
+                                <ZoomOut className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" onClick={handleZoomIn}>
+                                <ZoomIn className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" onClick={handleResetView}>
+                                <RefreshCw className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
                     <div className="flex w-full gap-2">
                         <Input
                             className="w-4/5"

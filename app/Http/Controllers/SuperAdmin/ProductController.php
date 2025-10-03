@@ -48,7 +48,7 @@ class ProductController extends Controller
         }
 
         $products = $query->where('store_id', null)->with('productColors.color')->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
-        $categories = Category::all();
+        $categories = Category::with('ownProductImage')->get();
         $colors = Color::all();
 
         return Inertia::render('home/product/index', [

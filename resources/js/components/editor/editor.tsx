@@ -112,9 +112,8 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
 
     const sharedData = usePage<SharedData>();
     // --- Sidebar state sync for non-users (admins, designers) ---
-    if(sharedData.props.auth.user?.type === 'user'){
+    if(sharedData.props.auth.user?.type !== 'user'){
         if(sharedData.props.auth.user != null){
-            console.log('non-user sidebar sync');
             const { toggleSidebar } = useSidebar();
 
             // Keep sidebar state in sync

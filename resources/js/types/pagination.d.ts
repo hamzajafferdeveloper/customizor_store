@@ -1,100 +1,47 @@
 import { User } from '.';
 import { Category, Color, Font, LogoGallery, Part, Product } from './data';
 
-export interface CategoryPagination {
+export interface BasePagination {
     current_page: number;
+    first_page_url: string;
+    from: number;
+    last_page: string;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+}
+
+export interface CategoryPagination implements BasePagination {
     data: Category[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
 }
 
-export interface ColorPagination {
-    current_page: number;
+export interface ColorPagination implements BasePagination {
     data: Color[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
 }
 
-export interface ProductPagination {
-    current_page: number;
+export interface ProductPagination implements BasePagination {
     data: Product[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
 }
 
-export interface LogoGalleryPagination {
-    current_page: number;
+export interface LogoGalleryPagination implements BasePagination {
     data: LogoGallery[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
 }
 
-export interface UserPagination {
-    current_page: number;
+export interface UserPagination implements BasePagination {
     data: User[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
 }
 
-export interface FontPagination {
-    current_page: number;
+export interface FontPagination implements BasePagination {
     data: Font[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
 }
 
-export interface PartPagination {
-    current_page: number;
+export interface PartPagination implements BasePagination {
     data: Part[];
-    first_page_url: string;
-    from: number;
-    last_page: string;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
+}
+
+export interface CreateOwnProductPagination implements BasePagination {
+    data: CreateOwnProductType[];
 }
