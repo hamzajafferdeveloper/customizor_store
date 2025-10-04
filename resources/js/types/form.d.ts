@@ -1,5 +1,6 @@
 export type CategoryForm = {
     name: string;
+    slug_short: string;
 };
 
 export type ColorForm = {

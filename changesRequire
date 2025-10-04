@@ -7,7 +7,7 @@
     - ✅ when add text. no outline. user is unable to identify where to add text
     - ✅ SVG not downloading proper svg. converts png to svg/. not fine
     - ✅ Remove Slug on product page. and the page must not be scrollable
-    - Display relevant products under product, open with collapse button "view relevant products"
+    - ✅ Display relevant products under product, open with collapse button "view relevant products"
     - Color picker option on Text area
     - Fix product view in all screens small to x-large
     - Also Fix Mobile issues

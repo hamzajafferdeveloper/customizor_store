@@ -29,10 +29,13 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:25',
+            'slug_short' => 'required|string|max:25',
+
         ]);
 
         $category = Category::create([
             'name' => $validated['name'],
+            'slug_short' => $validated['slug_short'],
         ]);
 
         return redirect()->back()->with('success', 'Category created successfully!');
@@ -45,12 +48,14 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:25',
+            'slug_short' => 'required|string|max:25',
         ]);
 
         $category = Category::findOrFail($id);
 
         $category->update([
-            'name' => $validated['name']
+            'name' => $validated['name'],
+            'slug_short' => $validated['slug_short'],
         ]);
 
         return redirect()->route('category.index')->with('success', 'Category updated successfully!');

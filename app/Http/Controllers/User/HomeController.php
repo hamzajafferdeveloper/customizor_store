@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\LogoCategory;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\SvgTemplate;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -60,4 +62,25 @@ class HomeController extends Controller
 
     }
 
+    public function categoryForRelatedProducts(){
+        $categories = Category::select('id', 'name')->get();
+
+        return response()->json([
+            'categories' => $categories
+        ], 200);
+    }
+
+    public function productForRelatedProducts(Request $request)
+    {
+        $category = $request->input('category');
+
+        $products = Product::where('categories_id', $category)
+            ->latest() // same as orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+
+            return response()->json([
+                'products' => $products
+            ], 200);
+    }
 }

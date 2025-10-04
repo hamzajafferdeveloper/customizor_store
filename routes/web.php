@@ -22,6 +22,10 @@ Route::get('/upgrade/mail', function() {
     return view('mails.payment.upgrade');
 });
 
+
+Route::get('/category-for-related-products', [HomeController::class, 'categoryForRelatedProducts'])->name('category.for.related.product');
+Route::get('/product-for-related-products', [HomeController::class, 'productForRelatedProducts'])->name('product.for.related.product');
+
 Route::get('/docs', [HomeController::class, 'docs'])->name('documentation');
 Route::get('/pricing', [HomeController::class, 'pricing'])->name('pricing');
 Route::get('/product/customizer/template={id}', [HomeController::class, 'customizer'])->name('customizer');

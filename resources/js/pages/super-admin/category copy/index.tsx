@@ -19,7 +19,7 @@ type FlashProps = {
     error?: string;
 };
 
-export default function Category({ categories }: { categories: CategoryPagination }) {
+export default function Brands({ categories }: { categories: CategoryPagination }) {
     const page = usePage();
     const flash = (page.props as { flash?: FlashProps }).flash;
 
@@ -81,7 +81,6 @@ export default function Category({ categories }: { categories: CategoryPaginatio
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Category Name</TableHead>
-                                <TableHead>Category Slug Short</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -89,7 +88,6 @@ export default function Category({ categories }: { categories: CategoryPaginatio
                             {filterData.map((category) => (
                                 <TableRow key={category.id}>
                                     <TableCell>{category.name}</TableCell>
-                                    <TableCell>{category.slug_short}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>

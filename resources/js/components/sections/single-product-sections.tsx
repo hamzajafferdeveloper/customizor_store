@@ -8,6 +8,7 @@ import { Link, router } from '@inertiajs/react';
 import { Crown, Layers, Link2, Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import RelatedProductsSection from './related-product-section';
 
 const SingleProductSection = ({
     product,
@@ -51,8 +52,8 @@ const SingleProductSection = ({
     const isAdmin = auth?.user?.type === 'admin';
 
     return (
-        <div>
-            <div className="flex sm:justify-end -mt-4  sm:-mt-14 md:-mt-12 space-y-1 border-b p-3 ">
+        <div className='max-w-7xl w-full mx-auto'>
+            <div className="flex justify-end space-y-1 border-b p-3 ">
                 <div className="flex cursor-pointer items-center gap-2 px-4">
                     <img
                         src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
@@ -220,6 +221,7 @@ const SingleProductSection = ({
                     )}
                 </div>
             </div>
+            <RelatedProductsSection />
             <ConfirmDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
