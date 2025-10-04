@@ -12,18 +12,18 @@ import { FormEventHandler } from 'react';
 type Props = {
     open: boolean;
     onOpenChange: () => void;
-    selectedCategory: Category;
+    selectedBrands: Category;
 };
 
-export default function EditCategoryModal({ open, onOpenChange, selectedCategory }: Props) {
+export default function EditBrandModal({ open, onOpenChange, selectedBrands }: Props) {
     const { data, setData, put, processing, errors, reset } = useForm<Required<CategoryForm>>({
-        name: selectedCategory.name,
-        slug_short: selectedCategory.slug_short,
+        name: selectedBrands.name,
+        slug_short: selectedBrands.slug_short,
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(route('superadmin.category.destroy', selectedCategory.id));
+        put(route('superadmin.brand.update', selectedBrands.id));
         onOpenChange();
     };
 
@@ -31,12 +31,12 @@ export default function EditCategoryModal({ open, onOpenChange, selectedCategory
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create Category</DialogTitle>
-                    <DialogDescription>Enter Name of Category. Then Click Save.</DialogDescription>
+                    <DialogTitle>Edit Brand</DialogTitle>
+                    <DialogDescription>Enter detail below. Then Click Save.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={submit} className="grid gap-2">
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Category Name</Label>
+                        <Label htmlFor="name">Brand Name</Label>
                         <Input
                             id="name"
                             type="text"
@@ -50,7 +50,7 @@ export default function EditCategoryModal({ open, onOpenChange, selectedCategory
                         />
                         <InputError message={errors.name} />
                     </div>
-                     <div className="grid gap-2">
+                    <div className="grid gap-2">
                         <Label htmlFor="name">Short Slug</Label>
                         <Input
                             id="name"

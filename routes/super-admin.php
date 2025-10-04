@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\SuperAdmin\BrandController;
 use App\Http\Controllers\SuperAdmin\CategoryController;
+use App\Http\Controllers\SuperAdmin\ColorController;
 use App\Http\Controllers\SuperAdmin\CreateYourOwnProduct;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\SuperAdmin\FontController;
 use App\Http\Controllers\SuperAdmin\LogoGalleryController;
-use App\Http\Controllers\SuperAdmin\ColorController;
 use App\Http\Controllers\SuperAdmin\PartController;
 use App\Http\Controllers\SuperAdmin\PlansController;
 use App\Http\Controllers\SuperAdmin\ProductController;
@@ -22,13 +23,19 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
     Route::delete('/admin/plans/{id}', [PlansController::class, 'destroy'])->name('superadmin.plan.destroy');
     Route::post('/plans/{plan}/update-permissions', [PlansController::class, 'updatePermissions'])->name('plans.updatePermissions');
 
-
     // Route For Category
     Route::prefix('/category')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('category.index');
         Route::post('/store', [CategoryController::class, 'store'])->name('superadmin.category.store');
         Route::put('/{id}', [CategoryController::class, 'update'])->name('superadmin.category.update');
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('superadmin.category.destroy');
+    });
+
+    Route::prefix('/brand')->group(function () {
+        Route::get('/', [BrandController::class, 'index'])->name('brand.index');
+        Route::post('/store', [BrandController::class, 'store'])->name('superadmin.brand.store');
+        Route::put('/{id}', [BrandController::class, 'update'])->name('superadmin.brand.update');
+        Route::delete('/{id}', [BrandController::class, 'destroy'])->name('superadmin.brand.destroy');
     });
 
     // Route For Color
@@ -88,12 +95,10 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::delete('/delete/categroy={id}', [PartController::class, 'destroyPart'])->name('superadmin.parts.destroy');
     });
 
-
     Route::prefix('/create-your-own-product')->name('superadmin.create-your-own-product.')->group(function () {
         Route::get('/index', [CreateYourOwnProduct::class, 'index'])->name('index');
-        Route::post('/store', [CreateYourOwnProduct::class,'store'])->name('store');
-        Route::post('/update/{id}', [CreateYourOwnProduct::class,'update'])->name('update');
-        Route::delete('/destroy/{id}', [CreateYourOwnProduct::class,'destroy'])->name('destroy');
+        Route::post('/store', [CreateYourOwnProduct::class, 'store'])->name('store');
+        Route::post('/update/{id}', [CreateYourOwnProduct::class, 'update'])->name('update');
+        Route::delete('/destroy/{id}', [CreateYourOwnProduct::class, 'destroy'])->name('destroy');
     });
 });
-

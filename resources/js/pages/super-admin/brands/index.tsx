@@ -11,8 +11,8 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { EllipsisVertical, Pen, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import CategoryModal from './component/create-product';
-import EditCategoryModal from './component/edit-modal';
+import CategoryModal from './component/create-brands';
+import EditBrandModal from './component/edit-modal';
 
 type FlashProps = {
     success?: string;
@@ -23,9 +23,9 @@ export default function Brands({ categories }: { categories: CategoryPagination 
     const page = usePage();
     const flash = (page.props as { flash?: FlashProps }).flash;
 
-    const [openCategoryModal, setOpenCategoryModal] = useState(false);
+    const [openBrandModal, setOpenBrandModal] = useState(false);
     const [searchValue, setSearchValue] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+    const [selectedBrands, setselectedBrands] = useState<Category | null>(null);
     const [perPage, setPerPage] = useState<number>(parseInt(new URLSearchParams(window.location.search).get('per_page') || '10'));
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
@@ -49,8 +49,8 @@ export default function Brands({ categories }: { categories: CategoryPagination 
     const filterData = categories.data.filter((cat) => cat.name.toLowerCase().includes(searchValue.toLowerCase()));
 
     const handleDelete = () => {
-        if (selectedCategory) {
-            router.delete(route('superadmin.category.destroy', selectedCategory?.id));
+        if (selectedBrands) {
+            router.delete(route('superadmin.brand.destroy', selectedBrands?.id));
             setConfirmOpen(false);
         } else {
             toast.error('SomeThing Went Wrong. Please Try Again later!');
@@ -68,11 +68,11 @@ export default function Brands({ categories }: { categories: CategoryPagination 
                         setSearchValue={setSearchValue}
                         btnType="button"
                         btnFunc={() => {
-                            setOpenCategoryModal(!openCategoryModal);
+                            setOpenBrandModal(!openBrandModal);
                         }}
-                        searchTxt="Search Category by Name..."
-                        heading="All Category"
-                        desc="List all Of Category Available"
+                        searchTxt="Search brands by Name..."
+                        heading="All Brands"
+                        desc="List all Of Brands Available"
                         // desc2={`Total No of Color is: ${categories.total}`}
                     />
 
@@ -80,14 +80,18 @@ export default function Brands({ categories }: { categories: CategoryPagination 
                         <TableCaption>A list of categories.</TableCaption>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Category Name</TableHead>
+                                <TableHead>Brand Name</TableHead>
+                                <TableHead>Short Slug</TableHead>
+
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filterData.map((category) => (
-                                <TableRow key={category.id}>
-                                    <TableCell>{category.name}</TableCell>
+                            {filterData.map((brand) => (
+                                <TableRow key={brand.id}>
+                                    <TableCell>{brand.name}</TableCell>
+                                    <TableCell>{brand.slug_short}</TableCell>
+
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>
@@ -99,7 +103,7 @@ export default function Brands({ categories }: { categories: CategoryPagination 
                                                     variant="ghost"
                                                     className="flex w-full cursor-pointer justify-start bg-gray-400/20 text-gray-900"
                                                     onClick={() => {
-                                                        setSelectedCategory(category);
+                                                        setselectedBrands(brand);
                                                         setEditOpen(true);
                                                     }}
                                                 >
@@ -112,7 +116,7 @@ export default function Brands({ categories }: { categories: CategoryPagination 
                                                     variant="ghost"
                                                     className="mt-1 flex w-full justify-start bg-red-400/20"
                                                     onClick={() => {
-                                                        setSelectedCategory(category);
+                                                        setselectedBrands(brand);
                                                         setConfirmOpen(true);
                                                     }}
                                                 >
@@ -139,21 +143,21 @@ export default function Brands({ categories }: { categories: CategoryPagination 
             <ConfirmDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
-                title="Delete Category"
-                description={`Are you sure you want to delete "${selectedCategory?.name}"?`}
+                title="Delete Brand"
+                description={`Are you sure you want to delete "${selectedBrands?.name}"?`}
                 confirmText="Delete"
                 cancelText="Cancel"
                 onConfirm={handleDelete}
             />
 
-            {openCategoryModal && <CategoryModal open={openCategoryModal} onOpenChange={() => setOpenCategoryModal(false)} />}
-            {editOpen && selectedCategory && (
-                <EditCategoryModal
+            {openBrandModal && <CategoryModal open={openBrandModal} onOpenChange={() => setOpenBrandModal(false)} />}
+            {editOpen && selectedBrands && (
+                <EditBrandModal
                     open={editOpen}
-                    selectedCategory={selectedCategory}
+                    selectedBrands={selectedBrands}
                     onOpenChange={() => {
                         setEditOpen(false);
-                        setSelectedCategory(null);
+                        setselectedBrands(null);
                     }}
                 />
             )}

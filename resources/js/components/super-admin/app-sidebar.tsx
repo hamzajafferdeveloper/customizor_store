@@ -4,7 +4,7 @@ import { NavMain } from '@/components/super-admin/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BadgePlus, Box, Component, FileType2Icon, Folder, Images, LayoutGrid, List, Palette } from 'lucide-react';
+import { BadgePlus, Box, Building, Component, FileType2Icon, Folder, Images, LayoutGrid, List, Palette } from 'lucide-react';
 import AppLogo from '../app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -53,6 +53,11 @@ const mainNavItems: NavItem[] = [
         title: 'Create Your Own Product',
         href: '/create-your-own-product/index',
         icon: BadgePlus,
+    },
+    {
+        title: 'Brand',
+        href: '/brand',
+        icon: Building,
     }
 ];
 

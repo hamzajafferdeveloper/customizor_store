@@ -21,7 +21,7 @@ export default function CategoryModal({ open, onOpenChange }: Props) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('superadmin.category.store'));
+        post(route('superadmin.brand.store'));
         onOpenChange()
     };
 
@@ -29,8 +29,8 @@ export default function CategoryModal({ open, onOpenChange }: Props) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create Category</DialogTitle>
-                    <DialogDescription>Enter Name of Category. Then Click Save.</DialogDescription>
+                    <DialogTitle>Create Brand</DialogTitle>
+                    <DialogDescription>Enter details. Then Click Save.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={submit} className="grid gap-2">
                     <div className="grid gap-2">
