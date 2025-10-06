@@ -9,6 +9,14 @@ export interface Category {
     updated_at: string;
 }
 
+export interface Brand {
+    id: number;
+    name: string;
+    slug_short: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Color {
     id: number;
     name: string;
@@ -23,6 +31,7 @@ export interface Product {
     title: string;
     user_id: number;
     image: string;
+    brand_id: number;
     sku: string;
     slug: string;
     type: string;
@@ -90,7 +99,7 @@ export interface Font {
 export interface PartCategroyWithPart {
     id: number;
     name: string;
-    parts: Part[]
+    parts: Part[];
     created_at: string;
     updated_at: string;
 }
@@ -104,12 +113,11 @@ export interface Part {
     updated_at: string;
 }
 
-
 export interface CreateOwnProductType {
     id: number;
     category_id: number;
     image: string;
-    category? : Category
+    category?: Category;
     created_at: string;
     updated_at: string;
 }

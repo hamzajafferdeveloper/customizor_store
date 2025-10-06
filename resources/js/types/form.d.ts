@@ -12,6 +12,7 @@ export type ColorForm = {
 export type ProductForm = {
     title: string;
     sku: string;
+    brand_id: number | null;
     image: File | null;
     type: string;
     sizes: string[];

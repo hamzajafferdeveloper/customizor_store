@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Category, Color } from '@/types/data';
+import { Brand, Category, Color } from '@/types/data';
 import { ProductForm } from '@/types/form';
 import { StoreData } from '@/types/store';
 import { useForm } from '@inertiajs/react';
@@ -14,7 +14,7 @@ import { RabbitIcon, X } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { Badge } from '../ui/badge';
 
-const CreateProductSection = ({ catogories, colors, store }: { catogories: Category[]; colors: Color[]; store?: StoreData }) => {
+const CreateProductSection = ({ catogories, colors, store, brands }: { catogories: Category[]; colors: Color[]; store?: StoreData, brands: Brand[] }) => {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [manualSku, setManualSku] = useState(false);
     const fileRef = useRef<HTMLInputElement | null>(null);
@@ -22,6 +22,7 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
     const { data, setData, post, processing, errors } = useForm<ProductForm>({
         title: '',
         sku: '',
+        brand_id: null,
         image: null,
         type: 'simple',
         sizes: [],
@@ -115,20 +116,30 @@ const CreateProductSection = ({ catogories, colors, store }: { catogories: Categ
                                 </div>
                                 {/* Product SKU */}
                                 <div className="grid gap-4">
-                                    <Label htmlFor="sku">Product SKU</Label>
-                                    <Input
-                                        id="sku"
-                                        type="text"
-                                        value={data.sku}
-                                        onChange={(e) => {
-                                            setManualSku(true);
-                                            setData('sku', e.target.value);
-                                        }}
-                                        placeholder="SKU-LG-RD"
-                                        required
-                                        tabIndex={2}
-                                    />
-                                    <InputError message={errors.sku} />
+                                    <Label htmlFor="sku">Product Brand</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="w-full justify-start" tabIndex={5}>
+                                                {brands.find((c) => c.id === data.brand_id)?.name || 'Select Brand'}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[300px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search brand..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No results found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {brands.map((brand) => (
+                                                            <CommandItem key={brand.id} onSelect={() => setData('brand_id', brand.id)}>
+                                                                {brand.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <InputError message={errors.brand_id} />
                                 </div>
 
                                 {/* Product Price and it's type */}

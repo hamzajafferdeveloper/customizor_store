@@ -1,7 +1,7 @@
 import EditProductSection from '@/components/sections/edit-product-section';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Category, Color, Product } from '@/types/data';
+import { Brand, Category, Color, Product } from '@/types/data';
 import { Head } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Create Product', href: '/product' }];
@@ -10,9 +10,10 @@ type Props = {
     catogories: Category[];
     colors: Color[];
     product: Product
+    brands: Brand[]
 };
 
-export default function EditProduct({ catogories, colors, product }: Props) {
+export default function EditProduct({ catogories, colors, product, brands }: Props) {
 
     return (
         <SuperAdminLayout breadcrumbs={breadcrumbs}>
@@ -21,6 +22,7 @@ export default function EditProduct({ catogories, colors, product }: Props) {
                 catogories={catogories}
                 colors={colors}
                 product={product}
+                brands={brands}
             />
         </SuperAdminLayout>
     );

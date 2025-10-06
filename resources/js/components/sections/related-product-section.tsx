@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Category, Product } from '@/types/data';
+import { Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 export default function RelatedProductsSection() {
@@ -133,7 +134,7 @@ export default function RelatedProductsSection() {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                 {product.slug}
                             </h3>
-                            <Button className="mt-2 w-full cursor-pointer">View</Button>
+                            <Link href={`/product/${product.slug}`} className="mt-2 bg-gray-900/90 py-2 px-4 rounded-md text-white dark:bg-white dark:text-gray-900 w-full cursor-pointer">View</Link>
                         </div>
                     ))
                 )}

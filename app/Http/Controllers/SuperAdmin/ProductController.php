@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Color;
 use App\Models\LogoCategory;
-use App\Models\Part;
 use App\Models\PartsCategory;
 use App\Models\Plan;
-use App\Models\PlanPermission;
 use App\Models\Product;
 use App\Models\ProductColors;
 use App\Models\SvgTemplate;
@@ -66,9 +65,12 @@ class ProductController extends Controller
     {
         $categories = Category::all();
         $colors = Color::all();
+        $brands = Brand::all();
+
         return Inertia::render('super-admin/product/create', [
             'catogories' => $categories,
-            'colors' => $colors
+            'colors' => $colors,
+            'brands' => $brands,
         ]);
     }
 
@@ -79,8 +81,9 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:100',
-            'sku' => 'required|string|max:100|unique:products,sku',
+            // Removed required sku from user input — will be auto-generated
             'type' => 'required|string|in:simple,starter,pro,ultra',
+            'brand_id' => 'required|integer|exists:brands,id',
             'price' => 'required|numeric|min:0',
             'price_type' => 'required|in:physical,digital',
 
@@ -98,50 +101,73 @@ class ProductController extends Controller
             'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        // Create Unique Slug
-        $originalSlug = Str::slug($request->title);
+        $brand = Brand::findOrFail($request->brand_id);
+        $category = Category::findOrFail($request->categories_id);
+
+        // Create base slug from brand + category
+        $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+        $originalSlug = Str::slug($rawSlug);
         $slug = $originalSlug;
         $count = 1;
         while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
+            $slug = $originalSlug.'-'.$count;
             $count++;
         }
 
-        // Filter Array
+        // ✅ Auto-generate unique SKU
+        // Format: BRN-CAT-0001 (based on brand/category short slugs)
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+        $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
+
+        if ($lastProduct) {
+            // Extract last number and increment
+            $lastNumber = (int) preg_replace('/\D/', '', substr($lastProduct->sku, -4));
+            $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $nextNumber = '0001';
+        }
+
+        $sku = $baseSku.'-'.$nextNumber;
+
+        // Filter Arrays
         $validated['sizes'] = array_filter($validated['sizes']);
         $validated['materials'] = array_filter($validated['materials']);
         $validated['colors'] = array_filter($validated['colors']);
 
         // Store Image
+        $product_image = null;
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = time() . '-' . $file->getClientOriginalName();
+            $filename = time().'-'.$file->getClientOriginalName();
             $product_image = $file->storeAs('product', $filename, 'public');
         }
 
         // Create Product
         $product = Product::create([
             'title' => $validated['title'],
-            'sku' => $validated['sku'],
+            'sku' => $sku, // ✅ Auto-generated SKU
             'slug' => $slug,
             'image' => $product_image,
             'type' => $validated['type'],
-            'user_id' => auth()->id(), // Assuming the user is authenticated
-            'sizes' => array_values($validated['sizes']),
-            'materials' => array_values($validated['materials']),
+            'user_id' => auth()->id(),
+            'sizes' => json_encode(array_values($validated['sizes'])),
+            'materials' => json_encode(array_values($validated['materials'])),
             'categories_id' => $validated['categories_id'],
             'price' => $validated['price'],
             'price_type' => $validated['price_type'],
+            'brand_id' => $validated['brand_id'],
         ]);
 
-        foreach (array_filter($validated['colors']) as $colorId) {
+        // Attach product colors
+        foreach ($validated['colors'] as $colorId) {
             ProductColors::create([
                 'product_id' => $product->id,
                 'color_id' => $colorId,
             ]);
         }
 
-        return redirect()->route('product.index')->with('success', 'Product created successfully!');
+        return redirect()->route('product.index')
+            ->with('success', 'Product created successfully!');
     }
 
     /**
@@ -170,10 +196,13 @@ class ProductController extends Controller
         if ($product) {
             $categories = Category::all();
             $colors = Color::all();
+            $brands = Brand::all();
+
             return Inertia::render('super-admin/product/edit', [
                 'catogories' => $categories,
                 'colors' => $colors,
-                'product' => $product
+                'product' => $product,
+                'brands' => $brands,
             ]);
         } else {
             abort(404);
@@ -187,7 +216,8 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'sku' => 'required|string|max:255',
+            'price_type' => 'required|in:physical,digital',
+            'brand_id' => 'required|integer|exists:brands,id',
             'categories_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
             'type' => 'nullable|string',
@@ -208,16 +238,49 @@ class ProductController extends Controller
 
             // Save new image
             $file = $request->file('image');
-            $filename = time() . '-' . $file->getClientOriginalName();
+            $filename = time().'-'.$file->getClientOriginalName();
             $product_image = $file->storeAs('product', $filename, 'public');
 
             $product->image = $product_image;
         }
 
+        $brand = Brand::findOrFail($validated['brand_id']);
+        $category = Category::findOrFail($validated['categories_id']);
+
+        // ✅ Only regenerate slug if brand/category changed
+        if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
+            $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+            $originalSlug = Str::slug($rawSlug);
+            $slug = $originalSlug;
+            $count = 1;
+
+            // Make sure it’s unique excluding current product
+            while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
+                $slug = $originalSlug.'-'.$count;
+                $count++;
+            }
+
+            $product->slug = $slug;
+        }
+
+        // ✅ Only regenerate SKU if brand/category changed
+        if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+            $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
+
+            if ($lastProduct) {
+                $lastNumber = (int) preg_replace('/\D/', '', substr($lastProduct->sku, -4));
+                $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $nextNumber = '0001';
+            }
+
+            $product->sku = $baseSku.'-'.$nextNumber;
+        }
+
         // Update product fields
         $product->title = $validated['title'];
         $product->price = $validated['price'];
-        $product->sku = $validated['sku'];
         $product->type = $validated['type'];
         $product->categories_id = $validated['categories_id'];
         $product->sizes = $validated['sizes'];
@@ -229,7 +292,7 @@ class ProductController extends Controller
         ProductColors::where('product_id', $product->id)->delete();
 
         // Add new colors
-        if (!empty($validated['colors'])) {
+        if (! empty($validated['colors'])) {
             foreach (array_filter($validated['colors']) as $colorId) {
                 ProductColors::create([
                     'product_id' => $product->id,
@@ -250,7 +313,7 @@ class ProductController extends Controller
         if ($product) {
 
             return Inertia::render('super-admin/product/add-template', [
-                'product' => $product
+                'product' => $product,
             ]);
         } else {
             abort(404);
@@ -299,7 +362,7 @@ class ProductController extends Controller
         if ($template) {
 
             return Inertia::render('super-admin/product/edit-template', [
-                'template' => $template
+                'template' => $template,
             ]);
         } else {
             abort(404);
@@ -369,11 +432,12 @@ class ProductController extends Controller
         $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
         $logoGallery = LogoCategory::with('logos')->get();
         $parts = PartsCategory::with('parts')->get();
+
         return Inertia::render('home/product/create-your-product', [
             'template' => $svgContent,
             'logoGallery' => $logoGallery,
             'permissions' => $storePermissions,
-            'parts' => $parts
+            'parts' => $parts,
         ]);
     }
 }

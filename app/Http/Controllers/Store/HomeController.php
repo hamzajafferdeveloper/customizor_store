@@ -3,17 +3,18 @@
 namespace App\Http\Controllers\Store;
 
 use App\Http\Controllers\Controller;
-use App\Models\LogoCategory;
-use App\Models\Plan;
-use Illuminate\Support\Facades\Storage;
-use App\Models\SvgTemplate;
-use App\Models\SvgTemplatePart;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Color;
+use App\Models\LogoCategory;
+use App\Models\Plan;
 use App\Models\Product;
 use App\Models\ProductColors;
 use App\Models\Store;
+use App\Models\SvgTemplate;
+use App\Models\SvgTemplatePart;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Str;
 
@@ -110,12 +111,14 @@ class HomeController extends Controller
         $store = Store::findOrFail($storeId);
         $categories = Category::all();
         $colors = Color::all();
+        $brands = Brand::all();
 
         // Render the create product view
         return Inertia::render('store/product/create', [
             'store' => $store,
             'categories' => $categories,
             'colors' => $colors,
+            'brands' => $brands,
         ]);
     }
 
@@ -123,54 +126,70 @@ class HomeController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:100',
-            'sku' => 'required|string|max:100|unique:products,sku',
             'price' => 'required|numeric|min:0',
             'price_type' => 'required|in:physical,digital',
-
+            'brand_id' => 'required|integer|exists:brands,id',
             'sizes' => 'required|array|min:1',
             'sizes.*' => 'required|string|max:20',
-
             'materials' => 'required|array|min:1',
             'materials.*' => 'required|string|max:30',
-
             'colors' => 'required|array|min:1',
             'colors.*' => 'required|integer|exists:colors,id',
-
             'categories_id' => 'required|integer|exists:categories,id',
-
             'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        // Create Unique Slug
-        $originalSlug = Str::slug($request->title);
+        $brand = Brand::findOrFail($request->brand_id);
+        $category = Category::findOrFail($request->categories_id);
+
+        // Create base slug using brand & category
+        $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+        $originalSlug = Str::slug($rawSlug);
         $slug = $originalSlug;
         $count = 1;
+
+        // Ensure unique slug
         while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
+            $slug = $originalSlug.'-'.$count;
             $count++;
         }
 
-        // Filter Array
+        // ✅ Generate Unique SKU
+        // Example: BRN-CAT-0001
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+        $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
+
+        if ($lastProduct) {
+            // Extract last numeric part (e.g., BRN-CAT-0005 → 5)
+            $lastNumber = (int) preg_replace('/\D/', '', substr($lastProduct->sku, -4));
+            $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $nextNumber = '0001';
+        }
+
+        $sku = $baseSku.'-'.$nextNumber;
+
+        // Clean up arrays
         $validated['sizes'] = array_filter($validated['sizes']);
         $validated['materials'] = array_filter($validated['materials']);
         $validated['colors'] = array_filter($validated['colors']);
 
         // Store Image
+        $product_image = null;
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = time() . '-' . $file->getClientOriginalName();
+            $filename = time().'-'.$file->getClientOriginalName();
             $product_image = $file->storeAs('product', $filename, 'public');
         }
 
         // Create Product
         $product = Product::create([
             'title' => $validated['title'],
-            'sku' => $validated['sku'],
+            'sku' => $sku, // ✅ Added SKU
             'slug' => $slug,
             'store_id' => $storeId,
             'price' => $validated['price'],
-
-
+            'price_type' => $validated['price_type'],
             'user_id' => auth()->id(),
             'type' => 'simple',
             'image' => $product_image,
@@ -179,6 +198,7 @@ class HomeController extends Controller
             'categories_id' => $validated['categories_id'],
         ]);
 
+        // Attach Colors
         foreach (array_filter($validated['colors']) as $colorId) {
             ProductColors::create([
                 'product_id' => $product->id,
@@ -186,7 +206,8 @@ class HomeController extends Controller
             ]);
         }
 
-        return redirect()->route('store.products', $storeId)->with('success', 'Product created successfully!');
+        return redirect()->route('store.products', $storeId)
+            ->with('success', 'Product created successfully!');
     }
 
     public function editProduct(string $storeId, string $slug)
@@ -195,6 +216,7 @@ class HomeController extends Controller
         $product = Product::with('productColors.color')->where('slug', $slug)->where('store_id', $storeId)->firstOrFail();
         $categories = Category::all();
         $colors = Color::all();
+        $brands = Brand::all();
 
         if ($product->user_id !== auth()->id()) {
             return redirect()->route('store.products', $storeId)->with('error', 'You do not have permission to edit this product.');
@@ -206,14 +228,16 @@ class HomeController extends Controller
             'product' => $product,
             'categories' => $categories,
             'colors' => $colors,
+            'brands' => $brands,
         ]);
     }
 
-    public function updateProduct(Request $request, string $storeId, string $id, )
+    public function updateProduct(Request $request, string $storeId, string $id)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'sku' => 'required|string|max:255',
+            'price_type' => 'required|in:physical,digital',
+            'brand_id' => 'required|integer|exists:brands,id',
             'categories_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
             'sizes' => 'nullable|array',
@@ -224,36 +248,68 @@ class HomeController extends Controller
 
         $product = Product::findOrFail($id);
 
-        // Handle image upload
+        // ✅ Handle image upload
         if ($request->hasFile('image')) {
             // Delete old image
-            if ($product->image) {
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
                 Storage::disk('public')->delete($product->image);
             }
 
             // Save new image
             $file = $request->file('image');
-            $filename = time() . '-' . $file->getClientOriginalName();
+            $filename = time().'-'.$file->getClientOriginalName();
             $product_image = $file->storeAs('product', $filename, 'public');
-
             $product->image = $product_image;
         }
 
-        // Update product fields
+        $brand = Brand::findOrFail($validated['brand_id']);
+        $category = Category::findOrFail($validated['categories_id']);
+
+        // ✅ Only regenerate slug if brand/category changed
+        if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
+            $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+            $originalSlug = Str::slug($rawSlug);
+            $slug = $originalSlug;
+            $count = 1;
+
+            // Make sure it’s unique excluding current product
+            while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
+                $slug = $originalSlug.'-'.$count;
+                $count++;
+            }
+
+            $product->slug = $slug;
+        }
+
+        // ✅ Only regenerate SKU if brand/category changed
+        if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+            $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
+
+            if ($lastProduct) {
+                $lastNumber = (int) preg_replace('/\D/', '', substr($lastProduct->sku, -4));
+                $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $nextNumber = '0001';
+            }
+
+            $product->sku = $baseSku.'-'.$nextNumber;
+        }
+
+        // ✅ Update product fields
         $product->title = $validated['title'];
         $product->price = $validated['price'];
-        $product->sku = $validated['sku'];
+        $product->brand_id = $validated['brand_id'];
+        $product->price_type = $validated['price_type'];
         $product->categories_id = $validated['categories_id'];
-        $product->sizes = $validated['sizes'];
-        $product->materials = $validated['materials'];
+        $product->sizes = ! empty($validated['sizes']) ? json_encode(array_values($validated['sizes'])) : json_encode([]);
+        $product->materials = ! empty($validated['materials']) ? json_encode(array_values($validated['materials'])) : json_encode([]);
         $product->save();
 
-        // Sync product colors
-        // Remove old colors
+        // ✅ Sync product colors
         ProductColors::where('product_id', $product->id)->delete();
 
-        // Add new colors
-        if (!empty($validated['colors'])) {
+        if (! empty($validated['colors'])) {
             foreach (array_filter($validated['colors']) as $colorId) {
                 ProductColors::create([
                     'product_id' => $product->id,
@@ -262,7 +318,8 @@ class HomeController extends Controller
             }
         }
 
-        return redirect()->route('store.products', $storeId)->with('success', 'Product updated successfully!');
+        return redirect()->route('store.products', $storeId)
+            ->with('success', 'Product updated successfully!');
     }
 
     public function destroyProduct(string $storeId, string $id)
@@ -373,7 +430,8 @@ class HomeController extends Controller
 
         // Update or create parts
         foreach ($validated['parts'] as $part) {
-            $type = $part['protection'] ? 'protection' : 'leather';$type = $part['protection'] ? 'protection' : 'leather';
+            $type = $part['protection'] ? 'protection' : 'leather';
+            $type = $part['protection'] ? 'protection' : 'leather';
             SvgTemplatePart::updateOrCreate(
                 ['part_id' => $part['part_id'], 'template_id' => $template->id],
                 [
@@ -388,13 +446,13 @@ class HomeController extends Controller
         return redirect()->route('store.products', $storeId)->with('success', 'Product SVG template updated successfully!');
     }
 
-
     public function customizeProduct(string $storeId, string $id)
     {
         $store = Store::findOrFail($storeId);
         $storePermissions = Plan::with('permissions', 'fonts')->where('id', $store->plan_id)->first();
         $template = SvgTemplate::with('part')->findOrFail($id);
         $logoGallery = LogoCategory::with('logos')->get();
+
         return Inertia::render('store/customizer', [
             'store' => $store,
             'template' => $template,
@@ -402,5 +460,4 @@ class HomeController extends Controller
             'permissions' => $storePermissions,
         ]);
     }
-
 }
