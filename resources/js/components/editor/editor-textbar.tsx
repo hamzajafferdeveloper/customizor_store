@@ -9,10 +9,10 @@ import { useEffect, useState } from 'react';
 import LimitModal from '@/components/editor/limit-modal';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover as ShadPopover, PopoverContent as ShadPopoverContent, PopoverTrigger as ShadPopoverTrigger } from '@/components/ui/popover';
+import { defaultFonts } from '@/constant/fonts';
 import { Font } from '@/types/data';
 import { CanvasItem, TextLayer } from '@/types/editor';
 import { HexColorPicker } from 'react-colorful';
-import { defaultFonts } from '@/constant/fonts';
 
 type Props = {
     AddText: () => void;
@@ -170,14 +170,43 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
 
                     {/* Color Picker */}
                     <div className="flex flex-col gap-2">
-                        <Label className="text-sm font-medium">Text Color</Label>
-                        <HexColorPicker
-                            color={color}
-                            onChange={(color) => {
-                                setColor(color);
-                                if (textLayer) onUpdateTextLayer(textLayer.id, { color });
-                            }}
-                        />
+                        {/* Text Color Picker */}
+                        <div className="flex flex-col gap-2">
+                            <Label className="text-sm font-medium">Text Color</Label>
+
+                            <div className="flex items-center gap-3">
+                                {/* Native Color Input */}
+                                <div className="relative">
+                                    <input
+                                        type="color"
+                                        value={color}
+                                        onChange={(e) => {
+                                            const newColor = e.target.value;
+                                            setColor(newColor);
+                                            if (textLayer) onUpdateTextLayer(textLayer.id, { color: newColor });
+                                        }}
+                                        className="h-9 w-9 cursor-pointer appearance-none rounded-md border border-gray-300 p-0 dark:border-gray-600"
+                                        style={{
+                                            backgroundColor: color,
+                                            WebkitAppearance: 'none',
+                                            padding: 0,
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Hex Display */}
+                                <Input
+                                    type="text"
+                                    value={color}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setColor(val);
+                                        if (textLayer) onUpdateTextLayer(textLayer.id, { color: val });
+                                    }}
+                                    className="w-[100px] text-center"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Font Settings */}
@@ -307,13 +336,38 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
                         {/* Stroke Color */}
                         <div>
                             <Label className="text-sm font-medium">Stroke Color</Label>
-                            <HexColorPicker
-                                color={strokeColor}
-                                onChange={(strokeColor) => {
-                                    setStrokeColor(strokeColor);
-                                    if (textLayer) onUpdateTextLayer(textLayer.id, { strokeColor });
-                                }}
-                            />
+                            <div className="flex items-center gap-3">
+                                {/* Native Color Input */}
+                                <div className="relative">
+                                    <input
+                                        type="color"
+                                        value={strokeColor}
+                                        onChange={(e) => {
+                                            const newColor = e.target.value;
+                                            setStrokeColor(newColor);
+                                            if (textLayer) onUpdateTextLayer(textLayer.id, { strokeColor: newColor });
+                                        }}
+                                        className="h-9 w-9 cursor-pointer appearance-none rounded-md border border-gray-300 p-0 dark:border-gray-600"
+                                        style={{
+                                            backgroundColor: strokeColor,
+                                            WebkitAppearance: 'none',
+                                            padding: 0,
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Hex Display */}
+                                <Input
+                                    type="text"
+                                    value={strokeColor}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setStrokeColor(val);
+                                        if (textLayer) onUpdateTextLayer(textLayer.id, { strokeColor: val });
+                                    }}
+                                    className="w-[100px] text-center"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

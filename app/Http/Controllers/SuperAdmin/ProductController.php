@@ -105,7 +105,7 @@ class ProductController extends Controller
         $category = Category::findOrFail($request->categories_id);
 
         // Create base slug from brand + category
-        $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+        $rawSlug = $brand->slug_short.''.$category->slug_short;
         $originalSlug = Str::slug($rawSlug);
         $slug = $originalSlug;
         $count = 1;
@@ -116,7 +116,7 @@ class ProductController extends Controller
 
         // ✅ Auto-generate unique SKU
         // Format: BRN-CAT-0001 (based on brand/category short slugs)
-        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).''.strtoupper(substr($category->slug_short, 0, 3));
         $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
 
         if ($lastProduct) {
@@ -127,7 +127,7 @@ class ProductController extends Controller
             $nextNumber = '0001';
         }
 
-        $sku = $baseSku.'-'.$nextNumber;
+        $sku = 'ANB'. '-' . $baseSku.'-'.$nextNumber;
 
         // Filter Arrays
         $validated['sizes'] = array_filter($validated['sizes']);
@@ -249,7 +249,7 @@ class ProductController extends Controller
 
         // ✅ Only regenerate slug if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+            $rawSlug = $brand->slug_short.''.$category->slug_short;
             $originalSlug = Str::slug($rawSlug);
             $slug = $originalSlug;
             $count = 1;
@@ -260,12 +260,12 @@ class ProductController extends Controller
                 $count++;
             }
 
-            $product->slug = $slug;
+            $product->slug = 'ANB'. '-' . $slug;
         }
 
         // ✅ Only regenerate SKU if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).''.strtoupper(substr($category->slug_short, 0, 3));
             $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
 
             if ($lastProduct) {
@@ -275,7 +275,7 @@ class ProductController extends Controller
                 $nextNumber = '0001';
             }
 
-            $product->sku = $baseSku.'-'.$nextNumber;
+            $product->sku = 'ANB'. '-' . $baseSku.'-'.$nextNumber;
         }
 
         // Update product fields

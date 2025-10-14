@@ -150,13 +150,13 @@ class HomeController extends Controller
 
         // Ensure unique slug
         while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug.'-'.$count;
+            $slug = $originalSlug.''.$count;
             $count++;
         }
 
         // ✅ Generate Unique SKU
         // Example: BRN-CAT-0001
-        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).''.strtoupper(substr($category->slug_short, 0, 3));
         $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
 
         if ($lastProduct) {
@@ -167,7 +167,7 @@ class HomeController extends Controller
             $nextNumber = '0001';
         }
 
-        $sku = $baseSku.'-'.$nextNumber;
+        $sku = 'ANB'. '-' .  $baseSku.'-'.$nextNumber;
 
         // Clean up arrays
         $validated['sizes'] = array_filter($validated['sizes']);
@@ -267,7 +267,7 @@ class HomeController extends Controller
 
         // ✅ Only regenerate slug if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+            $rawSlug = $brand->slug_short.''.$category->slug_short;
             $originalSlug = Str::slug($rawSlug);
             $slug = $originalSlug;
             $count = 1;
@@ -278,12 +278,12 @@ class HomeController extends Controller
                 $count++;
             }
 
-            $product->slug = $slug;
+            $product->slug = 'ANB'. '-' . $slug;
         }
 
         // ✅ Only regenerate SKU if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).'-'.strtoupper(substr($category->slug_short, 0, 3));
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).''.strtoupper(substr($category->slug_short, 0, 3));
             $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
 
             if ($lastProduct) {
@@ -293,7 +293,7 @@ class HomeController extends Controller
                 $nextNumber = '0001';
             }
 
-            $product->sku = $baseSku.'-'.$nextNumber;
+            $product->sku = 'ANB'. '-' . $baseSku.'-'.$nextNumber;
         }
 
         // ✅ Update product fields
