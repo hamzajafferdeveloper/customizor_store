@@ -4,7 +4,7 @@
     - ✅ "Design your own products" with categories.
 
     - ✅ customize option not working with user login.
-    - error message should revert to 404 page
+    - ✅ error message should revert to 404 page
     - ✅ when add text. no outline. user is unable to identify where to add text
     - ✅ SVG not downloading proper svg. converts png to svg/. not fine
     - ✅ Remove Slug on product page. and the page must not be scrollable
