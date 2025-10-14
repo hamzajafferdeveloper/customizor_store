@@ -5,10 +5,23 @@ import { SharedData } from '@/types';
 import { Product } from '@/types/data';
 import { StoreData } from '@/types/store';
 import { Link, router } from '@inertiajs/react';
-import { Crown, Layers, Link2, Pen, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import axios from 'axios';
+import { Crown, Layers, Link2, Loader2, Pen, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import RelatedProductsSection from './related-product-section';
+
+type BuyedProduct = {
+    id: number;
+    quantity: number;
+    price: number;
+    product_id: number;
+    user_id: number;
+    store_id: number;
+    product: Product;
+    created_at: string;
+    updated_at: string;
+};
 
 const SingleProductSection = ({
     product,
@@ -22,6 +35,22 @@ const SingleProductSection = ({
     page_type: string;
 }) => {
     const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+    const [buyedProduct, setBuyedProduct] = useState<BuyedProduct[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const handleCheckout = async () => {
+        setLoading(true);
+        try {
+            const { data } = await axios.post('/buy-product?product_id=' + product.id);
+            window.location.href = data.url; // Redirect to Stripe Checkout
+        } catch (error) {
+            console.error(error);
+            alert('Something went wrong.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     let parsedSizes: string[] = [];
     let parsedMaterials: string[] = [];
     try {
@@ -49,11 +78,21 @@ const SingleProductSection = ({
         }
     };
 
+    useEffect(() => {
+        fetch('/buyed-products')
+            .then((response) => response.json())
+            .then((data) => {
+                const payload = Array.isArray(data) ? data : (data.buyedProducts ?? []);
+                setBuyedProduct(payload);
+            })
+            .catch(() => setBuyedProduct([]));
+    }, []);
+
     const isAdmin = auth?.user?.type === 'admin';
 
     return (
-        <div className='max-w-7xl w-full mx-auto'>
-            <div className="flex justify-end space-y-1 border-b p-3 ">
+        <div className="mx-auto w-full max-w-7xl">
+            <div className="flex justify-end space-y-1 border-b p-3">
                 <div className="flex cursor-pointer items-center gap-2 px-4">
                     <img
                         src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
@@ -184,40 +223,78 @@ const SingleProductSection = ({
                         ))}
                     </div>
                     {product.template && (
-                        <Link
-                            // @ts-ignore
-                            href={
-                                page_type === 'home'
-                                    ? (product.type === 'simple' || isAdmin) && route('customizer', product.template.id)
-                                    : page_type === 'store' && route('store.product.customizer', { storeId: store?.id, id: product.template.id })
-                            }
-                        >
-                            <Button
-                                className={`relative flex w-full items-center justify-center gap-2 ${
-                                    page_type === 'home' && product.type !== 'simple' && (!auth?.user || auth?.user?.type === 'user')
-                                        ? 'pointer-events-none opacity-50'
-                                        : 'cursor-pointer'
-                                }`}
-                            >
-                                {page_type === 'home' && product.type !== 'simple' && (
-                                    <>
-                                        {!auth?.user ? (
-                                            <span className="absolute left-3 flex items-center">
-                                                <Crown className="h-4 w-4" />
-                                            </span>
-                                        ) : (
-                                            auth &&
-                                            auth?.user?.type === 'user' && (
-                                                <span className="absolute left-3 flex items-center">
-                                                    <Crown className="h-4 w-4" />
-                                                </span>
-                                            )
-                                        )}
-                                    </>
-                                )}
-                                <span className="ml-6">Customize</span>
-                            </Button>
-                        </Link>
+                        <>
+                            {auth?.user ? (
+                                // ✅ Authenticated user → Show Customize button
+                                <>
+                                    {buyedProduct.length > 0 ? (
+                                        <>
+                                            {!buyedProduct.some((item) => item.product_id === product.id) ? (
+                                                <Button
+                                                    onClick={handleCheckout}
+                                                    disabled={loading}
+                                                    className={`relative flex w-full items-center justify-center gap-2`}
+                                                >
+                                                    {loading ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
+                                                        </>
+                                                    ) : (
+                                                        'Proceed to Payment'
+                                                    )}
+                                                </Button>
+                                            ) : (
+                                                <Link
+                                                    // @ts-ignore
+                                                    href={
+                                                        page_type === 'home'
+                                                            ? (product.type === 'simple' || isAdmin) && route('customizer', product.template.id)
+                                                            : page_type === 'store' &&
+                                                              route('store.product.customizer', { storeId: store?.id, id: product.template.id })
+                                                    }
+                                                >
+                                                    <Button
+                                                        className={`relative flex w-full items-center justify-center gap-2 ${
+                                                            page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user'
+                                                                ? 'pointer-events-none opacity-50'
+                                                                : 'cursor-pointer'
+                                                        }`}
+                                                    >
+                                                        {page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user' && (
+                                                            <span className="absolute left-3 flex items-center">
+                                                                <Crown className="h-4 w-4" />
+                                                            </span>
+                                                        )}
+                                                        <span className="ml-6">Customize</span>
+                                                    </Button>
+                                                </Link>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <Button
+                                            onClick={handleCheckout}
+                                            disabled={loading}
+                                            className={`relative flex w-full items-center justify-center gap-2`}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
+                                                </>
+                                            ) : (
+                                                'Proceed to Payment'
+                                            )}
+                                        </Button>
+                                    )}
+                                </>
+                            ) : (
+                                // 🚪 Not logged in → Show Login button
+                                <Link href={route('login')}>
+                                    <Button className="flex w-full cursor-pointer items-center justify-center gap-2 bg-gray-800 text-white transition-all duration-300 hover:bg-gray-900">
+                                        <span>Login to Customize</span>
+                                    </Button>
+                                </Link>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

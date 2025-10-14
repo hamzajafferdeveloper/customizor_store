@@ -85,7 +85,7 @@ export default function EditorColorBar({ parts, openColorMenu, paintPart, ChageL
                 />
 
                 {/* Part name */}
-                <p className="text-sm font-medium text-gray-800">{part.name}</p>
+                <p className="text-sm font-medium">{part.name}</p>
               </div>
             </AccordionTrigger>
             <AccordionContent className="flex flex-wrap gap-2 text-balance">

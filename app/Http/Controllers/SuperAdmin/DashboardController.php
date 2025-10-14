@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentDetail;
 use App\Models\Product;
+use App\Models\SoldProduct;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class DashboardController extends Controller
         $usersData = $getMonthlyData(new User());
         $storesData = $getMonthlyData(new Store());
         $productData = $getMonthlyData(new Product());
+        $soldProductData = $getMonthlyData(new SoldProduct());
 
         // Growth calculation
         $calculateGrowth = function ($data) {
@@ -45,6 +47,12 @@ class DashboardController extends Controller
 
         // Store chart data (last 3 months)
         $storeChartData = Store::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->where('created_at', '>=', now()->subMonths(3))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $soldProductChartData = SoldProduct::selectRaw('DATE(created_at) as date, COUNT(*) as total')
             ->where('created_at', '>=', now()->subMonths(3))
             ->groupBy('date')
             ->orderBy('date')
@@ -102,6 +110,10 @@ class DashboardController extends Controller
 
         $users = $userQuery->where('type','user')->orderBy('created_at', 'desc')->paginate(10);
 
+        /**
+         * Dashboard Page
+         */
+
         return Inertia::render('super-admin/dashboard', [
             'stats' => [
                 'revenue' => [
@@ -123,9 +135,15 @@ class DashboardController extends Controller
                     'total' => Product::count(),
                     'growth' => $calculateGrowth($productData),
                     'chart' => $productData
+                ],
+                'soldProducts' => [
+                    'total' => SoldProduct::sum('price'),
+                    'growth' => $calculateGrowth($soldProductData),
+                    'chart' => $soldProductData
                 ]
             ],
             'storeChart' => $storeChartData,
+            'soldProductChart' => $soldProductChartData,
             'countryChart' => $countryData,
             'stores' => $stores,
             'users' => $users,
@@ -143,7 +161,4 @@ class DashboardController extends Controller
             'countries' => $countries
         ]);
     }
-
-
-
 }

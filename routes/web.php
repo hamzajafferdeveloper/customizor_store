@@ -57,6 +57,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Store Routes
     Route::get('/create/store', [StoreController::class, 'create'])->name('store.create');
     Route::post('/store/store', [StoreController::class, 'store'])->name('store.store');
+
+    // Get Currently Logged In users buyed products
+    Route::get('/buyed-products', [HomeController::class, 'buyedProducts'])->name('buyed.products');
+
+
+    Route::post('/buy-product', [HomeController::class, 'buyProduct'])->name('buy.product');
+    Route::get('/payment/success', [HomeController::class, 'paymentSuccess'])->name('buy.product');
 });
 
 require __DIR__ . '/settings.php';
