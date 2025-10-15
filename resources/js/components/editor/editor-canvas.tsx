@@ -194,19 +194,20 @@ export default function EditorCanvas({
 
     // --- RESIZE (LIVE), commit on end (MOBILE + DESKTOP) ---
     useEffect(() => {
-        if (!isResizing) return;
+        if (!isResizing || !selectedItemId) return;
 
         const handleMove = (e: MouseEvent | TouchEvent) => {
             let clientX: number, clientY: number;
+
             if ('touches' in e) {
                 if (e.touches.length !== 1) return;
                 clientX = e.touches[0].clientX;
                 clientY = e.touches[0].clientY;
+                e.preventDefault(); // Prevent page scroll
             } else {
                 clientX = e.clientX;
                 clientY = e.clientY;
             }
-            if (!selectedItemId) return;
 
             setUploadedItemsLive((prev) =>
                 prev.map((item) => {
@@ -225,21 +226,21 @@ export default function EditorCanvas({
             );
         };
 
-        const handleUp = () => {
+        const handleEnd = () => {
             setIsResizing(false);
             finalizeGesture();
         };
 
         window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('mouseup', handleEnd);
         window.addEventListener('touchmove', handleMove, { passive: false });
-        window.addEventListener('touchend', handleUp);
+        window.addEventListener('touchend', handleEnd);
 
         return () => {
             window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('mouseup', handleEnd);
             window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('touchend', handleUp);
+            window.removeEventListener('touchend', handleEnd);
         };
     }, [isResizing, selectedItemId, setUploadedItemsLive, finalizeGesture]);
 
@@ -574,6 +575,7 @@ export default function EditorCanvas({
                                         zIndex: 9999,
                                         borderRadius: 10,
                                         boxSizing: 'border-box',
+                                        // pointerEvents: 'none',
                                         transform: `rotate(${item.rotation}deg)`,
                                     }}
                                     onMouseDown={(e) => {
@@ -624,6 +626,12 @@ export default function EditorCanvas({
                                             e.stopPropagation();
                                             setIsResizing(true);
                                             resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
+                                        }}
+                                        onTouchStart={(e) => {
+                                            e.stopPropagation();
+                                            setIsResizing(true);
+                                            const touch = e.touches[0];
+                                            resizeStart.current = { x: touch.clientX, y: touch.clientY, width: item.width, height: item.height };
                                         }}
                                     >
                                         <Maximize2 size={16} className="text-indigo-500" />

@@ -4,6 +4,9 @@ import laravel from 'laravel-vite-plugin';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
+// Replace with your machine's local IP
+const LOCAL_IP = '192.168.1.14';
+
 export default defineConfig({
     plugins: [
         laravel({
@@ -14,11 +17,15 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
-    server: {
-        host: 'customizorstore',
-        origin: 'http://customizorstore:5173',
-        cors: true, // <-- Enable CORS
-    },
+    // server: {
+    //     host: '0.0.0.0', // Listen on all interfaces
+    //     port: 5173,
+    //     cors: true,
+    //     hmr: {
+    //         host: LOCAL_IP, // HMR works on mobile
+    //     },
+    //     allowedHosts: ['customizorstore', LOCAL_IP], // Accept these hosts
+    // },
     esbuild: {
         jsx: 'automatic',
     },
