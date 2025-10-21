@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CreateStoreController;
 use App\Http\Controllers\SuperAdmin\BrandController;
 use App\Http\Controllers\SuperAdmin\CategoryController;
 use App\Http\Controllers\SuperAdmin\ColorController;
@@ -100,5 +101,10 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::post('/store', [CreateYourOwnProduct::class, 'store'])->name('store');
         Route::post('/update/{id}', [CreateYourOwnProduct::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [CreateYourOwnProduct::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('/create-store')->name('superadmin.create-store.')->group(function () {
+        Route::get('/add', [CreateStoreController::class, 'add'])->name('add');
+        Route::post('/store', [CreateStoreController::class, 'store'])->name('store');
     });
 });

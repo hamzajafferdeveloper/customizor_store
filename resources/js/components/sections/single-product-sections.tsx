@@ -227,9 +227,73 @@ const SingleProductSection = ({
                             {auth?.user ? (
                                 // ✅ Authenticated user → Show Customize button
                                 <>
-                                    {buyedProduct.length > 0 ? (
+                                    {auth?.user.type === 'admin' ? (
+                                        <Link
+                                            // @ts-ignore
+                                            href={
+                                                page_type === 'home'
+                                                    ? (product.type === 'simple' || isAdmin) && route('customizer', product.template.id)
+                                                    : page_type === 'store' &&
+                                                      route('store.product.customizer', {
+                                                          storeId: store?.id,
+                                                          id: product.template.id,
+                                                      })
+                                            }
+                                        >
+                                            <Button className={`relative flex w-full items-center justify-center gap-2`}>
+                                                <span className="ml-6">Customize</span>
+                                            </Button>
+                                        </Link>
+                                    ) : (
                                         <>
-                                            {!buyedProduct.some((item) => item.product_id === product.id) ? (
+                                            {buyedProduct.length > 0 ? (
+                                                <>
+                                                    {!buyedProduct.some((item) => item.product_id === product.id) ? (
+                                                        <Button
+                                                            onClick={handleCheckout}
+                                                            disabled={loading}
+                                                            className={`relative flex w-full items-center justify-center gap-2`}
+                                                        >
+                                                            {loading ? (
+                                                                <>
+                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
+                                                                </>
+                                                            ) : (
+                                                                'Proceed to Payment'
+                                                            )}
+                                                        </Button>
+                                                    ) : (
+                                                        <Link
+                                                            // @ts-ignore
+                                                            href={
+                                                                page_type === 'home'
+                                                                    ? (product.type === 'simple' || isAdmin) &&
+                                                                      route('customizer', product.template.id)
+                                                                    : page_type === 'store' &&
+                                                                      route('store.product.customizer', {
+                                                                          storeId: store?.id,
+                                                                          id: product.template.id,
+                                                                      })
+                                                            }
+                                                        >
+                                                            <Button
+                                                                className={`relative flex w-full items-center justify-center gap-2 ${
+                                                                    page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user'
+                                                                        ? 'pointer-events-none opacity-50'
+                                                                        : 'cursor-pointer'
+                                                                }`}
+                                                            >
+                                                                {page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user' && (
+                                                                    <span className="absolute left-3 flex items-center">
+                                                                        <Crown className="h-4 w-4" />
+                                                                    </span>
+                                                                )}
+                                                                <span className="ml-6">Customize</span>
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                </>
+                                            ) : (
                                                 <Button
                                                     onClick={handleCheckout}
                                                     disabled={loading}
@@ -243,47 +307,8 @@ const SingleProductSection = ({
                                                         'Proceed to Payment'
                                                     )}
                                                 </Button>
-                                            ) : (
-                                                <Link
-                                                    // @ts-ignore
-                                                    href={
-                                                        page_type === 'home'
-                                                            ? (product.type === 'simple' || isAdmin) && route('customizer', product.template.id)
-                                                            : page_type === 'store' &&
-                                                              route('store.product.customizer', { storeId: store?.id, id: product.template.id })
-                                                    }
-                                                >
-                                                    <Button
-                                                        className={`relative flex w-full items-center justify-center gap-2 ${
-                                                            page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user'
-                                                                ? 'pointer-events-none opacity-50'
-                                                                : 'cursor-pointer'
-                                                        }`}
-                                                    >
-                                                        {page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user' && (
-                                                            <span className="absolute left-3 flex items-center">
-                                                                <Crown className="h-4 w-4" />
-                                                            </span>
-                                                        )}
-                                                        <span className="ml-6">Customize</span>
-                                                    </Button>
-                                                </Link>
                                             )}
                                         </>
-                                    ) : (
-                                        <Button
-                                            onClick={handleCheckout}
-                                            disabled={loading}
-                                            className={`relative flex w-full items-center justify-center gap-2`}
-                                        >
-                                            {loading ? (
-                                                <>
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
-                                                </>
-                                            ) : (
-                                                'Proceed to Payment'
-                                            )}
-                                        </Button>
                                     )}
                                 </>
                             ) : (

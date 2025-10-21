@@ -63,6 +63,11 @@ const mainNavItems: NavItem[] = [
         title: 'Buyed Product',
         href: '/buy-products',
         icon: PanelTopDashed,
+    },
+    {
+        title: 'Add Store',
+        href: '/create-store/add',
+        icon: LayoutGrid,
     }
 ];
 

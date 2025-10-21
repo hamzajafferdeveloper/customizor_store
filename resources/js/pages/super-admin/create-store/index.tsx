@@ -4,11 +4,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import AppLayout from '@/layouts/app-layout';
-import { Head, useForm } from '@inertiajs/react';
+import SuperAdminLayout from '@/layouts/super-admin-layout';
+import { BreadcrumbItem } from '@/types';
+import { useForm } from '@inertiajs/react';
 import { ChangeEvent } from 'react';
 
-export default function CreateStore() {
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Create Store',
+        href: '/create-store/add',
+    },
+];
+
+interface CreateProductProps {
+    storePlan: { id: number; name: string }[];
+    users: { id: number; name: string }[];
+}
+
+const CreateProduct = ({ storePlan, users }: CreateProductProps) => {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
@@ -17,6 +30,8 @@ export default function CreateStore() {
         logo: null as File | null,
         type: 'public',
         status: 'active',
+        plan_id: String(storePlan?.[0]?.id ?? ''),
+        user_id: String(users?.[0]?.id ?? ''),
         bio: '',
     });
 
@@ -28,15 +43,13 @@ export default function CreateStore() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('store.store'), {
+        post(route('superadmin.create-store.store'), {
             forceFormData: true,
         });
     };
 
     return (
-        <AppLayout>
-            <Head title="Create Store" />
-
+        <SuperAdminLayout breadcrumbs={breadcrumbs}>
             <div className="flex justify-center py-10">
                 <Card className="w-full max-w-2xl shadow-lg">
                     <CardHeader>
@@ -100,7 +113,7 @@ export default function CreateStore() {
 
                             <div>
                                 <Label>Store Type</Label>
-                                <Select onValueChange={(value) => setData('type', value)} defaultValue="public">
+                                <Select value={data.type} onValueChange={(value) => setData('type', value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
@@ -110,6 +123,42 @@ export default function CreateStore() {
                                     </SelectContent>
                                 </Select>
                                 {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
+                            </div>
+
+                            {/* Store Plan */}
+                            <div>
+                                <Label>Store Plan</Label>
+                                <Select value={data.plan_id} onValueChange={(value) => setData('plan_id', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select store plan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {storePlan.map((plan) => (
+                                            <SelectItem key={plan.id} value={String(plan.id)}>
+                                                {plan.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.plan_id && <p className="text-sm text-red-500">{errors.plan_id}</p>}
+                            </div>
+
+                            {/* Store Admin */}
+                            <div>
+                                <Label>Store Admin</Label>
+                                <Select value={data.user_id} onValueChange={(value) => setData('user_id', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select store admin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users.map((user) => (
+                                            <SelectItem key={user.id} value={String(user.id)}>
+                                                {user.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.user_id && <p className="text-sm text-red-500">{errors.user_id}</p>}
                             </div>
 
                             {/* Bio */}
@@ -132,6 +181,8 @@ export default function CreateStore() {
                     </CardContent>
                 </Card>
             </div>
-        </AppLayout>
+        </SuperAdminLayout>
     );
-}
+};
+
+export default CreateProduct;
