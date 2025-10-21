@@ -1,48 +1,51 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { Button } from "@/components/ui/button"; // if using ShadCN
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import { Head, router } from '@inertiajs/react';
 
-const BuyProduct = () => {
-  const [loading, setLoading] = useState(false);
-
-  const handleCheckout = async () => {
-    setLoading(true);
-    try {
-      const { data } = await axios.post("/create-checkout-session");
-      window.location.href = data.url; // Redirect to Stripe Checkout
-    } catch (error) {
-      console.error(error);
-      alert("Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4 text-center">
-      <h1 className="text-3xl font-bold text-gray-800 mb-4">
-        Buy Our Awesome Product
-      </h1>
-      <p className="text-gray-600 mb-6 max-w-md">
-        Complete your purchase securely using Stripe Checkout.
-      </p>
-
-      <Button
-        onClick={handleCheckout}
-        disabled={loading}
-        className="bg-blue-600 text-white hover:bg-blue-700 rounded-lg px-6 py-3 font-medium shadow-lg"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="animate-spin mr-2 h-4 w-4" /> Redirecting...
-          </>
-        ) : (
-          "Proceed to Payment"
-        )}
-      </Button>
-    </div>
-  );
-};
-
-export default BuyProduct;
+export default function BuyProduct({ products }: any) {
+    console.log(products);
+    return (
+        <AppLayout>
+            <Head title="Welcome">
+                <link rel="preconnect" href="https://fonts.bunny.net" />
+                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+            </Head>
+            <section className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {products.length > 0 &&
+                    products.map((product: any) => (
+                        <Card
+                            key={product.product.id}
+                            onClick={() =>
+                                router.get(
+                                    route(product.product.store_id === null ? 'product.show' : 'store.product.show', {
+                                        slug: product.product.slug,
+                                        storeId: product.product.store_id,
+                                    }),
+                                    {},
+                                    { preserveScroll: true },
+                                )
+                            }
+                            className="relative min-w-0 cursor-pointer transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
+                        >
+                            <CardHeader className="p-2">
+                                <img src={`/storage/${product.product.image}`} alt={product.product.title} className="rounded-md object-cover" />
+                            </CardHeader>
+                            <CardContent className="flex flex-col">
+                                <h1 className="font-semibold">{product.product.title}</h1>
+                                {/* <div className="flex flex-wrap gap-2">
+                                    {product.product.product_colors.map((color: any) => (
+                                        <div key={color.id} className="h-5 w-5 rounded-md border" style={{ backgroundColor: color.color.hexCode }} />
+                                    ))}
+                                </div> */}
+                            </CardContent>
+                        </Card>
+                    ))}
+            </section>
+            {products.length === 0 && (
+                <div className="8] flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
+                    No Buyed Product Found
+                </div>
+            )}
+        </AppLayout>
+    );
+}

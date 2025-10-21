@@ -17,15 +17,12 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
-    // server: {
-    //     host: '0.0.0.0', // Listen on all interfaces
-    //     port: 5173,
-    //     cors: true,
-    //     hmr: {
-    //         host: LOCAL_IP, // HMR works on mobile
-    //     },
-    //     allowedHosts: ['customizorstore', LOCAL_IP], // Accept these hosts
-    // },
+    server: {
+        host: 'customizorstore',
+        port: 5173,
+        cors: true,
+        allowedHosts: ['customizorstore', 'localhost'],
+    },
     esbuild: {
         jsx: 'automatic',
     },

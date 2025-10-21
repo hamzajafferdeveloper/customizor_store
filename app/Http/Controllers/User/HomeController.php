@@ -128,7 +128,6 @@ class HomeController extends Controller
     return response()->json(['url' => $session->url]);
 }
 
-
     public function paymentSuccess(Request $request)
 {
     $sessionId = $request->get('session_id');
@@ -169,4 +168,12 @@ class HomeController extends Controller
         'permissions' => $storePermissions,
     ]);
 }
+
+    public function buyProductPage(){
+        $user = auth()->user();
+
+            $buyedProducts = SoldProduct::where('user_id', $user->id)->with('product')->get();
+
+        return Inertia::render('home/buy-product', ['products' => $buyedProducts]);
+    }
 }

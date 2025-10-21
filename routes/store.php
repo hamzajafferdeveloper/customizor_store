@@ -7,8 +7,8 @@ use Inertia\Inertia;
 
 Route::get('/user={id}/store/all', [StoreController::class, 'allStoreofUser']);
 
-Route::prefix('/{storeId}')->name('store.')->middleware('isStorePublic')->group(function () {
-    
+Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isStoreActive'])->group(function () {
+
     Route::get('/products', [HomeController::class, 'products'])->name('products');
     Route::get('/product/{slug}', [HomeController::class, 'showProduct'])->name('product.show');
     Route::middleware('isStoreAdmin')->group(function () {

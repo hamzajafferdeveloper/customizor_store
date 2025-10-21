@@ -3,6 +3,7 @@
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\IsAdminMiddleware;
+use App\Http\Middleware\IsStoreActiveMiddleware;
 use App\Http\Middleware\IsStoreAdminMiddleware;
 use App\Http\Middleware\IsStorePublicMiddleware;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'isAdmin' => IsAdminMiddleware::class,
             'isStoreAdmin' => IsStoreAdminMiddleware::class,
             'isStorePublic' => IsStorePublicMiddleware::class,
+            'isStoreActive' => IsStoreActiveMiddleware::class,
         ]);
 
     })

@@ -34,7 +34,7 @@ export default function CategoryModal({ open, onOpenChange }: Props) {
                 </DialogHeader>
                 <form onSubmit={submit} className="grid gap-2">
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Category Name</Label>
+                        <Label htmlFor="name">Brands Name</Label>
                         <Input
                             id="name"
                             type="text"

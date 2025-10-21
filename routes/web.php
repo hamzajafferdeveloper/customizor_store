@@ -61,6 +61,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Get Currently Logged In users buyed products
     Route::get('/buyed-products', [HomeController::class, 'buyedProducts'])->name('buyed.products');
 
+    // Buy Product
+    Route::get('/buy-products', [HomeController::class, 'buyProductPage'])->name('buy.product.page');
 
     Route::post('/buy-product', [HomeController::class, 'buyProduct'])->name('buy.product');
     Route::get('/payment/success', [HomeController::class, 'paymentSuccess'])->name('buy.product');

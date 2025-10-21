@@ -11,7 +11,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Box, CircleUserIcon, DollarSignIcon, LayoutGrid, Menu } from 'lucide-react';
+import { BookOpen, Box, CircleUserIcon, DollarSignIcon, LayoutGrid, Menu, PanelTopDashed } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './super-admin/app-logo-icon';
 
@@ -36,6 +36,11 @@ const mainNavItems: NavItem[] = [
         href: '/pricing',
         icon: DollarSignIcon,
     },
+    {
+        title: 'Buyed Products',
+        href: '/buy-products',
+        icon: PanelTopDashed,
+    }
 ];
 
 const rightNavItems: NavItem[] = [];
