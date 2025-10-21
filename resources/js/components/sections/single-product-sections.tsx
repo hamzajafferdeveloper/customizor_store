@@ -18,6 +18,7 @@ type BuyedProduct = {
     product_id: number;
     user_id: number;
     store_id: number;
+    price_type: 'physical' | 'digital';
     product: Product;
     created_at: string;
     updated_at: string;
@@ -34,137 +35,143 @@ const SingleProductSection = ({
     store?: StoreData;
     page_type: string;
 }) => {
-    const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const [buyedProduct, setBuyedProduct] = useState<BuyedProduct[]>([]);
     const [loading, setLoading] = useState(false);
+    const isAdmin = auth?.user?.type === 'admin';
 
     const handleCheckout = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.post('/buy-product?product_id=' + product.id);
-            window.location.href = data.url; // Redirect to Stripe Checkout
-        } catch (error) {
-            console.error(error);
-            alert('Something went wrong.');
+            const { data } = await axios.post(`/buy-product?product_id=${product.id}`);
+            window.location.href = data.url;
+        } catch {
+            toast.error('Something went wrong.');
         } finally {
             setLoading(false);
         }
     };
 
-    let parsedSizes: string[] = [];
-    let parsedMaterials: string[] = [];
-    try {
-        parsedSizes = typeof product.sizes === 'string' ? JSON.parse(product.sizes) : product.sizes;
-    } catch {
-        console.error('Invalid sizes format');
-    }
-
-    try {
-        parsedMaterials = typeof product.materials === 'string' ? JSON.parse(product.materials) : product.materials;
-    } catch {
-        console.error('Invalid materials format');
-    }
     const handleDelete = () => {
+        const isOwner = auth?.user?.id === product.user_id;
         if (store) {
-            if (auth?.user?.id === product.user_id) {
-                router.delete(route('store.product.delete', { storeId: store.id, id: product.id }));
-            } else {
-                toast.error('You are not authorized to delete this product.');
-                setConfirmOpen(false);
-            }
-        } else {
-            router.delete(route('superadmin.product.destroy', product.id));
-            setConfirmOpen(false);
-        }
+            if (isOwner) router.delete(route('store.product.delete', { storeId: store.id, id: product.id }));
+            else toast.error('You are not authorized to delete this product.');
+        } else router.delete(route('superadmin.product.destroy', product.id));
+
+        setConfirmOpen(false);
     };
 
     useEffect(() => {
         fetch('/buyed-products')
-            .then((response) => response.json())
-            .then((data) => {
-                const payload = Array.isArray(data) ? data : (data.buyedProducts ?? []);
-                setBuyedProduct(payload);
-            })
+            .then((res) => res.json())
+            .then((data) => setBuyedProduct(Array.isArray(data) ? data : (data.buyedProducts ?? [])))
             .catch(() => setBuyedProduct([]));
     }, []);
 
-    const isAdmin = auth?.user?.type === 'admin';
+    // 🧭 Helpers
+    const parsedSizes = safeParseArray(product.sizes);
+    const parsedMaterials = safeParseArray(product.materials);
+
+    const isProductBought = buyedProduct.some((item) => item.product_id === product.id);
+
+    const customizeHref =
+        page_type === 'home'
+            ? route('customizer', product.template.id)
+            : route('store.product.customizer', { storeId: store?.id, id: product.template.id });
+
+    const isOwnerOrStore = product.user_id === auth?.user?.id || store?.id === product.store_id;
+
+    const renderButton = () => {
+        if (!auth?.user)
+            return (
+                <Link href={route('login')}>
+                    <Button className="flex w-full cursor-pointer items-center justify-center gap-2 bg-gray-800 text-white hover:bg-gray-900">
+                        Login to Customize
+                    </Button>
+                </Link>
+            );
+
+        // 👑 Admin always gets customize
+        if (isAdmin)
+            return (
+                <Link href={customizeHref}>
+                    <Button className="flex w-full items-center justify-center gap-2">Customize</Button>
+                </Link>
+            );
+
+        // 🧍 Regular user logic
+        if (product.price_type === 'digital' && !isProductBought) return renderCheckoutButton();
+
+        // 🧵 Physical products → show Customize
+        if (page_type === 'home' && product.type !== 'simple' && !isOwnerOrStore) return renderDisabledCustomize();
+
+        return renderCustomizeButton();
+    };
+
+    const renderCheckoutButton = () => (
+        <Button onClick={handleCheckout} disabled={loading} className="relative flex w-full items-center justify-center gap-2">
+            {loading ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
+                </>
+            ) : (
+                'Proceed to Payment'
+            )}
+        </Button>
+    );
+
+    const renderCustomizeButton = () => (
+        <Link href={customizeHref}>
+            <Button className="relative flex w-full items-center justify-center gap-2">Customize</Button>
+        </Link>
+    );
+
+    const renderDisabledCustomize = () => (
+        <span>
+            <Button className="pointer-events-none relative flex w-full items-center justify-center gap-2 opacity-50">
+                <span className="absolute left-3 flex items-center">
+                    <Crown className="h-4 w-4" />
+                </span>
+                <span className="ml-6">Customize</span>
+            </Button>
+        </span>
+    );
 
     return (
         <div className="mx-auto w-full max-w-7xl">
-            <div className="flex justify-end space-y-1 border-b p-3">
-                <div className="flex cursor-pointer items-center gap-2 px-4">
+            {/* Header Actions */}
+            <div className="flex justify-end border-b p-3">
+                <div className="flex items-center gap-2 px-4">
                     <img
                         src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
                         alt="WhatsApp"
-                        className="h-7 w-7"
-                        onClick={() => {
-                            const url = `https://wa.me/?text=${encodeURIComponent(
-                                `Check out this product: ${product.title.toUpperCase()} - ${window.location.href}`,
-                            )}`;
-                            window.open(url, '_blank');
-                        }}
+                        className="h-7 w-7 cursor-pointer"
+                        onClick={() =>
+                            window.open(
+                                `https://wa.me/?text=${encodeURIComponent(
+                                    `Check out this product: ${product.title.toUpperCase()} - ${window.location.href}`,
+                                )}`,
+                                '_blank',
+                            )
+                        }
                     />
                     <Link2
-                        className="h-5 w-5"
-                        onClick={() => {
-                            navigator.clipboard.writeText(window.location.href).then(
-                                () => {
-                                    toast.success('Link copied!');
-                                },
-                                () => {
-                                    toast.error('Failed to copy the link!');
-                                },
-                            );
-                        }}
+                        className="h-5 w-5 cursor-pointer"
+                        onClick={() =>
+                            navigator.clipboard
+                                .writeText(window.location.href)
+                                .then(() => toast.success('Link copied!'))
+                                .catch(() => toast.error('Failed to copy link!'))
+                        }
                     />
-                    {/* Store owner has priority over admin */}
-                    {store?.id === product.store_id ? (
-                        <>
-                            {/* Edit Product */}
 
-                            <Link href={route('store.product.edit', { storeId: store.id, slug: product.slug })}>
-                                <Pen className="h-5 w-5" />
-                            </Link>
-
-                            {/* Delete Product */}
-                            <Trash2 className="h-5 w-5 text-red-500" onClick={() => setConfirmOpen(true)} />
-
-                            {/* Add / Edit Template */}
-                            {!product.template ? (
-                                <Link href={route('store.product.add.template', { storeId: store.id, slug: product.slug })}>
-                                    <Layers className="h-5 w-5" />
-                                </Link>
-                            ) : (
-                                <Link href={route('store.product.edit.template', { storeId: store.id, id: product.template.id })}>
-                                    <Layers className="h-5 w-5" />
-                                </Link>
-                            )}
-                        </>
-                    ) : auth?.user?.type === 'admin' ? (
-                        <>
-                            {/* Edit Product */}
-                            <Link href={route('superadmin.product.edit', product.slug)}>
-                                <Pen className="h-5 w-5" />
-                            </Link>
-
-                            {/* Delete Product */}
-                            <Trash2 className="h-5 w-5 text-red-500" onClick={() => setConfirmOpen(true)} />
-
-                            {/* Add / Edit Template */}
-                            {!product.template ? (
-                                <Link href={route('superadmin.product.add.template', product.slug)}>
-                                    <Layers className="h-5 w-5" />
-                                </Link>
-                            ) : (
-                                <Link href={route('superadmin.product.edit.template', { id: product.template.id })}>
-                                    <Layers className="h-5 w-5" />
-                                </Link>
-                            )}
-                        </>
-                    ) : null}
+                    {/* Owner/Admin actions */}
+                    {store?.id === product.store_id ? renderStoreActions(store, product) : isAdmin && renderAdminActions(product)}
                 </div>
             </div>
+
+            {/* Product Detail */}
             <div className="lg:flex">
                 <div className="flex lg:w-1/2">
                     <img src={`/storage/${product.image}`} className="max-h-screen" />
@@ -172,162 +179,45 @@ const SingleProductSection = ({
                 <div className="ml-10 space-y-2 p-5 lg:mr-0 lg:p-10 xl:p-14">
                     <h1 className="text-5xl font-bold">{product.title}</h1>
                     <p className="text-xs">SKU: {product.sku}</p>
-                    <div className="gap-2 space-y-2 sm:flex sm:space-y-0">
-                        <p className="w-fit rounded-full border-2 p-3 text-sm shadow-2xs">
-                            Product Type: <b>{product.type}</b>{' '}
-                        </p>
-                        <p className="w-fit rounded-full border-2 p-3 text-sm shadow-2xs">
-                            Product Price: <b>{product.price}</b>{' '}
-                        </p>
-                    </div>
-                    <p className="pl-3 text-sm">Color:</p>
-                    <div className="flex flex-wrap gap-2">
-                        <div className="flex flex-wrap gap-2">
-                            {product.product_colors.map((color) => {
-                                const bg = color.color.hexCode;
-                                const textColor = isLightColor(bg) ? 'text-black' : 'text-white';
 
-                                return (
-                                    <div
-                                        key={color.id}
-                                        className={`cursor-pointer rounded-full px-4 py-2 shadow-2xl ${textColor}`}
-                                        style={{ backgroundColor: bg }}
-                                    >
-                                        {color.color.name}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    <p className="pl-3 text-sm">Size:</p>
                     <div className="flex flex-wrap gap-2">
-                        {parsedSizes.map((size: string, index: number) => (
-                            <div
-                                key={index}
-                                className="cursor-pointer rounded-full border-2 px-4 py-2 shadow-orange-500 hover:bg-gray-200/80 dark:hover:bg-gray-200/10"
-                            >
-                                {size}
-                            </div>
-                        ))}
+                        <Tag label="Product Type" value={product.type} />
+                        <Tag label="Product Price" value={product.price} />
                     </div>
 
-                    <p className="pl-3 text-sm">Material:</p>
-                    <div className="flex flex-wrap gap-2">
-                        {parsedMaterials.map((material: string, index: number) => (
-                            <div
-                                key={index}
-                                className="cursor-pointer rounded-full border-2 px-4 py-2 shadow-orange-500 hover:bg-gray-200/80 dark:hover:bg-gray-200/10"
-                            >
-                                {material}
-                            </div>
+                    <Section label="Color">
+                        {product.product_colors.map(({ id, color }) => {
+                            const textColor = isLightColor(color.hexCode) ? 'text-black' : 'text-white';
+                            return (
+                                <div key={id} className={`rounded-full px-4 py-2 shadow-2xl ${textColor}`} style={{ backgroundColor: color.hexCode }}>
+                                    {color.name}
+                                </div>
+                            );
+                        })}
+                    </Section>
+
+                    <Section label="Size">
+                        {parsedSizes.map((size, i) => (
+                            <Chip key={i} text={size} />
                         ))}
-                    </div>
-                    {product.template && (
-                        <>
-                            {auth?.user ? (
-                                // ✅ Authenticated user → Show Customize button
-                                <>
-                                    {auth?.user.type === 'admin' ? (
-                                        <Link
-                                            // @ts-ignore
-                                            href={
-                                                page_type === 'home'
-                                                    ? (product.type === 'simple' || isAdmin) && route('customizer', product.template.id)
-                                                    : page_type === 'store' &&
-                                                      route('store.product.customizer', {
-                                                          storeId: store?.id,
-                                                          id: product.template.id,
-                                                      })
-                                            }
-                                        >
-                                            <Button className={`relative flex w-full items-center justify-center gap-2`}>
-                                                <span className="ml-6">Customize</span>
-                                            </Button>
-                                        </Link>
-                                    ) : (
-                                        <>
-                                            {buyedProduct.length > 0 ? (
-                                                <>
-                                                    {!buyedProduct.some((item) => item.product_id === product.id) ? (
-                                                        <Button
-                                                            onClick={handleCheckout}
-                                                            disabled={loading}
-                                                            className={`relative flex w-full items-center justify-center gap-2`}
-                                                        >
-                                                            {loading ? (
-                                                                <>
-                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
-                                                                </>
-                                                            ) : (
-                                                                'Proceed to Payment'
-                                                            )}
-                                                        </Button>
-                                                    ) : (
-                                                        <Link
-                                                            // @ts-ignore
-                                                            href={
-                                                                page_type === 'home'
-                                                                    ? (product.type === 'simple' || isAdmin) &&
-                                                                      route('customizer', product.template.id)
-                                                                    : page_type === 'store' &&
-                                                                      route('store.product.customizer', {
-                                                                          storeId: store?.id,
-                                                                          id: product.template.id,
-                                                                      })
-                                                            }
-                                                        >
-                                                            <Button
-                                                                className={`relative flex w-full items-center justify-center gap-2 ${
-                                                                    page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user'
-                                                                        ? 'pointer-events-none opacity-50'
-                                                                        : 'cursor-pointer'
-                                                                }`}
-                                                            >
-                                                                {page_type === 'home' && product.type !== 'simple' && auth?.user?.type === 'user' && (
-                                                                    <span className="absolute left-3 flex items-center">
-                                                                        <Crown className="h-4 w-4" />
-                                                                    </span>
-                                                                )}
-                                                                <span className="ml-6">Customize</span>
-                                                            </Button>
-                                                        </Link>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <Button
-                                                    onClick={handleCheckout}
-                                                    disabled={loading}
-                                                    className={`relative flex w-full items-center justify-center gap-2`}
-                                                >
-                                                    {loading ? (
-                                                        <>
-                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirecting...
-                                                        </>
-                                                    ) : (
-                                                        'Proceed to Payment'
-                                                    )}
-                                                </Button>
-                                            )}
-                                        </>
-                                    )}
-                                </>
-                            ) : (
-                                // 🚪 Not logged in → Show Login button
-                                <Link href={route('login')}>
-                                    <Button className="flex w-full cursor-pointer items-center justify-center gap-2 bg-gray-800 text-white transition-all duration-300 hover:bg-gray-900">
-                                        <span>Login to Customize</span>
-                                    </Button>
-                                </Link>
-                            )}
-                        </>
-                    )}
+                    </Section>
+
+                    <Section label="Material">
+                        {parsedMaterials.map((m, i) => (
+                            <Chip key={i} text={m} />
+                        ))}
+                    </Section>
+
+                    {/* Action Button */}
+                    {product.template && renderButton()}
                 </div>
             </div>
+
             <RelatedProductsSection />
             <ConfirmDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
-                title="Delete Category"
+                title="Delete Product"
                 description={`Are you sure you want to delete "${product.title}"?`}
                 confirmText="Delete"
                 cancelText="Cancel"
@@ -336,5 +226,77 @@ const SingleProductSection = ({
         </div>
     );
 };
+
+// 🧩 Small Reusable UI Helpers
+const Tag = ({ label, value }: { label: string; value: string | number }) => (
+    <p className="w-fit rounded-full border-2 p-3 text-sm shadow-2xs">
+        {label}: <b>{value}</b>
+    </p>
+);
+
+const Section = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+        <p className="pl-3 text-sm">{label}:</p>
+        <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+);
+
+const Chip = ({ text }: { text: string }) => (
+    <div className="rounded-full border-2 px-4 py-2 hover:bg-gray-200/80 dark:hover:bg-gray-200/10">{text}</div>
+);
+
+// 🧭 Utility: Safe JSON parsing
+const safeParseArray = (val: any): string[] => {
+    try {
+        return typeof val === 'string' ? JSON.parse(val) : val || [];
+    } catch {
+        return [];
+    }
+};
+
+// 🔧 Action Renderers
+const renderStoreActions = (store: StoreData, product: Product) => (
+    <>
+        <Link href={route('store.product.edit', { storeId: store.id, slug: product.slug })}>
+            <Pen className="h-5 w-5" />
+        </Link>
+        <Trash2 className="h-5 w-5 text-red-500" />
+        <Link
+            href={
+                product.template
+                    ? route('store.product.edit.template', {
+                          storeId: store.id,
+                          id: product.template.id,
+                      })
+                    : route('store.product.add.template', {
+                          storeId: store.id,
+                          slug: product.slug,
+                      })
+            }
+        >
+            <Layers className="h-5 w-5" />
+        </Link>
+    </>
+);
+
+const renderAdminActions = (product: Product) => (
+    <>
+        <Link href={route('superadmin.product.edit', product.slug)}>
+            <Pen className="h-5 w-5" />
+        </Link>
+        <Trash2 className="h-5 w-5 text-red-500" />
+        <Link
+            href={
+                product.template
+                    ? route('superadmin.product.edit.template', {
+                          id: product.template.id,
+                      })
+                    : route('superadmin.product.add.template', product.slug)
+            }
+        >
+            <Layers className="h-5 w-5" />
+        </Link>
+    </>
+);
 
 export default SingleProductSection;

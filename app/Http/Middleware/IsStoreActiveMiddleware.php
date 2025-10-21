@@ -22,7 +22,9 @@ class IsStoreActiveMiddleware
 
         // dd($store->status);
 
-        if ($store->status == 'inactive') {
+        $user = auth()->user();
+
+        if ($user->id != $store->user_id && $store->status == 'inactive') {
             return abort(403, 'Store is not active');
         }
 
