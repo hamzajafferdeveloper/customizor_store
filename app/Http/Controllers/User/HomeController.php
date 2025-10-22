@@ -104,74 +104,75 @@ class HomeController extends Controller
     }
 
     public function buyProduct(Request $request)
-{
-    $product = Product::findOrFail($request->input('product_id'));
+    {
+        $product = Product::findOrFail($request->input('product_id'));
 
-    Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(config('services.stripe.secret'));
 
-    $session = Session::create([
-        'payment_method_types' => ['card'],
-        'line_items' => [[
-            'price_data' => [
-                'currency' => 'usd',
-                'product_data' => ['name' => $product->title],
-                'unit_amount' => $product->price * 100,
-            ],
-            'quantity' => 1,
-        ]],
-        'mode' => 'payment',
-        'success_url' => url('/payment/success?session_id={CHECKOUT_SESSION_ID}'),
-        'cancel_url' => url('/payment/cancel'),
-    ]);
+        $session = Session::create([
+            'payment_method_types' => ['card'],
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => 'usd',
+                    'product_data' => ['name' => $product->title],
+                    'unit_amount' => $product->price * 100,
+                ],
+                'quantity' => 1,
+            ]],
+            'mode' => 'payment',
+            'success_url' => url('/payment/success?session_id={CHECKOUT_SESSION_ID}'),
+            'cancel_url' => url('/payment/cancel'),
+        ]);
 
-    return response()->json(['url' => $session->url]);
-}
+        return response()->json(['url' => $session->url]);
+    }
 
     public function paymentSuccess(Request $request)
-{
-    $sessionId = $request->get('session_id');
+    {
+        $sessionId = $request->get('session_id');
 
-    if (!$sessionId) {
-        abort(404, 'Missing session');
+        if (! $sessionId) {
+            abort(404, 'Missing session');
+        }
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+        $session = Session::retrieve($sessionId);
+
+        if ($session->payment_status !== 'paid') {
+            abort(403, 'Payment not verified.');
+        }
+
+        $lineItems = Session::allLineItems($sessionId);
+
+        // Get product & user data (you can use metadata if needed)
+        $user = auth()->user();
+        $product = Product::where('title', $lineItems->data[0]->description ?? '')->first();
+
+        // ✅ Now safely create the record
+        SoldProduct::firstOrCreate([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+        ], [
+            'price' => $product->price,
+        ]);
+
+        // Render your Inertia view
+        $template = SvgTemplate::with('part')->where('product_id', $product->id)->first();
+        $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
+        $logoGallery = LogoCategory::with('logos')->get();
+
+        return Inertia::render('home/product/customizer', [
+            'template' => $template,
+            'logoGallery' => $logoGallery,
+            'permissions' => $storePermissions,
+        ]);
     }
 
-    Stripe::setApiKey(config('services.stripe.secret'));
-    $session = Session::retrieve($sessionId);
-
-    if ($session->payment_status !== 'paid') {
-        abort(403, 'Payment not verified.');
-    }
-
-    $lineItems = Session::allLineItems($sessionId);
-
-    // Get product & user data (you can use metadata if needed)
-    $user = auth()->user();
-    $product = Product::where('title', $lineItems->data[0]->description ?? '')->first();
-
-    // ✅ Now safely create the record
-    SoldProduct::firstOrCreate([
-        'user_id' => $user->id,
-        'product_id' => $product->id,
-    ], [
-        'price' => $product->price,
-    ]);
-
-    // Render your Inertia view
-    $template = SvgTemplate::with('part')->where('product_id', $product->id)->first();
-    $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
-    $logoGallery = LogoCategory::with('logos')->get();
-
-    return Inertia::render('home/product/customizer', [
-        'template' => $template,
-        'logoGallery' => $logoGallery,
-        'permissions' => $storePermissions,
-    ]);
-}
-
-    public function buyProductPage(){
+    public function buyProductPage()
+    {
         $user = auth()->user();
 
-            $buyedProducts = SoldProduct::where('user_id', $user->id)->with('product')->get();
+        $buyedProducts = SoldProduct::where('user_id', $user->id)->with('product')->get();
 
         return Inertia::render('home/buy-product', ['products' => $buyedProducts]);
     }

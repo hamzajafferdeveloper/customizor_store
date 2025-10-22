@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Home\BuyPhysicalProduct;
 use App\Http\Controllers\home\PaymentController;
 use App\Http\Controllers\home\StoreController;
 use App\Http\Controllers\SuperAdmin\ProductController;
@@ -43,6 +44,16 @@ Route::get('/all/colors', function (){
     return response()->json(['message', 'No Color Found'], 404);
 });
 
+Route::get('product-price-type/{id}', function ($id) {
+    $product = \App\Models\Product::find($id);
+    if($product){
+        return response()->json([
+            'productPriceType' => $product->price_type
+        ], 200);
+    }
+    return response()->json(['message', 'No Product Found'], 404);
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Payment Routes
     Route::get('/checkout/plan-id={planId}', [PaymentController::class, 'showPaymentForm'])->name('checkout.form');
@@ -66,7 +77,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/buy-product', [HomeController::class, 'buyProduct'])->name('buy.product');
     Route::get('/payment/success', [HomeController::class, 'paymentSuccess'])->name('buy.product');
+
+
+    Route::post('/buy-physical-product', [BuyPhysicalProduct::class, 'buyProduct'])->name('buy.physical.product');
+    Route::post('/buy-physical-product/success', [BuyPhysicalProduct::class, 'paymentSuccess'])->name('buy.physical.product.success');
+    Route::post('/buy-physical-product/cancel', [BuyPhysicalProduct::class, 'paymentCancel'])->name('buy.physical.product.cancel');
+
 });
+
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

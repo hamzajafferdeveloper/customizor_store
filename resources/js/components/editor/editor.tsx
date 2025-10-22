@@ -305,6 +305,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
                     selectedItemId={selectedItemId}
                     Allowedpermissions={permissions}
                     setSelectedItemId={setSelectedItemId}
+                    template={template}
                 />
             </div>
         </main>
