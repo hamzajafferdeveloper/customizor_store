@@ -21,4 +21,9 @@ class SoldPhysicalProduct extends Model
         'payment_status',
         'file'
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

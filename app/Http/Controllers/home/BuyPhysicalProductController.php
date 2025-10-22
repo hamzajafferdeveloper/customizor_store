@@ -17,7 +17,7 @@ use Inertia\Inertia;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 
-class BuyPhysicalProduct extends Controller
+class BuyPhysicalProductController extends Controller
 {
     public function buyProduct(Request $request)
     {
@@ -127,11 +127,18 @@ class BuyPhysicalProduct extends Controller
                 Mail::to($admin->email)->send(new OrderConfirmedAdminMail($order, $admin));
             }
 
-            // return redirect()->route('user.orders')->with('success', 'Payment successful! Your order has been confirmed.');
+            return redirect()->to('/buy-products?product_type=physical')->with('success', 'Payment successful! Your order has been confirmed.');
         } catch (Exception $e) {
             Log::error('Payment Success Error: '.$e->getMessage());
 
             return back()->with('error', 'Payment verification failed.');
         }
+    }
+
+    public function show(string $id){
+        $order = SoldPhysicalProduct::findOrFail($id);
+        return Inertia::render('home/buy-physical-product/show', [
+            'order' => $order,
+        ]);
     }
 }

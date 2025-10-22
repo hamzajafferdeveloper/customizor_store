@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Home\BuyPhysicalProduct;
+use App\Http\Controllers\Home\BuyPhysicalProductController;
 use App\Http\Controllers\home\PaymentController;
 use App\Http\Controllers\home\StoreController;
 use App\Http\Controllers\SuperAdmin\ProductController;
@@ -79,10 +79,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payment/success', [HomeController::class, 'paymentSuccess'])->name('buy.product');
 
 
-    Route::post('/buy-physical-product', [BuyPhysicalProduct::class, 'buyProduct'])->name('buy.physical.product');
-    Route::get('/buy-physical-product/success', [BuyPhysicalProduct::class, 'paymentSuccess'])->name('buy.physical.product.success');
-    Route::get('/buy-physical-product/cancel', [BuyPhysicalProduct::class, 'paymentCancel'])->name('buy.physical.product.cancel');
+    Route::post('/buy-physical-product', [BuyPhysicalProductController::class, 'buyProduct'])->name('buy.physical.product');
+    Route::get('/buy-physical-product/success', [BuyPhysicalProductController::class, 'paymentSuccess'])->name('buy.physical.product.success');
+    Route::get('/buy-physical-product/cancel', [BuyPhysicalProductController::class, 'paymentCancel'])->name('buy.physical.product.cancel');
 
+    Route::get('/buy-physical-product/{id}', [BuyPhysicalProductController::class, 'show'])->name('buy.physical.product.show');
 
 });
 

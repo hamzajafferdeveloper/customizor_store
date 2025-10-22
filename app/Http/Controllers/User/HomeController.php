@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Home\BuyPhysicalProductController;
 use App\Models\Category;
 use App\Models\LogoCategory;
 use App\Models\Plan;
@@ -168,12 +169,26 @@ class HomeController extends Controller
         ]);
     }
 
-    public function buyProductPage()
+    public function buyProductPage(Request $request)
     {
+        $selectedType = $request->query('product_type', 'digital'); // default to digital
+
         $user = auth()->user();
 
-        $buyedProducts = SoldProduct::where('user_id', $user->id)->with('product')->get();
+        if ($selectedType === 'physical') {
+            $products = \App\Models\SoldPhysicalProduct::where('user_id', $user->id)
+                ->with('product')
+                ->get();
+        } else {
+            $products = SoldProduct::where('user_id', $user->id)
+                ->with('product')
+                ->get();
+        }
 
-        return Inertia::render('home/buy-product', ['products' => $buyedProducts]);
+        return Inertia::render('home/buy-product', [
+            'products' => $products,
+            'selectedUrlType' => $selectedType, // frontend can use this for tab highlight
+        ]);
     }
+
 }
