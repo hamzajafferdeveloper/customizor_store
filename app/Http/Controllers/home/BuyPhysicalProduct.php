@@ -3,11 +3,17 @@
 namespace App\Http\Controllers\Home;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OrderConfirmedAdminMail;
+use App\Mail\OrderConfirmedMail;
 use App\Models\Product;
 use App\Models\SoldPhysicalProduct;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 
@@ -26,16 +32,22 @@ class BuyPhysicalProduct extends Controller
                 'product_id' => 'required|exists:products,id',
                 'has_delivery_address' => 'required|boolean',
                 'delivery_address' => 'nullable|string',
-                'file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'file' => 'nullable',
             ]);
 
             // ✅ Get product
             $product = Product::findOrFail($validated['product_id']);
 
-            // ✅ Store uploaded file (if any)
             $filePath = null;
-            if ($request->hasFile('file')) {
-                $filePath = $request->file('file')->store('physical-product-orders', 'public');
+            if ($request->filled('file')) {
+                // Create a unique file name
+                $fileName = 'order_'.time().'.svg';
+                $fileContent = $request->input('file');
+
+                // Save the SVG content as a file inside storage/app/public/physical-product-orders/
+                Storage::disk('public')->put("physical-product-orders/{$fileName}", $fileContent);
+
+                $filePath = "physical-product-orders/{$fileName}";
             }
 
             // ✅ Create order (Pending until payment success)
@@ -52,7 +64,7 @@ class BuyPhysicalProduct extends Controller
                 'delivery_address' => $validated['delivery_address'] ?? null,
                 'payment_status' => 'pending',
                 'price' => $product->price,
-                // 'file' => $filePath,
+                'file' => $filePath,
             ]);
 
             // ✅ Initialize Stripe
@@ -74,8 +86,7 @@ class BuyPhysicalProduct extends Controller
                 'cancel_url' => url('/buy-physical-product/cancel'),
             ]);
 
-            // ✅ Redirect user to Stripe Checkout
-            return redirect($session->url);
+            return Inertia::location($session->url);
         } catch (Exception $e) {
             Log::error('Stripe Error: '.$e->getMessage());
 
@@ -100,15 +111,23 @@ class BuyPhysicalProduct extends Controller
                 abort(403, 'Payment not verified.');
             }
 
-            // ✅ Mark order as paid
+            // ✅ Get order
             $order = SoldPhysicalProduct::findOrFail($orderId);
-            $order->payment_status = 'paid';
-            $order->save();
 
-            // Optional: send email / notification
-            // Mail::to($order->email)->send(new OrderConfirmedMail($order));
+            // ✅ Only process if not already paid
+            if ($order->payment_status === 'pending') {
+                // ✅ Mark order as paid
+                $order->payment_status = 'paid';
+                $order->save();
 
-            return redirect()->route('user.orders')->with('success', 'Payment successful! Your order has been confirmed.');
+                $pro = Product::find($order->product_id);
+                $admin = User::findOrFail($pro->user_id);
+
+                Mail::to($order->email)->send(new OrderConfirmedMail($order));
+                Mail::to($admin->email)->send(new OrderConfirmedAdminMail($order, $admin));
+            }
+
+            // return redirect()->route('user.orders')->with('success', 'Payment successful! Your order has been confirmed.');
         } catch (Exception $e) {
             Log::error('Payment Success Error: '.$e->getMessage());
 

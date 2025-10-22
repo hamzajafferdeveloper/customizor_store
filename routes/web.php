@@ -80,8 +80,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/buy-physical-product', [BuyPhysicalProduct::class, 'buyProduct'])->name('buy.physical.product');
-    Route::post('/buy-physical-product/success', [BuyPhysicalProduct::class, 'paymentSuccess'])->name('buy.physical.product.success');
-    Route::post('/buy-physical-product/cancel', [BuyPhysicalProduct::class, 'paymentCancel'])->name('buy.physical.product.cancel');
+    Route::get('/buy-physical-product/success', [BuyPhysicalProduct::class, 'paymentSuccess'])->name('buy.physical.product.success');
+    Route::get('/buy-physical-product/cancel', [BuyPhysicalProduct::class, 'paymentCancel'])->name('buy.physical.product.cancel');
+
 
 });
 

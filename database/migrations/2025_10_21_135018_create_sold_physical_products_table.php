@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('delivery_address')->nullable();
             $table->enum('payment_status', ['pending', 'paid', 'failed'])->default('pending');
             $table->integer('price')->default('0');
+            $table->string('file')->nullable();
             $table->timestamps();
         });
     }

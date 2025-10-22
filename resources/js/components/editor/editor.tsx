@@ -1,6 +1,9 @@
+
+
 import EditorCanvas from '@/components/editor/editor-canvas';
 import { EditorSidebar } from '@/components/editor/editor-sidebar';
 import { useSidebar } from '@/components/ui/sidebar';
+import { generateCanvasSVG } from '@/lib/downloadEditorCanvas';
 import { handleAddText, handleClickonSvgContainer, handlePaintPart, handleUploadFile, loadSvgtemplate } from '@/lib/editor';
 import { SharedData } from '@/types';
 import { AllowedPermission, LogoCategory } from '@/types/data';
@@ -109,6 +112,17 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     const downloadRef = useRef<HTMLDivElement | null>(null);
     const [openColorMenu, setOpenColorMenu] = useState<string>('');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [svgFile, setSvgFile] = useState<string>('');
+    const [svgOverlayBox, setSvgOverlayBox] = useState<{
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+        bottom: number;
+        right: number;
+        x: number;
+        y: number;
+    } | null>(null);
 
     const sharedData = usePage<SharedData>();
     // --- Sidebar state sync for non-users (admins, designers) ---
@@ -267,6 +281,25 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
         });
     }, [parts]);
 
+    useEffect(() => {
+        if (!svgContainerRef.current) return;
+
+        const run = async () => {
+            try {
+                const svgString = await generateCanvasSVG({
+                    svgContainerId: svgContainerRef.current.id,
+                    uploadedItems,
+                    svgOverlayBox,
+                });
+                setSvgFile(svgString);
+            } catch (error) {
+                console.error('Error generating SVG:', error);
+            }
+        };
+
+        run();
+    }, [uploadedItems, svgOverlayBox]);
+
     return (
         <main className="flex flex-col p-2 lg:flex-row">
             <div className="order-1 flex-1 p-4 lg:order-2">
@@ -287,6 +320,8 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
                     onRedo={redo}
                     canUndo={canUndo}
                     canRedo={canRedo}
+                    svgOverlayBox={svgOverlayBox}
+                    setSvgOverlayBox={setSvgOverlayBox}
                 />
             </div>
 
@@ -306,6 +341,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
                     Allowedpermissions={permissions}
                     setSelectedItemId={setSelectedItemId}
                     template={template}
+                    svgFile={svgFile}
                 />
             </div>
         </main>

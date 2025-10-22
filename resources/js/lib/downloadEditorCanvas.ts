@@ -1,7 +1,12 @@
 import { PartLayer } from '@/types/createProduct';
 import { CanvasItem, TextLayer } from '@/types/editor';
 
-// ✅ Updated to support text items
+/**
+ * ✅ Export the clipped mask (template + uploaded items)
+ *    - SVG: downloads
+ *    - PNG: converts SVG to PNG and downloads
+ *    - No uploadedPart logic here
+ */
 export async function downloadClippedCanvas({
     svgContainerId,
     uploadedItems,
@@ -22,70 +27,130 @@ export async function downloadClippedCanvas({
     const { width, height } = svgOverlayBox;
     const svgContainer = document.getElementById(svgContainerId);
     if (!svgContainer) return;
+
     const svgEl = svgContainer.querySelector('svg');
     if (!svgEl) return;
 
+    // 🧠 Create loader (shown for both SVG and PNG)
+    const loader = document.createElement('div');
+    loader.id = 'export-loader';
+    loader.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    z-index: 9999;
+  `;
+    loader.textContent = format === 'svg' ? 'Generating SVG... please wait' : 'Generating PNG... please wait';
+    document.body.appendChild(loader);
 
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgEl);
+    try {
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svgEl);
 
-    // ✅ Create canvas with zoom & pan
-    const canvas = document.createElement('canvas');
-    canvas.width = width * zoom;
-    canvas.height = height * zoom;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+        // 🧩 SVG export
+        if (format === 'svg') {
+            try {
+                // Generate full SVG file and download it
+                const fullSvgString = await formatSVGForDownload(svgEl, uploadedItems, fileName, width, height, true);
 
-    ctx.save();
-    ctx.scale(zoom, zoom);
-    ctx.translate(pan.x, pan.y);
+                // @ts-ignore
+                const blob = new Blob([fullSvgString], {
+                    type: 'image/svg+xml;charset=utf-8',
+                });
+                const url = URL.createObjectURL(blob);
 
-    // ✅ Draw SVG template
-    await new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve();
-        };
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-    });
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${fileName}.svg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-    // ✅ Draw all uploaded items (images + text)
-    for (const item of uploadedItems) {
-        if (item.type === 'image') {
-            await new Promise<void>((resolve) => {
-                formatImageForDownlaod(item, ctx, svgOverlayBox, resolve);
-            });
-        } else if (item.type === 'text' && item.text) {
-            // ✅ Draw text with styles, rotation, and alignment
-            formatTextForDownload(item, ctx, svgOverlayBox);
+                // Wait briefly to ensure browser finishes starting the download
+                await new Promise((res) => setTimeout(res, 500));
+                URL.revokeObjectURL(url);
+            } finally {
+                // ✅ Hide loader AFTER SVG download triggered
+                const loaderEl = document.getElementById('export-loader');
+                if (loaderEl) loaderEl.remove();
+            }
+            return;
         }
-    }
 
-    // ✅ Apply mask using template
-    await new Promise<void>((resolve) => {
-        const maskImg = new Image();
-        maskImg.onload = () => {
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.drawImage(maskImg, 0, 0, width, height);
-            ctx.globalCompositeOperation = 'source-over';
-            resolve();
+        // 🧩 PNG export logic
+        const fullSvgString = await formatSVGForDownload(svgEl, uploadedItems, fileName, width, height, true);
+
+        // @ts-ignore
+        const svgBlob = new Blob([fullSvgString], {
+            type: 'image/svg+xml;charset=utf-8',
+        });
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+
+        img.onload = async () => {
+            try {
+                const viewBox = svgEl.getAttribute('viewBox');
+                let vbWidth = width,
+                    vbHeight = height;
+                if (viewBox) {
+                    const parts = viewBox.split(' ').map(Number);
+                    if (parts.length === 4) [, , vbWidth, vbHeight] = parts;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = vbWidth * zoom;
+                canvas.height = vbHeight * zoom;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                ctx.drawImage(img, 0, 0, vbWidth * zoom, vbHeight * zoom);
+
+                await new Promise<void>((resolve) => {
+                    canvas.toBlob((blob) => {
+                        if (!blob) return resolve();
+                        const pngUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = pngUrl;
+                        link.download = `${fileName}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(pngUrl);
+                        resolve();
+                    }, 'image/png');
+                });
+            } finally {
+                // ✅ Hide loader AFTER PNG is generated
+                const loaderEl = document.getElementById('export-loader');
+                if (loaderEl) loaderEl.remove();
+            }
+            URL.revokeObjectURL(url);
         };
-        maskImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-    });
 
-    ctx.restore();
+        img.onerror = () => {
+            console.error('❌ Image failed to load during PNG export');
+            const loaderEl = document.getElementById('export-loader');
+            if (loaderEl) loaderEl.remove();
+            URL.revokeObjectURL(url);
+        };
 
-    // ✅ Export file
-    if (format === 'png') {
-        formatPngForDownload(canvas, fileName);
-    } else {
-        formatSVGForDownload(svgEl, uploadedItems, fileName, width, height);
+        img.src = url;
+    } catch (err) {
+        console.error('❌ Export failed:', err);
+        alert('Something went wrong during export.');
+        const loaderEl = document.getElementById('export-loader');
+        if (loaderEl) loaderEl.remove();
     }
 }
 
 /**
- * Export the current canvas (SVG template + uploaded items + uploaded parts) as SVG or PNG.
+ * ✅ Export with parts (used in CreateProduct)
  */
 export async function downloadCreateProduct({
     svgContainerId,
@@ -112,7 +177,6 @@ export async function downloadCreateProduct({
     const svgEl = svgContainer.querySelector('svg');
     if (!svgEl) return;
 
-    // --- Ensure part color changes are reflected in SVG before serialization ---
     uploadedPart.forEach((part) => {
         if (part.color) {
             const el = svgEl.querySelector(`[part-id="${part.id}"], [data-category-id="${part.category_id}"]`);
@@ -127,7 +191,11 @@ export async function downloadCreateProduct({
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svgEl);
 
-    // --- Create canvas ---
+    if (format === 'svg') {
+        await formatSVGForDownload(svgEl, uploadedItems, fileName, width, height, false, uploadedPart);
+        return;
+    }
+
     const canvas = document.createElement('canvas');
     canvas.width = width * zoom;
     canvas.height = height * zoom;
@@ -138,27 +206,15 @@ export async function downloadCreateProduct({
     ctx.scale(zoom, zoom);
     ctx.translate(pan.x, pan.y);
 
-    // --- Draw SVG template ---
-    await new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve();
-        };
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-    });
+    await drawSvgToCanvas(ctx, svgString, width, height);
 
-    // --- Draw uploaded parts as images (with color if needed) ---
     for (const part of uploadedPart) {
         if (part.path) {
             await new Promise<void>((resolve) => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = () => {
-                    ctx.save();
-                    ctx.globalAlpha = 1;
                     ctx.drawImage(img, 0, 0, width, height);
-                    ctx.restore();
                     resolve();
                 };
                 img.src = part.path;
@@ -166,200 +222,158 @@ export async function downloadCreateProduct({
         }
     }
 
-    // --- Draw uploaded items (images + text as SVG) ---
     for (const item of uploadedItems) {
-        await new Promise<void>((resolve) => {
-            if (item.type === 'image') {
-                formatImageForDownlaod(item, ctx, svgOverlayBox, resolve);
-            } else if (item.type === 'text' && item.text) {
-                // ✅ Draw text with styles, rotation, and alignment
-                formatTextForDownload(item, ctx, svgOverlayBox);
-            } else {
-                resolve();
-            }
-        });
+        if (item.type === 'image') {
+            await drawImageItem(item, ctx);
+        } else if (item.type === 'text' && item.text) {
+            drawTextItem(item, ctx);
+        }
     }
-
-    // --- Apply mask (so output matches visible template) ---
-    await new Promise<void>((resolve) => {
-        const maskImg = new Image();
-        maskImg.onload = () => {
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.drawImage(maskImg, 0, 0, width, height);
-            ctx.globalCompositeOperation = 'source-over';
-            resolve();
-        };
-        maskImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-    });
 
     ctx.restore();
     formatPngForDownload(canvas, fileName);
-    if (format === 'png') {
-    } else {
-        formatSVGForDownload(svgEl, uploadedItems, fileName, width, height);
-    }
 }
 
-const formatTextForDownload = (item: TextLayer, ctx: CanvasRenderingContext2D, svgOverlayBox: { left: number; top: number }) => {
-    ctx.save();
+/**
+ * ✅ New utility: create SVG string (like ClippedMask but returns only SVG)
+ */
+export function generateCanvasSVG({
+    svgContainerId,
+    uploadedItems,
+    svgOverlayBox,
+}: {
+    svgContainerId: string;
+    uploadedItems: CanvasItem[];
+    svgOverlayBox: { left: number; top: number; width: number; height: number };
+}) {
 
+    const { width, height } = svgOverlayBox;
+    const svgContainer = document.getElementById(svgContainerId);
+    if (!svgContainer) return '';
+    const svgEl = svgContainer.querySelector('svg');
+    if (!svgEl) return '';
+    return  formatSVGForDownload(svgEl, uploadedItems, 'temp', width, height, true);
+}
+
+/* ------------------ Helpers ------------------ */
+
+async function drawSvgToCanvas(ctx: CanvasRenderingContext2D, svgString: string, width: number, height: number) {
+    return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve();
+        };
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+    });
+}
+
+async function drawImageItem(item: any, ctx: CanvasRenderingContext2D) {
+    return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.save();
+            ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
+            ctx.rotate((item.rotation * Math.PI) / 180);
+            ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
+            ctx.restore();
+            resolve();
+        };
+
+        if (item.file instanceof File) {
+            const reader = new FileReader();
+            reader.onload = () => (img.src = reader.result as string);
+            reader.readAsDataURL(item.file);
+        } else if (item.src?.startsWith('<svg')) {
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src);
+        } else {
+            img.src = item.src || '';
+        }
+    });
+}
+
+function drawTextItem(item: TextLayer, ctx: CanvasRenderingContext2D) {
+    ctx.save();
     const fontWeight = item.bold ? 'bold' : 'normal';
     const fontStyle = item.italic ? 'italic' : 'normal';
     const fontSize = item.fontSize || 20;
     const fontFamily = item.fontFamily || 'Arial';
-
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-    ctx.fillStyle = item.color || '#000000';
-
-    // --- text alignment ---
-    if (item.textAlignment === 'left') ctx.textAlign = 'left';
-    else if (item.textAlignment === 'right') ctx.textAlign = 'right';
-    else ctx.textAlign = 'center';
+    ctx.fillStyle = item.color || '#000';
+    ctx.textAlign = item.textAlignment || 'center';
     ctx.textBaseline = 'middle';
-
-    const maxTextWidth = item.width || 200;
-
-    // --- word wrap ---
-    const wrapText = (text: string, maxWidth: number): string[] => {
-        const words = text.split(' ');
-        const lines: string[] = [];
-        let current = '';
-        words.forEach((word) => {
-            const testLine = current ? current + ' ' + word : word;
-            if (ctx.measureText(testLine).width > maxWidth && current) {
-                lines.push(current);
-                current = word;
-            } else {
-                current = testLine;
-            }
-        });
-        if (current) lines.push(current);
-        return lines;
-    };
-
-    const lines = wrapText(item.text, maxTextWidth);
-    const lineHeight = fontSize * 1.2;
-    const totalHeight = lines.length * lineHeight;
-
-    // 🔥 FIX: normalize coords relative to overlayBox, and center box
-    const baseX = item.x;
-    const baseY = item.y;
-
-    ctx.translate(baseX, baseY);
-
-    if (item.rotation && item.rotation !== 0) {
-        ctx.rotate((item.rotation * Math.PI) / 180);
-    }
-
-    // --- draw relative to box ---
-    const startY = -(totalHeight / 2) + lineHeight / 2;
-
-    lines.forEach((line, i) => {
-        const y = startY + i * lineHeight;
-
-        let x: number;
-        if (item.textAlignment === 'left') {
-            x = -item.width / 2; // left edge
-        } else if (item.textAlignment === 'right') {
-            x = item.width / 2; // right edge
-        } else {
-            x = 0; // center
-        }
-
-        // stroke
-        if (item.strokeColor && item.stroke) {
-            ctx.lineWidth = item.stroke;
-            ctx.strokeStyle = item.strokeColor;
-            ctx.strokeText(line, x, y);
-        }
-        // fill
-        ctx.fillText(line, x, y);
-
-        // underline
-        if (item.underline) {
-            const textWidth = ctx.measureText(line).width;
-            const underlineY = y + fontSize / 2 + 2;
-
-            ctx.beginPath();
-            if (item.textAlignment === 'left') {
-                ctx.moveTo(x, underlineY);
-                ctx.lineTo(x + textWidth, underlineY);
-            } else if (item.textAlignment === 'right') {
-                ctx.moveTo(x - textWidth, underlineY);
-                ctx.lineTo(x, underlineY);
-            } else {
-                ctx.moveTo(x - textWidth / 2, underlineY);
-                ctx.lineTo(x + textWidth / 2, underlineY);
-            }
-            ctx.lineWidth = Math.max(1, fontSize / 12);
-            ctx.strokeStyle = item.color || '#000000';
-            ctx.stroke();
-        }
-    });
-
+    ctx.translate(item.x + (item.width || 0) / 2, item.y + (item.height || 0) / 2);
+    if (item.rotation) ctx.rotate((item.rotation * Math.PI) / 180);
+    ctx.fillText(item.text || '', 0, 0);
     ctx.restore();
-};
+}
 
-const formatImageForDownlaod = (item: any, ctx: CanvasRenderingContext2D, svgOverlayBox: { left: number; top: number }, resolve: () => void) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-        ctx.save();
-        ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
-        ctx.rotate((item.rotation * Math.PI) / 180);
-        ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
-        ctx.restore();
-        resolve();
-    };
-    if (item.fileType === 'svg' || item.src?.trim().startsWith('<svg')) {
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.src || '');
-    } else {
-        img.src = item.src || '';
-    }
-};
-
-const formatSVGForDownload = (svgEl: SVGSVGElement, uploadedItems: CanvasItem[], fileName: string, width: number, height: number) => {
+async function formatSVGForDownload(
+    svgEl: SVGSVGElement,
+    uploadedItems: CanvasItem[],
+    fileName: string,
+    width: number,
+    height: number,
+    returnString = false,
+    uploadedPart?: PartLayer[],
+) {
     const serializer = new XMLSerializer();
     const baseSvg = serializer.serializeToString(svgEl);
 
-    // Build uploaded items as SVG
-    const itemSvgs = uploadedItems
-        .map((item) => {
-            if (item.type === 'image') {
-                const transform = `translate(${item.x + item.width / 2},${item.y + item.height / 2}) rotate(${item.rotation}) translate(${-item.width / 2},${-item.height / 2})`;
-                return `<image href="${item.src}" width="${item.width}" height="${item.height}" transform="${transform}" />`;
-            } else if (item.type === 'text' && item.text) {
-                const fontWeight = item.bold ? 'bold' : 'normal';
-                const fontStyle = item.italic ? 'italic' : 'normal';
-                const fontSize = item.fontSize || 20;
-                const fontFamily = item.fontFamily || 'Arial';
-                const textAnchor = item.textAlignment === 'left' ? 'start' : item.textAlignment === 'right' ? 'end' : 'middle';
+    const embedImageAsBase64 = async (src: string): Promise<string> => {
+        if (!src) return '';
+        if (src.startsWith('data:')) return src;
+        return await new Promise((resolve) => {
+            fetch(src)
+                .then((res) => res.blob())
+                .then((blob) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                })
+                .catch(() => resolve(src));
+        });
+    };
 
-                const transform = `translate(${item.x},${item.y}) rotate(${item.rotation || 0})`;
+    const itemSvgs: string[] = [];
 
-                return `<text
-                x="0" y="0"
-                font-family="${fontFamily}"
-                font-size="${fontSize}"
-                font-style="${fontStyle}"
-                font-weight="${fontWeight}"
-                fill="${item.color || '#000'}"
-                text-anchor="${textAnchor}"
-                transform="${transform}">
-                ${item.text}
-            </text>`;
-            }
-            return '';
-        })
-        .join('\n');
+    for (const item of uploadedItems) {
+        if (item.type === 'image') {
+            const href = await embedImageAsBase64(item.src || '');
+            const transform = `translate(${item.x + item.width / 2},${item.y + item.height / 2}) rotate(${item.rotation || 0}) translate(${-item.width / 2},${-item.height / 2})`;
+            itemSvgs.push(`<image href="${href}" width="${item.width}" height="${item.height}" transform="${transform}" />`);
+        } else if (item.type === 'text' && item.text) {
+            const fontWeight = item.bold ? 'bold' : 'normal';
+            const fontStyle = item.italic ? 'italic' : 'normal';
+            const fontSize = item.fontSize || 20;
+            const fontFamily = item.fontFamily || 'Arial';
+            const textAnchor = item.textAlignment === 'left' ? 'start' : item.textAlignment === 'right' ? 'end' : 'middle';
+            const centerX = item.x + (item.width || 0) / 2;
+            const centerY = item.y + (item.height || 0) / 2;
+            const transform = `translate(${centerX},${centerY}) rotate(${item.rotation || 0}) translate(0, ${fontSize / 2})`;
+            itemSvgs.push(
+                `<text font-family="${fontFamily}" font-size="${fontSize}" font-style="${fontStyle}" font-weight="${fontWeight}" fill="${item.color || '#000'}" text-anchor="${textAnchor}" transform="${transform}">${item.text}</text>`,
+            );
+        }
+    }
 
-    // Wrap everything into a new SVG root
+    const partSvgs = uploadedPart
+        ? uploadedPart
+              .map((part) =>
+                  part.path ? `<image href="${part.path}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />` : '',
+              )
+              .join('\n')
+        : '';
+
     const svgOutput = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-            ${baseSvg}
-            ${itemSvgs}
-        </svg>
-    `;
+  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    ${baseSvg}
+    ${partSvgs}
+    ${itemSvgs.join('\n')}
+  </svg>`;
+
+    if (returnString) return svgOutput;
 
     const blob = new Blob([svgOutput], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -370,9 +384,9 @@ const formatSVGForDownload = (svgEl: SVGSVGElement, uploadedItems: CanvasItem[],
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-};
+}
 
-const formatPngForDownload = (canvas: HTMLCanvasElement, fileName: string) => {
+function formatPngForDownload(canvas: HTMLCanvasElement, fileName: string) {
     canvas.toBlob((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
@@ -384,4 +398,4 @@ const formatPngForDownload = (canvas: HTMLCanvasElement, fileName: string) => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }, 'image/png');
-};
+}

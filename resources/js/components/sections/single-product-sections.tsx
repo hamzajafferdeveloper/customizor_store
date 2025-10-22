@@ -77,8 +77,12 @@ const SingleProductSection = ({
 
     const customizeHref =
         page_type === 'home'
-            ? route('customizer', product.template.id)
-            : route('store.product.customizer', { storeId: store?.id, id: product.template.id });
+            ? product?.template?.id
+                ? route('customizer', product.template.id)
+                : '#'
+            : product?.template?.id
+              ? route('store.product.customizer', { storeId: store?.id, id: product.template.id })
+              : '#';
 
     const isOwnerOrStore = product.user_id === auth?.user?.id || store?.id === product.store_id;
 

@@ -30,6 +30,9 @@ type Props = {
     onRedo: () => void;
     canUndo: boolean;
     canRedo: boolean;
+
+    svgOverlayBox: { left: number; top: number; width: number; height: number } | null;
+    setSvgOverlayBox: React.Dispatch<React.SetStateAction<{ left: number; top: number; width: number; height: number; bottom: number; right: number; x: number; y: number; } | null>>;
 };
 
 export default function EditorCanvas({
@@ -48,6 +51,8 @@ export default function EditorCanvas({
     onRedo,
     canUndo,
     canRedo,
+    svgOverlayBox,
+    setSvgOverlayBox
 }: Props) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const offsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
@@ -61,7 +66,7 @@ export default function EditorCanvas({
 
     const [svgMaskUrl, setSvgMaskUrl] = useState<string | null>(null);
     const [clipPath, setClipPath] = useState<string | null>(null);
-    const [svgOverlayBox, setSvgOverlayBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+
 
     const controllerRef = useRef<HTMLDivElement | null>(null);
     const [isResizing, setIsResizing] = useState(false);
@@ -296,6 +301,10 @@ export default function EditorCanvas({
                 top: rect.top - parentRect.top + 1,
                 width: rect.width,
                 height: rect.height,
+                bottom: 942,
+                right: 1878,
+                x: 556,
+                y: 90,
             });
         };
         setTimeout(updateOverlayBox, 200);

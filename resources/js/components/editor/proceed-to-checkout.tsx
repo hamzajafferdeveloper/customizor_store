@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Textarea } from '../ui/textarea';
 
@@ -13,9 +13,10 @@ type Props = {
     open: boolean;
     onOpenChange: () => void;
     product_id: number;
+    svgFile: string;
 };
 
-export default function ProceedToCheckout({ open, onOpenChange, product_id }: Props) {
+export default function ProceedToCheckout({ open, onOpenChange, product_id, svgFile }: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         number: '',
@@ -25,17 +26,28 @@ export default function ProceedToCheckout({ open, onOpenChange, product_id }: Pr
         has_delivery_address: false as boolean,
         delivery_address: '',
         product_id: product_id,
+        file: svgFile,
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('buy.physical.product'));
-        onOpenChange();
+
+        post(route('buy.physical.product'), {
+            onSuccess: (page: any) => {
+                //
+            },
+            onError: (errors) => {
+                console.log('Validation errors:', errors);
+            },
+            onFinish: () => {
+                onOpenChange();
+            },
+        });
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-h-[90vh] overflow-y-auto'>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create Category</DialogTitle>
                     <DialogDescription>Enter Name of Category. Then Click Save.</DialogDescription>
@@ -138,9 +150,8 @@ export default function ProceedToCheckout({ open, onOpenChange, product_id }: Pr
                             <InputError message={errors.delivery_address} />
                         </div>
                     )}
-                    <DialogFooter className='sm:flex'>
+                    <DialogFooter className="sm:flex">
                         <Button className="w-full cursor-pointer" onClick={onOpenChange} variant="outline" type="submit" tabIndex={2}>
-
                             Cancel
                         </Button>
                         <Button className="w-full cursor-pointer" type="submit" tabIndex={2} disabled={processing}>

@@ -28,6 +28,7 @@ type Props = {
     Allowedpermissions: AllowedPermission;
     setSelectedItemId: React.Dispatch<React.SetStateAction<string | null>>;
     template: Template;
+    svgFile: string;
 };
 
 export function EditorSidebar({
@@ -44,6 +45,7 @@ export function EditorSidebar({
     Allowedpermissions,
     setSelectedItemId,
     template,
+    svgFile,
 }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [showBar, setShowBar] = useState<'layerbar' | 'textbar' | 'logobar' | 'colorbar'>('textbar');
@@ -104,6 +106,8 @@ export function EditorSidebar({
                 setProductType(data.productPriceType);
             });
     }, []);
+
+
 
     return (
         <aside className="mt-2 h-full w-full space-y-2 lg:flex">
@@ -195,7 +199,7 @@ export function EditorSidebar({
                 )}
             </div>
             {showProceedToCheckOutModal && (
-                <ProceedToCheckout open={showProceedToCheckOutModal} product_id={template.product_id} onOpenChange={() => setShowProceedToCheckOutModal(false)} />
+                <ProceedToCheckout open={showProceedToCheckOutModal} svgFile={svgFile} product_id={template.product_id} onOpenChange={() => setShowProceedToCheckOutModal(false)} />
             )}
         </aside>
     );
