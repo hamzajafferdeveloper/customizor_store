@@ -7,6 +7,7 @@ use App\Mail\OrderConfirmedAdminMail;
 use App\Mail\OrderConfirmedMail;
 use App\Models\Product;
 use App\Models\SoldPhysicalProduct;
+use App\Models\StoreStripeKey;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
@@ -67,8 +68,26 @@ class BuyPhysicalProductController extends Controller
                 'file' => $filePath,
             ]);
 
-            // ✅ Initialize Stripe
-            Stripe::setApiKey(config('services.stripe.secret'));
+            // Default Stripe key
+            $stripeSecret = config('services.stripe.secret');
+
+            // Check for store-specific Stripe keys
+            if ($product->store_id) {
+                $stripeKeys = StoreStripeKey::where('store_id', $product->store_id)->first();
+                if ($stripeKeys && $stripeKeys->stripe_secret_key) {
+                    $stripeSecret = $stripeKeys->stripe_secret_key;
+                }
+            }
+
+            // Ensure we have a valid Stripe secret key
+            if (! $stripeSecret) {
+                return response()->json([
+                    'error' => 'Stripe secret key not configured for this store.',
+                ], 500);
+            }
+
+            // Set Stripe API key
+            Stripe::setApiKey($stripeSecret);
 
             // ✅ Create checkout session
             $session = Session::create([

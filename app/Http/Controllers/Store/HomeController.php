@@ -360,14 +360,15 @@ class HomeController extends Controller
 
     public function storeTemplate(Request $request, string $storeId, string $id)
     {
+        // dd($request->all());
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'name' => 'required|string',
-            'svg' => 'required|string',
+            'svg' => 'required|string', // assuming raw SVG string
             'parts' => 'required|array',
             'parts.*.id' => 'required|string',
             'parts.*.name' => 'required|string',
-            'parts.*.type' => 'required|string|in:leather,protection',
+            'parts.*.protection' => 'required|boolean',
             'parts.*.isGroup' => 'required|boolean',
             'parts.*.color' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/'],
         ]);
@@ -379,11 +380,12 @@ class HomeController extends Controller
         ]);
 
         foreach ($validated['parts'] as $part) {
+            $type = $part['protection'] ? 'protection' : 'leather';
 
             SvgTemplatePart::create([
                 'part_id' => $part['id'],
                 'template_id' => $svgtemplate->id,
-                'type' => $part['type'],
+                'type' => $type,
                 'name' => $part['name'],
                 'color' => $part['color'],
                 'is_group' => $part['isGroup'],
@@ -431,7 +433,7 @@ class HomeController extends Controller
         // Update or create parts
         foreach ($validated['parts'] as $part) {
             $type = $part['protection'] ? 'protection' : 'leather';
-            $type = $part['protection'] ? 'protection' : 'leather';
+            // $type = $part['protection'] ? 'protection' : 'leather';
             SvgTemplatePart::updateOrCreate(
                 ['part_id' => $part['part_id'], 'template_id' => $template->id],
                 [

@@ -3,17 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import StoreLayout from '@/layouts/store-layout';
 import { SharedData } from '@/types';
 import { StoreData } from '@/types/store';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { PenBox } from 'lucide-react';
+import { Eye, EyeOff, PenBox } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 
-const StoreProfile = ({ store }: { store: StoreData }) => {
+const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: StoreData; initialPublicKey: string; initialSecretKey: string }) => {
     const page = usePage<SharedData>();
     const { flash } = page.props;
 
@@ -30,6 +31,9 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
     const [filePreview, setFilePreview] = useState<string | null>(null);
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState<string | null>(store.banner ? `/storage/${store.banner.path}` : null);
+    const [publicKey, setPublicKey] = useState(initialPublicKey);
+    const [secretKey, setSecretKey] = useState(initialSecretKey);
+    const [showSecret, setShowSecret] = useState(false);
 
     const BannerRef = useRef<HTMLInputElement | null>(null);
 
@@ -81,6 +85,23 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
             },
             onError: () => {
                 toast.error('Failed to update store profile');
+            },
+        });
+    };
+
+    const handleStripeSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        const data = new FormData();
+        data.append('stripe_public_key', publicKey);
+        data.append('stripe_secret_key', secretKey);
+
+        router.post(route('store.stripe.update', store.id), data, {
+            forceFormData: true,
+            onSuccess: () => {
+                // Optionally show a toast
+            },
+            onError: () => {
+                // Optionally show a toast
             },
         });
     };
@@ -179,7 +200,39 @@ const StoreProfile = ({ store }: { store: StoreData }) => {
                     </div>
                 </Card>
 
-                {/* Account Info */}
+                {/* Payment Info */}
+                <Card className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                    <div className="mb-4 flex w-full justify-between">
+                        <h2 className="text-lg font-semibold">Stripe Payment Keys</h2>
+                        <Badge className="bg-green-700 text-white">Editable</Badge>
+                    </div>
+                    <form onSubmit={handleStripeSave} className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                            <Label>Publishable Key</Label>
+                            <Input type="text" value={publicKey} onChange={(e) => setPublicKey(e.target.value)} placeholder="Enter publishable key" />
+                        </div>
+                        <div className="relative flex flex-col gap-1">
+                            <Label>Secret Key</Label>
+                            <Input
+                                type={showSecret ? 'text' : 'password'}
+                                value={secretKey}
+                                onChange={(e) => setSecretKey(e.target.value)}
+                                placeholder="Enter secret key"
+                            />
+                            <button
+                                type="button"
+                                className="absolute top-[30px] right-2 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowSecret(!showSecret)}
+                            >
+                                {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+                        <Button type="submit" className="mt-2 w-full">
+                            Save
+                        </Button>
+                    </form>
+                </Card>
+
                 <Card className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
                     <div className="mb-4 flex w-full justify-between">
                         <h2 className="text-lg font-semibold">Account Info</h2>

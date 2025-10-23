@@ -12,6 +12,7 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use Stripe\Checkout\Session as StripeSession;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 
@@ -22,51 +23,50 @@ class PaymentController extends Controller
         $user = auth()->user();
         $plan = Plan::findOrFail($planId);
 
-        // If user is not paid, show checkout page
-        if (!$user->is_paid) {
-            return Inertia::render('home/payment/checkout', [
-                'stripeKey' => config('services.stripe.key'),
-                'plan' => $plan,
-            ]);
-        }
-
-        // If user is already paid
+        // If user is already paid, check if they already bought this plan
         if ($user->is_paid) {
-            // Fetch user's payments
-            $paymentDetails = PaymentDetail::where('user_id', $user->id)
+            $paymentForPlan = PaymentDetail::where('user_id', $user->id)
+                ->where('plan_id', $planId)
                 ->where('type', 'new')
-                ->get();
-
-            // ✅ Check if user has any payment with the given plan_id
-            $paymentForPlan = $paymentDetails->firstWhere('plan_id', $planId);
+                ->first();
 
             if ($paymentForPlan) {
-                // ✅ Check if any store is linked with this plan_id for this user
                 $storeExists = Store::where('user_id', $user->id)
                     ->where('plan_id', $planId)
                     ->exists();
 
                 if ($storeExists) {
-                    // If store already exists for this plan_id → redirect to payment page
-                    return Inertia::render('home/payment/checkout', [
-                        'stripeKey' => config('services.stripe.key'),
-                        'plan' => $plan,
-                        'message' => 'You already have a store for this plan. Please choose another plan.',
-                    ]);
+                    return redirect()->route('home')->with('error', 'You already have a store for this plan. Please choose another plan.');
                 } else {
-                    // If payment exists but no store yet → redirect to store.create
                     return redirect()->route('store.create');
                 }
-            } else {
-                // If no payment for this plan → show checkout page
-                return Inertia::render('home/payment/checkout', [
-                    'stripeKey' => config('services.stripe.key'),
-                    'plan' => $plan,
-                ]);
             }
         }
 
-        return redirect()->route('home')->with('error', 'You are not authorized to access this page.');
+        // Initialize Stripe
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        // Create a Stripe Checkout Session
+        $session = StripeSession::create([
+            'payment_method_types' => ['card'],
+            'mode' => 'payment',
+            'customer_email' => $user->email,
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => 'usd', // or your currency
+                    'product_data' => [
+                        'name' => $plan->name,
+                    ],
+                    'unit_amount' => $plan->price * 100, // in cents
+                ],
+                'quantity' => 1,
+            ]],
+            'success_url' => route('payment.confirmation', ['planId' => $planId]),
+            'cancel_url' => route('home'),
+        ]);
+
+        // Redirect to Stripe Checkout
+        return Inertia::location($session->url);
     }
 
     public function showUpgradeForm($storeId)
@@ -79,7 +79,7 @@ class PaymentController extends Controller
             return Inertia::render('home/payment/upgrade', [
                 'stripeKey' => config('services.stripe.key'),
                 'plans' => $plans,
-                'storeId' => $storeId
+                'storeId' => $storeId,
             ]);
         } else {
             return abort(403, 'Unathorized Access');
@@ -98,7 +98,7 @@ class PaymentController extends Controller
             return Inertia::render('home/payment/renew', [
                 'stripeKey' => config('services.stripe.key'),
                 'plan' => $plan->plan,
-                'storeId' => $storeId
+                'storeId' => $storeId,
             ]);
         } else {
             return abort(403, 'Unathorized Access');
@@ -108,7 +108,6 @@ class PaymentController extends Controller
     /**
      * Create a Stripe Payment Intent
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function createIntent(Request $request)
@@ -120,34 +119,36 @@ class PaymentController extends Controller
             'currency' => 'usd',
         ]);
 
-
         return response()->json(['clientSecret' => $intent->client_secret]);
     }
 
     public function confirmation(Request $request)
     {
-        // Optional: Validate
-        $request->validate([
-            'plan.id' => 'required|integer',
-            'plan.price' => 'required|numeric',
-        ]);
+        try {
+            $plan = Plan::findOrFail($request->input('planId'));
 
-        // Update user as paid
-        $user = auth()->user();
-        $user->is_paid = true;
-        $user->save();
+            // Optional: Validate
 
-        // Store payment details
-        $paymentDetail = new PaymentDetail();
-        $paymentDetail->user_id = $user->id;
-        $paymentDetail->plan_id = $request->input('plan.id');
-        $paymentDetail->amount = $request->input('plan.price');
-        $paymentDetail->type = 'new'; // Assuming this is a new payment
-        $paymentDetail->save();
 
-        Mail::to($user->email)->send(new CheckSuccessfullMail());
+            // Update user as paid
+            $user = auth()->user();
+            $user->is_paid = true;
+            $user->save();
 
-        return redirect()->route('store.create')->with('success', 'Payment successful!');
+            // Store payment details
+            $paymentDetail = new PaymentDetail;
+            $paymentDetail->user_id = $user->id;
+            $paymentDetail->plan_id = $plan->id;
+            $paymentDetail->amount = $plan->price;
+            $paymentDetail->type = 'new'; // Assuming this is a new payment
+            $paymentDetail->save();
+
+            Mail::to($user->email)->send(new CheckSuccessfullMail);
+
+            return redirect()->route('store.create')->with('success', 'Payment successful!');
+        } catch (\Exception $e) {
+            return redirect()->route('home')->with('error', 'Payment failed!');
+        }
     }
 
     public function upgradeConfirmation(Request $request)
@@ -169,18 +170,18 @@ class PaymentController extends Controller
         $oldDetail = PaymentDetail::findOrFail($store->payment_detail_id);
 
         $oldDetail->update([
-            'type' => 'upgrade'
+            'type' => 'upgrade',
         ]);
 
         // Store payment details
-        $paymentDetail = new PaymentDetail();
+        $paymentDetail = new PaymentDetail;
         $paymentDetail->user_id = $user->id;
         $paymentDetail->plan_id = $request->input('plan.id');
         $paymentDetail->amount = $request->input('plan.price');
         $paymentDetail->type = 'upgrade';
         $paymentDetail->save();
 
-        Mail::to($user->email)->send(new UpgradeSuccessfullMail());
+        Mail::to($user->email)->send(new UpgradeSuccessfullMail);
 
         $plan = Plan::findOrFail($request->input('plan.id'));
 
@@ -192,7 +193,7 @@ class PaymentController extends Controller
             'payment_detail_id' => $paymentDetail->id,
             'plan_id' => $request->input('plan.id'),
             'plan_expiry_date' => $expiryDate,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         return redirect()->route('store.dashboard', $request->input('store_id'));
@@ -213,7 +214,7 @@ class PaymentController extends Controller
         $user->save();
 
         // Store payment details
-        $paymentDetail = new PaymentDetail();
+        $paymentDetail = new PaymentDetail;
         $paymentDetail->user_id = $user->id;
         $paymentDetail->plan_id = $request->input('plan.id');
         $paymentDetail->amount = $request->input('plan.price');
@@ -232,10 +233,10 @@ class PaymentController extends Controller
             'payment_detail_id' => $paymentDetail->id,
             'plan_id' => $request->input('plan.id'),
             'plan_expiry_date' => $expiryDate,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
-        Mail::to($user->email)->send(new RenewSuccessfullMail());
+        Mail::to($user->email)->send(new RenewSuccessfullMail);
 
         return redirect()->route('store.dashboard', $request->input('store_id'));
     }

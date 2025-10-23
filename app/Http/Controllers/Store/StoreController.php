@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Store;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\StoreBanner;
+use App\Models\StoreStripeKey;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,10 @@ use Inertia\Inertia;
 
 class StoreController extends Controller
 {
+    public function dashboard(){
+        dd('Welcome To Dashboard');
+    }
+
     public function allStoreofUser(string $id)
     {
         $stores = Store::where('user_id', $id)->get();
@@ -30,9 +35,12 @@ class StoreController extends Controller
     public function profile(string $storeId)
     {
         $store = Store::with('banner')->findOrFail($storeId);
+        $stripeKey = StoreStripeKey::where('store_id', $store->id)->first();
 
         return Inertia::render('store/profile', [
-            'store' => $store->load('plan')
+            'store' => $store->load('plan'),
+            'initialPublicKey' => $stripeKey ? $stripeKey->stripe_public_key : '',
+            'initialSecretKey' => $stripeKey ? $stripeKey->stripe_secret_key : '',
         ]);
     }
 
@@ -103,4 +111,36 @@ class StoreController extends Controller
 
     }
 
+    public function updateStripe(Request $request, string $storeId)
+    {
+        // Validate request
+        $validated = $request->validate([
+            'stripe_public_key' => 'required|string|max:255',
+            'stripe_secret_key' => 'required|string|max:255',
+        ]);
+
+        // Ensure the store exists
+        $store = Store::findOrFail($storeId);
+
+        // Check if Stripe keys already exist for this store
+        $stripeKeys = StoreStripeKey::where('store_id', $storeId)->first();
+
+        if ($stripeKeys) {
+            // Update existing keys
+            $stripeKeys->update([
+                'stripe_public_key' => $validated['stripe_public_key'],
+                'stripe_secret_key' => $validated['stripe_secret_key'],
+            ]);
+        } else {
+            // Create new record
+            StoreStripeKey::create([
+                'store_id' => $store->id,
+                'stripe_public_key' => $validated['stripe_public_key'],
+                'stripe_secret_key' => $validated['stripe_secret_key'],
+            ]);
+        }
+
+        // Return success response
+        return back()->with('success', 'Stripe keys saved successfully.');
+    }
 }

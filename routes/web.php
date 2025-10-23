@@ -61,7 +61,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/renew/store-id={storeId}', [PaymentController::class, 'showRenewForm'])->name('renew.form');
 
     Route::post('/payment-intent', [PaymentController::class, 'createIntent'])->name('payment.intent');
-    Route::post('/confirmation', [PaymentController::class, 'confirmation'])->name('payment.confirmation');
+    Route::get('/confirmation', [PaymentController::class, 'confirmation'])->name('payment.confirmation');
     Route::post('/upgrade/confirm', [PaymentController::class, 'upgradeConfirmation']);
     Route::post('/renew/confirm', [PaymentController::class, 'renewConfirmation']);
 

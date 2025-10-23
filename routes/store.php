@@ -12,7 +12,8 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
     Route::get('/products', [HomeController::class, 'products'])->name('products');
     Route::get('/product/{slug}', [HomeController::class, 'showProduct'])->name('product.show');
     Route::middleware('isStoreAdmin')->group(function () {
-        Route::get('/dashboard', [StoreController::class, 'profile'])->name('dashboard');
+        Route::get('/dashboard', [StoreController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [StoreController::class, 'profile'])->name('dashboard');
         Route::get('/create/product', [HomeController::class, 'createProduct'])->name('product.create');
         Route::post('/store/product', [HomeController::class, 'storeProduct'])->name('product.store');
         Route::get('/edit/product/{slug}', [HomeController::class, 'editProduct'])->name('product.edit');
@@ -25,6 +26,7 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
         Route::post('/store/banner', [StoreController::class, 'banner'])->name('banner');
         Route::get('/edit/template/template-id={id}', [HomeController::class, 'editTemplate'])->name('product.edit.template');
         Route::put('/update/template/template-id={id}', [HomeController::class, 'updateTemplate'])->name('product.update.template');
+        Route::post('/update/stripe/update', [StoreController::class, 'updateStripe'])->name('stripe.update');
     });
     Route::get('/product/{id}/customize', [HomeController::class, 'customizeProduct'])->name('product.customizer');
 });

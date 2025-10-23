@@ -3,10 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Traits\HasRoles;
 
 class Store extends Model
 {
@@ -45,4 +41,8 @@ class Store extends Model
         return $this->hasOne(StoreBanner::class);
     }
 
+    public function stripeKeys()
+    {
+        return $this->hasOne(StoreStripeKey::class);
+    }
 }

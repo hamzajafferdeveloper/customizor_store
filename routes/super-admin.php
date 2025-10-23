@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\CreateStoreController;
 use App\Http\Controllers\SuperAdmin\BrandController;
 use App\Http\Controllers\SuperAdmin\CategoryController;
@@ -106,5 +107,10 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
     Route::prefix('/create-store')->name('superadmin.create-store.')->group(function () {
         Route::get('/add', [CreateStoreController::class, 'add'])->name('add');
         Route::post('/store', [CreateStoreController::class, 'store'])->name('store');
+    });
+
+    Route::prefix('/order')->name('superadmin.order.')->group(function () {
+        Route::get('/index', [AdminOrderController::class, 'index'])->name('index');
+        Route::get('/show/{id}', [AdminOrderController::class, 'show'])->name('show');
     });
 });

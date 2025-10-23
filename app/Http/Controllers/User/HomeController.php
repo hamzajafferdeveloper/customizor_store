@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Home\BuyPhysicalProductController;
 use App\Models\Category;
 use App\Models\LogoCategory;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\SoldProduct;
+use App\Models\StoreStripeKey;
 use App\Models\SvgTemplate;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -108,24 +108,52 @@ class HomeController extends Controller
     {
         $product = Product::findOrFail($request->input('product_id'));
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+        // Default Stripe key
+        $stripeSecret = config('services.stripe.secret');
 
-        $session = Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'usd',
-                    'product_data' => ['name' => $product->title],
-                    'unit_amount' => $product->price * 100,
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => url('/payment/success?session_id={CHECKOUT_SESSION_ID}'),
-            'cancel_url' => url('/payment/cancel'),
-        ]);
+        // Check for store-specific Stripe keys
+        if ($product->store_id) {
+            $stripeKeys = StoreStripeKey::where('store_id', $product->store_id)->first();
+            if ($stripeKeys && $stripeKeys->stripe_secret_key) {
+                $stripeSecret = $stripeKeys->stripe_secret_key;
+            }
+        }
 
-        return response()->json(['url' => $session->url]);
+        // Ensure we have a valid Stripe secret key
+        if (! $stripeSecret) {
+            return response()->json([
+                'error' => 'Stripe secret key not configured for this store.',
+            ], 500);
+        }
+
+        // Set Stripe API key
+        Stripe::setApiKey($stripeSecret);
+
+        try {
+            $session = Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => 'usd',
+                        'product_data' => ['name' => $product->title],
+                        'unit_amount' => (int) ($product->price * 100),
+                    ],
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => url('/payment/success?session_id={CHECKOUT_SESSION_ID}'),
+                'cancel_url' => url('/payment/cancel'),
+            ]);
+
+            // ✅ Return JSON instead of redirect to avoid CORS issues
+            return response()->json(['url' => $session->url]);
+
+        } catch (\Exception $e) {
+            // Handle Stripe API errors gracefully
+            return response()->json([
+                'error' => 'Stripe error: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     public function paymentSuccess(Request $request)
@@ -190,5 +218,4 @@ class HomeController extends Controller
             'selectedUrlType' => $selectedType, // frontend can use this for tab highlight
         ]);
     }
-
 }

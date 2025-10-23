@@ -32,7 +32,7 @@ class OrderConfirmedAdminMail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Your Order is Confirmed')
+        return $this->subject('You have received a new order')
                     ->markdown('emails.orders.admin.confirmed')
                     ->with([
                         'order' => $this->order,
