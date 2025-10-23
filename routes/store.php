@@ -14,6 +14,12 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
     Route::middleware('isStoreAdmin')->group(function () {
         Route::get('/dashboard', [StoreController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [StoreController::class, 'profile'])->name('dashboard');
+
+        Route::prefix('/order')->name('order.')->group(function () {
+            Route::get('/index', [StoreController::class, 'allOrders'])->name('index');
+            Route::get('/show/{id}', [StoreController::class, 'singleOrder'])->name('show');
+        });
+
         Route::get('/create/product', [HomeController::class, 'createProduct'])->name('product.create');
         Route::post('/store/product', [HomeController::class, 'storeProduct'])->name('product.store');
         Route::get('/edit/product/{slug}', [HomeController::class, 'editProduct'])->name('product.edit');

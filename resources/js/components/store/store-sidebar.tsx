@@ -3,7 +3,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { StoreData } from '@/types/store';
 import { Link } from '@inertiajs/react';
-import { Box, LayoutGrid } from 'lucide-react';
+import { Box, LayoutGrid, ShoppingBag } from 'lucide-react';
 import AppLogo from '../app-logo';
 import { NavStore } from './nav-store';
 
@@ -18,6 +18,12 @@ export function StoreSidebar({ store }: { store: StoreData }) {
             title: 'Product',
             href: `/${store.id}/products`,
             icon: Box,
+        },
+
+        {
+            title: 'Orders',
+            href: `/${store.id}/order/index`,
+            icon: ShoppingBag,
         },
     ];
 

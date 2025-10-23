@@ -3,18 +3,56 @@
 namespace App\Http\Controllers\Store;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
+use App\Models\SoldPhysicalProduct;
 use App\Models\Store;
 use App\Models\StoreBanner;
 use App\Models\StoreStripeKey;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class StoreController extends Controller
 {
-    public function dashboard(){
-        dd('Welcome To Dashboard');
+    public function dashboard(string $storeId)
+    {
+
+        $store = Store::with('banner')->findOrFail($storeId);
+
+        $totalProducts = Product::where('store_id', $storeId)->count();
+
+        return Inertia::render('store/dashboard', ['store' => $store]);
+    }
+
+    public function allOrders(string $storeId, Request $request)
+    {
+        $store = Store::findOrFail($storeId);
+        $query = SoldPhysicalProduct::where('store_id', $store->id)->with('product');
+        // Search filter
+        if ($request->has('search') && $request->search !== '') {
+            $query->whereHas('product', function ($q) use ($request) {
+                $q->where('title', 'like', '%'.$request->search.'%');
+            });
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $orders = $query->paginate($perPage)->appends($request->all());
+
+        return Inertia::render('store/order/index', [
+            'orders' => $orders,
+            'store' => $store
+        ]);
+    }
+
+    public function singleOrder(string $storeId, string $id) {
+        $store = Store::findOrFail($storeId);
+        $order = SoldPhysicalProduct::findOrFail($id);
+
+        return Inertia::render('store/order/show', [
+            'order' => $order,
+            'store' => $store
+        ]);
     }
 
     public function allStoreofUser(string $id)
@@ -23,11 +61,11 @@ class StoreController extends Controller
 
         if ($stores) {
             return response()->json([
-                'data' => $stores
+                'data' => $stores,
             ], 200);
         } else {
             return response()->json([
-                'message' => 'No Store related to given user'
+                'message' => 'No Store related to given user',
             ], 404);
         }
     }
