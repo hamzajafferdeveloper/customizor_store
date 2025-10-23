@@ -23,7 +23,7 @@ export default function BuyProduct({ products, selectedUrlType }: any) {
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             </Head>
-            <header className="border-b px-4 md:px-6">
+            <header className="border-b px-4 mt-4 md:px-6">
                 <nav ref={navRef} className="no-scrollbar relative flex items-end gap-6 overflow-x-auto pb-2">
                     {types.map((cat, i) => (
                         <button
