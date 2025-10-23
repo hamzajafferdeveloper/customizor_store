@@ -71,8 +71,9 @@ export default function StoreDataTable({ stores, filters, countries }: any) {
                     <Select
                         value={type || 'all'}
                         onValueChange={(v) => {
-                            setType(v === 'all' ? '' : v);
-                            applyFilters();
+                            const newType = v === 'all' ? '' : v;
+                            setType(newType);
+                            router.get(route('dashboard'), { type: newType, country }, { preserveState: true });
                         }}
                     >
                         <SelectTrigger className="w-40">
@@ -89,8 +90,9 @@ export default function StoreDataTable({ stores, filters, countries }: any) {
                     <Select
                         value={country || 'all'}
                         onValueChange={(v) => {
-                            setCountry(v === 'all' ? '' : v);
-                            applyFilters();
+                            const newCountry = v === 'all' ? '' : v;
+                            setCountry(newCountry);
+                            router.get(route('dashboard'), { type, country: newCountry }, { preserveState: true });
                         }}
                     >
                         <SelectTrigger className="w-40">

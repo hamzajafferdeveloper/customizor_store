@@ -10,7 +10,8 @@ Route::get('/user={id}/store/all', [StoreController::class, 'allStoreofUser']);
 Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isStoreActive'])->group(function () {
 
     Route::get('/products', [HomeController::class, 'products'])->name('products');
-    Route::get('/product/{slug}', [HomeController::class, 'showProduct'])->name('product.show');
+    Route::get('/product/{sku}', [HomeController::class, 'showProduct'])->name('product.show');
+
     Route::middleware('isStoreAdmin')->group(function () {
         Route::get('/dashboard', [StoreController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [StoreController::class, 'profile'])->name('dashboard');
@@ -22,7 +23,7 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
 
         Route::get('/create/product', [HomeController::class, 'createProduct'])->name('product.create');
         Route::post('/store/product', [HomeController::class, 'storeProduct'])->name('product.store');
-        Route::get('/edit/product/{slug}', [HomeController::class, 'editProduct'])->name('product.edit');
+        Route::get('/edit/product/{sku}', [HomeController::class, 'editProduct'])->name('product.edit');
         Route::post('/update/product/{id}', [HomeController::class, 'updateProduct'])->name('product.update');
         Route::delete('/delete/product/{id}', [HomeController::class, 'destroyProduct'])->name('product.delete');
         Route::get('/product/{slug}/add-template', [HomeController::class, 'addTemplate'])->name('product.add.template');

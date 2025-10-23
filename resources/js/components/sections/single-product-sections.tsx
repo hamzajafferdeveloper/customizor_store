@@ -261,7 +261,7 @@ const safeParseArray = (val: any): string[] => {
 // 🔧 Action Renderers
 const renderStoreActions = (store: StoreData, product: Product) => (
     <>
-        <Link href={route('store.product.edit', { storeId: store.id, slug: product.slug })}>
+        <Link href={route('store.product.edit', { storeId: store.id, sku: product.sku })}>
             <Pen className="h-5 w-5" />
         </Link>
         <Trash2 className="h-5 w-5 text-red-500" />
@@ -285,7 +285,7 @@ const renderStoreActions = (store: StoreData, product: Product) => (
 
 const renderAdminActions = (product: Product) => (
     <>
-        <Link href={route('superadmin.product.edit', product.slug)}>
+        <Link href={route('superadmin.product.edit', product.sku)}>
             <Pen className="h-5 w-5" />
         </Link>
         <Trash2 className="h-5 w-5 text-red-500" />
@@ -295,7 +295,7 @@ const renderAdminActions = (product: Product) => (
                     ? route('superadmin.product.edit.template', {
                           id: product.template.id,
                       })
-                    : route('superadmin.product.add.template', product.slug)
+                    : route('superadmin.product.add.template', product.sku)
             }
         >
             <Layers className="h-5 w-5" />

@@ -31,8 +31,8 @@ Route::get('/docs', [HomeController::class, 'docs'])->name('documentation');
 Route::get('/pricing', [HomeController::class, 'pricing'])->name('pricing');
 Route::get('/product/customizer/template={id}', [HomeController::class, 'customizer'])->name('customizer');
 Route::get('/product', [ProductController::class, 'index'])->name('product.index');
-Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
-Route::get('/design-our-own-product', [ProductController::class, 'createOwnProduct'])->name('design.product');
+Route::get('/product/{sku}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/design-our-own-product/{categoryId}', [ProductController::class, 'createOwnProduct'])->name('design.product');
 
 Route::get('/all/colors', function (){
     $colors = Color::all();

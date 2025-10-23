@@ -28,82 +28,97 @@ class CreateYourOwnProduct extends Controller
             $validated = $request->validate([
                 'category_id' => 'required|integer|exists:categories,id|unique:create_your_own_products,category_id',
                 'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'template' => 'nullable|mimes:svg,svg+xml|max:2048',
             ]);
 
-            // ✅ Handle file upload if exists
             $imagePath = null;
+            $templatePath = null;
+
+            // ✅ Handle image upload
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
                 $filename = time().'-'.uniqid().'.'.$file->getClientOriginalExtension();
                 $imagePath = $file->storeAs('create_own_product', $filename, 'public');
             }
 
+            // ✅ Handle SVG template upload
+            if ($request->hasFile('template')) {
+                $file = $request->file('template');
+                $templatename = time().'-'.uniqid().'.'.$file->getClientOriginalExtension();
+                $templatePath = $file->storeAs('create_own_product/template', $templatename, 'public');
+            }
+
             // ✅ Save product
-            $product = \App\Models\CreateYourOwnProduct::create([
+            \App\Models\CreateYourOwnProduct::create([
                 'category_id' => $validated['category_id'],
                 'image' => $imagePath,
+                'template' => $templatePath,
             ]);
 
-            return redirect()
-                ->back()
-                ->with('success', 'Create Own Product Image created successfully!');
+            return redirect()->back()->with('success', 'Create Own Product created successfully!');
+
         } catch (\Throwable $e) {
-            // 🔴 Log full error
-            Log::error('Create Own Product Image destroy failed', [
+            Log::error('Create Own Product store failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all(),
             ]);
 
-            return redirect()
-                ->back()
-                ->with('error', 'Something went wrong. Please try again later.');
+            return redirect()->back()->with('error', 'Something went wrong. Please try again later.');
         }
     }
 
     public function update(Request $request, $id)
     {
         try {
-            // Validate input
             $validated = $request->validate([
                 'category_id' => 'required|exists:categories,id',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'template' => 'nullable|mimes:svg,svg+xml|max:4096',
             ]);
 
-            // Find record
             $cop = \App\Models\CreateYourOwnProduct::findOrFail($id);
 
-            // Handle new image if uploaded
+            // ✅ If image uploaded — delete old & store new
             if ($request->hasFile('image')) {
-                // Delete old image if exists
-                if ($cop->image && \Storage::disk('public')->exists($cop->image)) {
+
+                if ($cop->image && Storage::disk('public')->exists($cop->image)) {
                     Storage::disk('public')->delete($cop->image);
                 }
 
-                // Save new image with unique name
                 $file = $request->file('image');
-                $filename = time().'-'.uniqid().'.'.$file->getClientOriginalExtension();
-                $path = $file->storeAs('create_own_product', $filename, 'public');
-
-                $validated['image'] = $path;
+                $filename = time() . '-' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $validated['image'] = $file->storeAs('create_own_product', $filename, 'public');
+            } else {
+                unset($validated['image']); // ✅ keep old one
             }
 
-            // Update DB
+            // ✅ If template uploaded — delete old & store new
+            if ($request->hasFile('template')) {
+
+                if ($cop->template && Storage::disk('public')->exists($cop->template)) {
+                    Storage::disk('public')->delete($cop->template);
+                }
+
+                $file = $request->file('template');
+                $filename = time() . '-' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $validated['template'] = $file->storeAs('create_own_product/template', $filename, 'public');
+            } else {
+                unset($validated['template']); // ✅ keep old one
+            }
+
+            // ✅ Update database
             $cop->update($validated);
 
-            return redirect()
-                ->back()
-                ->with('success', 'Product updated successfully!');
-        } catch (\Exception $e) {
-            Log::error('CreateOwnProduct update failed', [
+            return back()->with('success', 'Product updated successfully!');
+        } catch (\Throwable $e) {
+
+            Log::error('CreateYourOwnProduct update failed', [
                 'id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()
-                ->back()
-                ->with('error', 'Something went wrong. Please try again later.');
+            return back()->with('error', 'Something went wrong. Please try again.');
         }
     }
 

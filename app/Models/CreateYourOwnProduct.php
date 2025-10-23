@@ -8,7 +8,8 @@ class CreateYourOwnProduct extends Model
 {
     protected $fillable = [
         'category_id',
-        'image'
+        'image',
+        'template'
     ];
 
     public function category()

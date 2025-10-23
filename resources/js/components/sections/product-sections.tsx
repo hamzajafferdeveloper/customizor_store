@@ -122,8 +122,8 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
             </div>
 
             <section className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {/* <Card
-                    onClick={() => router.get(route('design.product'), {}, { preserveScroll: true })}
+                <Card
+                    onClick={() => router.get(route('design.product' , { categoryId:  selectedCategoryId }), {}, { preserveScroll: true })}
                     className="flex min-w-0 cursor-pointer flex-col justify-between transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
                 >
                     <CardHeader className="p-2">
@@ -133,7 +133,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                         <h1 className="font-semibold">Design your own product</h1>
                         <div className="flex flex-wrap gap-2"></div>
                     </CardContent>
-                </Card> */}
+                </Card>
 
                 {filterData.length > 0 ? (
                     filterData.map((product) => {
@@ -143,7 +143,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                             <Card
                                 key={product.id}
                                 onClick={() =>
-                                    router.get(route(showProductRoute, { slug: product.slug, storeId: store?.id }), {}, { preserveScroll: true })
+                                    router.get(route(showProductRoute, { sku: product.sku, storeId: store?.id }), {}, { preserveScroll: true })
                                 }
                                 className="relative min-w-0 cursor-pointer transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
                             >

@@ -75,7 +75,7 @@ const CreateYourOwnProduct = ({ categories, CreateOwnProduct }: { categories: Ca
                         <TableCaption>A list of color.</TableCaption>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Category Name</TableHead>
+                                <TableHead>Name</TableHead>
                                 <TableHead>Image</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>

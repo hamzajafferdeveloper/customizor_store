@@ -23,7 +23,7 @@ export default function EditorLogoBar({ logoGallery, setUploadedItems, setSelect
     const filteredLogos = selectedCategory?.logos.filter((logo) => logo.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const uploadLogo = (logo: LogoGallery) => {
-        const allZ = [...uploadedItems].map((l) => l.zIndex ?? 0);
+        const allZ = uploadedItems?.map((l) => l.zIndex ?? 0) ?? [];
         const maxZ = allZ.length ? Math.max(...allZ) : 0;
         handleUploadLogo(logo, setUploadedItems, maxZ, setSelectedItemId);
     };

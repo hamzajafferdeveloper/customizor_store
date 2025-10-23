@@ -93,10 +93,10 @@ class HomeController extends Controller
         ]);
     }
 
-    public function showProduct(string $storeId, string $slug)
+    public function showProduct(string $storeId, string $sku)
     {
         $store = Store::findOrFail($storeId);
-        $product = Product::where('slug', $slug)->with('productColors.color', 'template')->firstOrFail();
+        $product = Product::where('sku', $sku)->with('productColors.color', 'template')->firstOrFail();
 
         // Render the store product detail view
         return Inertia::render('store/product/show', [
@@ -142,32 +142,35 @@ class HomeController extends Controller
         $brand = Brand::findOrFail($request->brand_id);
         $category = Category::findOrFail($request->categories_id);
 
-        // Create base slug using brand & category
-        $rawSlug = $brand->slug_short.'-'.$category->slug_short;
+        // ✅ Create base slug
+        $rawSlug = $brand->slug_short . $category->slug_short;
         $originalSlug = Str::slug($rawSlug);
         $slug = $originalSlug;
         $count = 1;
 
-        // Ensure unique slug
         while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug.''.$count;
+            $slug = $originalSlug . '-' . $count;
             $count++;
         }
 
-        // ✅ Generate Unique SKU
-        // Example: BRN-CAT-0001
-        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).''.strtoupper(substr($category->slug_short, 0, 3));
-        $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
+        // ✅ Auto-generate unique SKU
+        // Format: ANB-BRN-CAT-0001
+        $basePrefix = 'ANB';
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)) . strtoupper(substr($category->slug_short, 0, 3));
+        $prefix = $basePrefix . '-' . $baseSku . '-';
+
+        $lastProduct = Product::where('sku', 'like', $prefix . '%')
+            ->orderBy('sku', 'desc')
+            ->first();
 
         if ($lastProduct) {
-            // Extract last numeric part (e.g., BRN-CAT-0005 → 5)
-            $lastNumber = (int) preg_replace('/\D/', '', substr($lastProduct->sku, -4));
+            $lastNumber = (int) substr($lastProduct->sku, -4);
             $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {
             $nextNumber = '0001';
         }
 
-        $sku = 'ANB'. '-' .  $baseSku.'-'.$nextNumber;
+        $sku = $prefix . $nextNumber;
 
         // Clean up arrays
         $validated['sizes'] = array_filter($validated['sizes']);
@@ -196,6 +199,7 @@ class HomeController extends Controller
             'sizes' => json_encode(array_values($validated['sizes'])),
             'materials' => json_encode(array_values($validated['materials'])),
             'categories_id' => $validated['categories_id'],
+            'brand_id' => $validated['brand_id'],
         ]);
 
         // Attach Colors
@@ -210,10 +214,10 @@ class HomeController extends Controller
             ->with('success', 'Product created successfully!');
     }
 
-    public function editProduct(string $storeId, string $slug)
+    public function editProduct(string $storeId, string $sku)
     {
         $store = Store::findOrFail($storeId);
-        $product = Product::with('productColors.color')->where('slug', $slug)->where('store_id', $storeId)->firstOrFail();
+        $product = Product::with('productColors.color')->where('sku', $sku)->where('store_id', $storeId)->firstOrFail();
         $categories = Category::all();
         $colors = Color::all();
         $brands = Brand::all();
@@ -262,38 +266,46 @@ class HomeController extends Controller
             $product->image = $product_image;
         }
 
-        $brand = Brand::findOrFail($validated['brand_id']);
+                $brand = Brand::findOrFail($validated['brand_id']);
         $category = Category::findOrFail($validated['categories_id']);
 
         // ✅ Only regenerate slug if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $rawSlug = $brand->slug_short.''.$category->slug_short;
+            $rawSlug = $brand->slug_short . $category->slug_short;
             $originalSlug = Str::slug($rawSlug);
             $slug = $originalSlug;
             $count = 1;
 
-            // Make sure it’s unique excluding current product
-            while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
-                $slug = $originalSlug.'-'.$count;
+            while (Product::where('slug', $slug)
+                ->where('id', '!=', $product->id)
+                ->exists()) {
+
+                $slug = $originalSlug . '-' . $count;
                 $count++;
             }
 
-            $product->slug = 'ANB'. '-' . $slug;
+            $product->slug = 'ANB-' . $slug;
         }
 
         // ✅ Only regenerate SKU if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).''.strtoupper(substr($category->slug_short, 0, 3));
-            $lastProduct = Product::where('sku', 'like', $baseSku.'%')->orderBy('id', 'desc')->first();
+
+            $basePrefix = 'ANB';
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)) . strtoupper(substr($category->slug_short, 0, 3));
+            $prefix = $basePrefix . '-' . $baseSku . '-';
+
+            $lastProduct = Product::where('sku', 'like', $prefix . '%')
+                ->orderBy('sku', 'desc')
+                ->first();
 
             if ($lastProduct) {
-                $lastNumber = (int) preg_replace('/\D/', '', substr($lastProduct->sku, -4));
+                $lastNumber = (int) substr($lastProduct->sku, -4);
                 $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
             } else {
                 $nextNumber = '0001';
             }
 
-            $product->sku = 'ANB'. '-' . $baseSku.'-'.$nextNumber;
+            $product->sku = $prefix . $nextNumber;
         }
 
         // ✅ Update product fields

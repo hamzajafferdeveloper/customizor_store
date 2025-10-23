@@ -15,14 +15,11 @@ type Props = {
 };
 
 const CreateOwnProductModal = ({ open, onOpenChange, categories }: Props) => {
-
-
     const { data, setData, post, processing, errors, reset } = useForm<Required<CreateOwnProductForm>>({
         category_id: 0,
         image: null,
+        template: null,
     });
-
-
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,6 +72,18 @@ const CreateOwnProductModal = ({ open, onOpenChange, categories }: Props) => {
                             onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)}
                         />
                         <InputError message={errors.image} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="template">Template</Label>
+                        <Input
+                            id="template"
+                            type="file"
+                            accept="image/svg+xml"
+                            onChange={(e) => setData('template', e.target.files ? e.target.files[0] : null)}
+                        />
+
+                        <InputError message={errors.template} />
                     </div>
 
                     <div className="flex justify-end gap-2">

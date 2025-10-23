@@ -42,4 +42,6 @@ export type LogoForm = {
 export type CreateOwnProductForm = {
     category_id: number;
     image: File | null;
+    template: File | null;
+
 };

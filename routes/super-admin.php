@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
     // Route For Product
     Route::prefix('/product')->group(function () {
         Route::post('/store', [ProductController::class, 'store'])->name('superadmin.product.store');
-        Route::get('/edit/{slug}', [ProductController::class, 'edit'])->name('superadmin.product.edit');
+        Route::get('/edit/{sku}', [ProductController::class, 'edit'])->name('superadmin.product.edit');
         Route::post('/{id}', [ProductController::class, 'update'])->name('superadmin.product.update');
         Route::delete('/{id}', [ProductController::class, 'destroy'])->name('superadmin.product.destroy');
         Route::get('/add/template/product-slug={slug}', [ProductController::class, 'template'])->name('superadmin.product.add.template');
