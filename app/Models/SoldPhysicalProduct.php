@@ -19,7 +19,8 @@ class SoldPhysicalProduct extends Model
         'has_delivery_address',
         'delivery_address',
         'payment_status',
-        'file'
+        'file',
+        'order_status'
     ];
 
     public function product()

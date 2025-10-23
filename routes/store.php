@@ -16,8 +16,8 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
         Route::get('/profile', [StoreController::class, 'profile'])->name('dashboard');
 
         Route::prefix('/order')->name('order.')->group(function () {
-            Route::get('/index', [StoreController::class, 'allOrders'])->name('index');
             Route::get('/show/{id}', [StoreController::class, 'singleOrder'])->name('show');
+            Route::post('/{id}/update-status', [StoreController::class, 'changeOrderStatus'])->name('change.status');
         });
 
         Route::get('/create/product', [HomeController::class, 'createProduct'])->name('product.create');

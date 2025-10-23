@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Store;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\SoldPhysicalProduct;
+use App\Models\SoldProduct;
 use App\Models\Store;
 use App\Models\StoreBanner;
 use App\Models\StoreStripeKey;
@@ -14,19 +15,65 @@ use Inertia\Inertia;
 
 class StoreController extends Controller
 {
-    public function dashboard(string $storeId)
+    public function dashboard(string $storeId, Request $request)
     {
-
         $store = Store::with('banner')->findOrFail($storeId);
+
+        $months = collect(range(5, 0))->map(function ($i) {
+            return now()->subMonths($i)->format('Y-m'); // Last 6 months
+        });
+
+        // Helper for monthly chart data
+        $getMonthlyData = function ($model, $column = 'COUNT(*)') use ($months) {
+            $rawData = $model::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, '.$column.' as total')
+                ->where('created_at', '>=', now()->subMonths(6))
+                ->groupBy('month')
+                ->pluck('total', 'month');
+
+            return $months->map(fn ($m) => $rawData[$m] ?? 0)->toArray();
+        };
+
+        $calculateGrowth = function ($data) {
+            if (count($data) < 2) {
+                return 0;
+            }
+            $last = end($data);
+            $prev = $data[count($data) - 2];
+
+            return $prev > 0 ? round((($last - $prev) / $prev) * 100, 2) : ($last > 0 ? 100 : 0);
+        };
+
+        $totalProductData = $getMonthlyData(new Product);
+        $totalDigitalProductSoldData = $getMonthlyData(new SoldProduct, 'SUM(price)');
+        $totalPhysicalProductSoldData = $getMonthlyData(new SoldPhysicalProduct, 'SUM(price)');
+        // $totalRevenueData = $getMonthlyData(new Product());
+
+        $totalProductChartData = Product::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->where('created_at', '>=', now()->subMonths(3))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $totalDigitalProductSoldChartData = SoldProduct::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->where('created_at', '>=', now()->subMonths(3))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Country chart data
+        $totalPhysicalProductSoldChartData = SoldPhysicalProduct::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->where('created_at', '>=', now()->subMonths(3))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
 
         $totalProducts = Product::where('store_id', $storeId)->count();
 
-        return Inertia::render('store/dashboard', ['store' => $store]);
-    }
+        $totalDigitalProductSold = SoldProduct::where('store_id', $storeId)->sum('price');
+        $totalPhysicalProductSold = SoldPhysicalProduct::where('store_id', $storeId)->sum('price');
 
-    public function allOrders(string $storeId, Request $request)
-    {
-        $store = Store::findOrFail($storeId);
+        $totalRevenue = $totalDigitalProductSold + $totalPhysicalProductSold;
+
         $query = SoldPhysicalProduct::where('store_id', $store->id)->with('product');
         // Search filter
         if ($request->has('search') && $request->search !== '') {
@@ -39,19 +86,42 @@ class StoreController extends Controller
         $perPage = $request->get('per_page', 10);
         $orders = $query->paginate($perPage)->appends($request->all());
 
-        return Inertia::render('store/order/index', [
+        return Inertia::render('store/dashboard', [
+            'store' => $store,
             'orders' => $orders,
-            'store' => $store
+            'stats' => [
+                'revenue' => [
+                    'total' => $totalRevenue,
+                    // 'growth' => $calculateGrowth($revenueData),
+                    // 'chart' => $revenueData
+                ],
+                'product' => [
+                    'total' => $totalProducts,
+                    'growth' => $calculateGrowth($totalProductData),
+                    'chart' => $totalProductData,
+                ],
+                'digitalProductSold' => [
+                    'total' => $totalDigitalProductSold,
+                    'growth' => $calculateGrowth($totalDigitalProductSoldData),
+                    'chart' => $totalDigitalProductSoldData,
+                ],
+                'physicalProductSold' => [
+                    'total' => $totalPhysicalProductSold,
+                    'growth' => $calculateGrowth($totalPhysicalProductSoldData),
+                    'chart' => $totalPhysicalProductSoldData,
+                ],
+            ],
         ]);
     }
 
-    public function singleOrder(string $storeId, string $id) {
+    public function singleOrder(string $storeId, string $id)
+    {
         $store = Store::findOrFail($storeId);
         $order = SoldPhysicalProduct::findOrFail($id);
 
         return Inertia::render('store/order/show', [
             'order' => $order,
-            'store' => $store
+            'store' => $store,
         ]);
     }
 
@@ -180,5 +250,23 @@ class StoreController extends Controller
 
         // Return success response
         return back()->with('success', 'Stripe keys saved successfully.');
+    }
+
+    public function changeOrderStatus(Request $request, string $id)
+    {
+        try {
+
+            $request->validate([
+                'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
+            ]);
+
+            $order = SoldPhysicalProduct::findOrFail($id);
+            $order->order_status = $request->status;
+            $order->save();
+
+            return redirect()->back()->with('success', 'Order status updatd successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Order not found.');
+        }
     }
 }

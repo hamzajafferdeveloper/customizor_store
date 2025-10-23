@@ -1,10 +1,7 @@
 import OrderInvoice from '@/components/sections/invoice';
-import StoreLayout from '@/layouts/store-layout';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { BreadcrumbItem } from '@/types';
-import { StoreData } from '@/types/store';
 import { Head } from '@inertiajs/react';
-import React from 'react';
 
 type Props = {
     order: {
@@ -22,17 +19,16 @@ type Props = {
         payment_status: string;
         file?: string;
     };
-    store: StoreData
 };
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Invoice', href: '/order/invoice' }];
 
-const InvoicePage = ({ order, store }: Props) => {
+const InvoicePage = ({ order }: Props) => {
     return (
-        <StoreLayout store={store} breadcrumbs={breadcrumbs}>
+        <SuperAdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Invoice" />
             <OrderInvoice order={order} />
-        </StoreLayout>
+        </SuperAdminLayout>
     );
 };
 

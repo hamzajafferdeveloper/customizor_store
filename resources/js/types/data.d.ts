@@ -121,3 +121,14 @@ export interface CreateOwnProductType {
     created_at: string;
     updated_at: string;
 }
+
+type Order = {
+    id: number;
+    product: { title: string };
+    price: number;
+    payment_status: string;
+    created_at: string;
+    file?: string;
+    address: string;
+    order_status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+};

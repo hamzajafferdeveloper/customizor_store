@@ -1,22 +1,23 @@
 import CustomTableFooter from '@/components/table-footer';
 import TableHeaderCustom from '@/components/table-header';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Order } from '@/types/data';
+import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'All Orders', href: '/order/index' }];
-
-type Order = {
-    id: number;
-    product: { title: string };
-    price: number;
-    payment_status: string;
-    created_at: string;
-    file?: string;
-    address: string;
-};
 
 type Props = {
     orders: {
@@ -31,7 +32,34 @@ type Props = {
 const Orders = ({ orders }: Props) => {
     const [searchValue, setSearchValue] = useState('');
     const [perPage, setPerPage] = useState(orders.per_page);
+    const [loading, setLoading] = useState(false);
+    const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
+    const handleStatusChange = (orderId: number, newStatus: string) => {
+        setLoading(true);
+        setUpdatingOrderId(orderId);
+
+        router.post(
+            `/order/${orderId}/update-status`,
+            { status: newStatus },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setLoading(false);
+                    setUpdatingOrderId(null);
+                },
+                onError: () => {
+                    setLoading(false);
+                    setUpdatingOrderId(null);
+                    alert('Failed to update order status.');
+                },
+                onFinish: () => {
+                    setLoading(false);
+                    setUpdatingOrderId(null);
+                },
+            },
+        );
+    };
     // Format date using native JS
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -74,13 +102,17 @@ const Orders = ({ orders }: Props) => {
                                 <TableHead>Product</TableHead>
                                 <TableHead>Price</TableHead>
                                 <TableHead>Payment Status</TableHead>
+                                <TableHead>Order Status</TableHead>
+
                                 <TableHead>Date</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredOrders.map((order) => (
                                 <TableRow key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                    <TableCell><Link href={`/order/show/${order.id}`}>{order.product.title}</Link></TableCell>
+                                    <TableCell>
+                                        <Link href={`/order/show/${order.id}`}>{order.product.title}</Link>
+                                    </TableCell>
                                     <TableCell>${order.price.toFixed(2)}</TableCell>
                                     <TableCell>
                                         <span
@@ -92,6 +124,34 @@ const Orders = ({ orders }: Props) => {
                                         >
                                             {order.payment_status.toUpperCase()}
                                         </span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    className="w-40 capitalize"
+                                                    variant="outline"
+                                                    disabled={loading && order.id === updatingOrderId}
+                                                >
+                                                    {loading && order.id === updatingOrderId ? 'Updating...' : order.order_status}
+                                                </Button>
+                                            </DropdownMenuTrigger>
+
+                                            <DropdownMenuContent className="w-56">
+                                                <DropdownMenuLabel>Order Status</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuRadioGroup
+                                                    value={order.order_status}
+                                                    onValueChange={(newStatus) => handleStatusChange(order.id, newStatus)}
+                                                >
+                                                    <DropdownMenuRadioItem value="pending">Pending</DropdownMenuRadioItem>
+                                                    <DropdownMenuRadioItem value="processing">Processing</DropdownMenuRadioItem>
+                                                    <DropdownMenuRadioItem value="shipped">Shipped</DropdownMenuRadioItem>
+                                                    <DropdownMenuRadioItem value="delivered">Delivered</DropdownMenuRadioItem>
+                                                    <DropdownMenuRadioItem value="cancelled">Cancelled</DropdownMenuRadioItem>
+                                                </DropdownMenuRadioGroup>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                     <TableCell>{formatDate(order.created_at)}</TableCell>
                                 </TableRow>

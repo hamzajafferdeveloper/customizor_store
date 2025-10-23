@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminOrderController;
-use App\Http\Controllers\Admin\CreateStoreController;
+use App\Http\Controllers\SuperAdmin\AdminOrderController;
+use App\Http\Controllers\SuperAdmin\CreateStoreController;
 use App\Http\Controllers\SuperAdmin\BrandController;
 use App\Http\Controllers\SuperAdmin\CategoryController;
 use App\Http\Controllers\SuperAdmin\ColorController;
@@ -112,5 +112,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
     Route::prefix('/order')->name('superadmin.order.')->group(function () {
         Route::get('/index', [AdminOrderController::class, 'index'])->name('index');
         Route::get('/show/{id}', [AdminOrderController::class, 'show'])->name('show');
+        Route::post('/{id}/update-status', [AdminOrderController::class, 'changeOrderStatus'])->name('change.status');
+
     });
 });

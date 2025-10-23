@@ -19,12 +19,6 @@ export function StoreSidebar({ store }: { store: StoreData }) {
             href: `/${store.id}/products`,
             icon: Box,
         },
-
-        {
-            title: 'Orders',
-            href: `/${store.id}/order/index`,
-            icon: ShoppingBag,
-        },
     ];
 
     return (

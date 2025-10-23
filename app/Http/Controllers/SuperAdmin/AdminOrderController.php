@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SoldPhysicalProduct;
@@ -37,5 +37,23 @@ class AdminOrderController extends Controller
         return Inertia::render('super-admin/order/show', [
             'order' => $order,
         ]);
+    }
+
+    public function changeOrderStatus(Request $request, string $id)
+    {
+        try {
+
+            $request->validate([
+                'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
+            ]);
+
+            $order = SoldPhysicalProduct::findOrFail($id);
+            $order->order_status = $request->status;
+            $order->save();
+
+            return redirect()->back()->with('success', 'Order status updatd successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Order not found.');
+        }
     }
 }
