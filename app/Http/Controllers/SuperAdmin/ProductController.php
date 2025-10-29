@@ -12,6 +12,7 @@ use App\Models\PartsCategory;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\ProductColors;
+use App\Models\ProductType;
 use App\Models\SvgTemplate;
 use App\Models\SvgTemplatePart;
 use Exception;
@@ -68,11 +69,13 @@ class ProductController extends Controller
         $categories = Category::all();
         $colors = Color::all();
         $brands = Brand::all();
+        $productTypes = ProductType::all();
 
         return Inertia::render('super-admin/product/create', [
             'catogories' => $categories,
             'colors' => $colors,
             'brands' => $brands,
+            'productTypes' => $productTypes
         ]);
     }
 
@@ -84,7 +87,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:100',
             // Removed required sku from user input — will be auto-generated
-            'type' => 'required|string|in:simple,starter,pro,ultra',
+            'type' => 'required|string|exists:product_types,id',
             'brand_id' => 'required|integer|exists:brands,id',
             'price' => 'required|numeric|min:0',
             'price_type' => 'required|in:physical,digital',
@@ -155,7 +158,7 @@ class ProductController extends Controller
             'sku' => $sku, // ✅ Auto-generated SKU
             'slug' => $slug,
             'image' => $product_image,
-            'type' => $validated['type'],
+            'product_type_id' => $validated['type'],
             'user_id' => auth()->id(),
             'sizes' => json_encode(array_values($validated['sizes'])),
             'materials' => json_encode(array_values($validated['materials'])),
@@ -204,12 +207,14 @@ class ProductController extends Controller
             $categories = Category::all();
             $colors = Color::all();
             $brands = Brand::all();
+            $productTypes = ProductType::all();
 
             return Inertia::render('super-admin/product/edit', [
                 'catogories' => $categories,
                 'colors' => $colors,
                 'product' => $product,
                 'brands' => $brands,
+                'productTypes' => $productTypes
             ]);
         } else {
             abort(404);
@@ -227,7 +232,7 @@ class ProductController extends Controller
             'brand_id' => 'required|integer|exists:brands,id',
             'categories_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
-            'type' => 'nullable|string',
+            'type' => 'required|string|exists:product_types,id',
             'sizes' => 'nullable|array',
             'materials' => 'nullable|array',
             'colors' => 'nullable|array',
@@ -297,7 +302,7 @@ class ProductController extends Controller
         $product->title = $validated['title'];
         $product->price = $validated['price'];
         $product->brand_id = $validated['brand_id'];
-        $product->type = $validated['type'];
+        $product->product_type_id = $validated['type'];
         $product->categories_id = $validated['categories_id'];
         $product->sizes = $validated['sizes'];
         $product->materials = $validated['materials'];

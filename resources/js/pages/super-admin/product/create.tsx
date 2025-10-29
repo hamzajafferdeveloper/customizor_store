@@ -9,14 +9,15 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Create Product', href: '/produc
 type Props = {
     catogories: Category[];
     colors: Color[];
-    brands: Brand[]
+    brands: Brand[];
+    productTypes: any[];
 };
 
-export default function CreateProduct({ catogories, colors, brands }: Props) {
+export default function CreateProduct({ catogories, colors, brands, productTypes }: Props) {
     return (
         <SuperAdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Product" />
-            <CreateProductSection catogories={catogories} colors={colors} brands={brands} />
+            <CreateProductSection catogories={catogories} colors={colors} brands={brands} productTypes={productTypes} />
         </SuperAdminLayout>
     );
 }

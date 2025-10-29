@@ -14,7 +14,19 @@ import { RabbitIcon, X } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { Badge } from '../ui/badge';
 
-const CreateProductSection = ({ catogories, colors, store, brands }: { catogories: Category[]; colors: Color[]; store?: StoreData, brands: Brand[] }) => {
+const CreateProductSection = ({
+    catogories,
+    colors,
+    store,
+    brands,
+    productTypes,
+}: {
+    catogories: Category[];
+    colors: Color[];
+    store?: StoreData;
+    brands: Brand[];
+    productTypes?: any[];
+}) => {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [manualSku, setManualSku] = useState(false);
     const fileRef = useRef<HTMLInputElement | null>(null);
@@ -276,19 +288,23 @@ const CreateProductSection = ({ catogories, colors, store, brands }: { catogorie
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-start" tabIndex={8}>
-                                                    {data.type ? data.type : 'Select Product Type'}
+                                                    {data.type
+                                                        ? productTypes.find((ptype) => ptype.id === data.type)?.name || 'Select Product Type'
+                                                        : 'Select Product Type'}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[300px] p-0">
                                                 <Command>
-                                                    <CommandInput placeholder="Search category..." />
+                                                    <CommandInput placeholder="Search product type..." />
                                                     <CommandList>
                                                         <CommandEmpty>No results found.</CommandEmpty>
                                                         <CommandGroup>
-                                                            <CommandItem onSelect={() => setData('type', 'simple')}>Simple</CommandItem>
-                                                            <CommandItem onSelect={() => setData('type', 'starter')}>Starter</CommandItem>
-                                                            <CommandItem onSelect={() => setData('type', 'pro')}>Pro</CommandItem>
-                                                            <CommandItem onSelect={() => setData('type', 'ultra')}>Ultra</CommandItem>
+                                                            {productTypes &&
+                                                                productTypes.map((ptype) => (
+                                                                    <CommandItem key={ptype.id} onSelect={() => setData('type', ptype.id)}>
+                                                                        {ptype.name}
+                                                                    </CommandItem>
+                                                                ))}
                                                         </CommandGroup>
                                                     </CommandList>
                                                 </Command>

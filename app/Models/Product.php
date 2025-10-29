@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    protected $fillable = ['image', 'title', 'sku', 'price', 'store_id', 'user_id', 'slug', 'type', 'sizes', 'materials', 'categories_id', 'price_type'];
+    protected $fillable = ['image', 'title', 'sku', 'price', 'store_id', 'user_id', 'slug', 'product_type_id', 'sizes', 'materials', 'categories_id', 'price_type'];
 
     protected $casts = [
         'sizes' => 'array',

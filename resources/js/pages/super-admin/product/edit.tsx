@@ -9,11 +9,12 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Create Product', href: '/produc
 type Props = {
     catogories: Category[];
     colors: Color[];
-    product: Product
-    brands: Brand[]
+    product: Product;
+    brands: Brand[];
+    productTypes: any[];
 };
 
-export default function EditProduct({ catogories, colors, product, brands }: Props) {
+export default function EditProduct({ catogories, colors, product, brands, productTypes }: Props) {
 
     return (
         <SuperAdminLayout breadcrumbs={breadcrumbs}>
@@ -23,6 +24,7 @@ export default function EditProduct({ catogories, colors, product, brands }: Pro
                 colors={colors}
                 product={product}
                 brands={brands}
+                productTypes={productTypes}
             />
         </SuperAdminLayout>
     );

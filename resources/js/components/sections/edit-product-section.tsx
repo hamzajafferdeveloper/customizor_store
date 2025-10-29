@@ -19,12 +19,14 @@ const EditProductSection = ({
     colors,
     store,
     brands,
+    productTypes,
 }: {
     product: Product;
     catogories: Category[];
     colors: Color[];
     store?: StoreData;
     brands: Brand[];
+    productTypes: any[];
 }) => {
     const [imagePreview, setImagePreview] = useState<string | null>(product.image ? `/storage/${product.image}` : null);
     const fileRef = useRef<HTMLInputElement | null>(null);
@@ -49,7 +51,7 @@ const EditProductSection = ({
         sku: product.sku,
         brand_id: product.brand_id,
         image: null,
-        type: product.type,
+        type: product.product_type_id,
         price_type: product.price_type,
         sizes: parsedSizes,
         materials: parsedMaterials,
@@ -284,20 +286,24 @@ const EditProductSection = ({
                                         <Label>Type</Label>
                                         <Popover>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline" className="w-full justify-start">
-                                                    {data.type ? data.type : 'Select Product Type'}
+                                                <Button variant="outline" className="w-full justify-start" tabIndex={8}>
+                                                    {data.type
+                                                        ? productTypes.find((ptype) => ptype.id === data.type)?.name || 'Select Product Type'
+                                                        : 'Select Product Type'}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[300px] p-0">
                                                 <Command>
-                                                    <CommandInput placeholder="Search category..." />
+                                                    <CommandInput placeholder="Search product type..." />
                                                     <CommandList>
                                                         <CommandEmpty>No results found.</CommandEmpty>
                                                         <CommandGroup>
-                                                            <CommandItem onSelect={() => setData('type', 'simple')}>Simple</CommandItem>
-                                                            <CommandItem onSelect={() => setData('type', 'starter')}>Starter</CommandItem>
-                                                            <CommandItem onSelect={() => setData('type', 'pro')}>Pro</CommandItem>
-                                                            <CommandItem onSelect={() => setData('type', 'ultra')}>Ultra</CommandItem>
+                                                            {productTypes &&
+                                                                productTypes.map((ptype) => (
+                                                                    <CommandItem key={ptype.id} onSelect={() => setData('type', ptype.id)}>
+                                                                        {ptype.name}
+                                                                    </CommandItem>
+                                                                ))}
                                                         </CommandGroup>
                                                     </CommandList>
                                                 </Command>

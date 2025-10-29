@@ -34,7 +34,7 @@ export interface Product {
     brand_id: number;
     sku: string;
     slug: string;
-    type: string;
+    product_type_id: string;
     sizes: string[];
     materials: string[];
     product_colors: productColors[];

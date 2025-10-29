@@ -12,6 +12,7 @@ use App\Http\Controllers\SuperAdmin\LogoGalleryController;
 use App\Http\Controllers\SuperAdmin\PartController;
 use App\Http\Controllers\SuperAdmin\PlansController;
 use App\Http\Controllers\SuperAdmin\ProductController;
+use App\Http\Controllers\SuperAdmin\ProductTypeController;
 use Illuminate\Support\Facades\Route;
 
 // Route Only for Super Admin
@@ -114,5 +115,12 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::get('/show/{id}', [AdminOrderController::class, 'show'])->name('show');
         Route::post('/{id}/update-status', [AdminOrderController::class, 'changeOrderStatus'])->name('change.status');
 
+    });
+
+    Route::prefix('/product-type')->group(function () {
+        Route::get('/', [ProductTypeController::class, 'index'])->name('product-type.index');
+        Route::post('/store', [ProductTypeController::class, 'store'])->name('superadmin.product-type.store');
+        Route::put('/{id}', [ProductTypeController::class, 'update'])->name('superadmin.product-type.update');
+        Route::delete('/{id}', [ProductTypeController::class, 'destroy'])->name('superadmin.product-type.destroy');
     });
 });

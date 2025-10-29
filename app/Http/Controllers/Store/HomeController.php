@@ -60,6 +60,8 @@ class HomeController extends Controller
         $plan = $store->load('plan.permissions');
         $permissions = $plan->plan->permissions->pluck('key')->toArray();
 
+        // dd($permissions);
+
         // Map permissions to product types
         $allowedTypes = [];
         if (in_array('simple_product', $permissions)) {
