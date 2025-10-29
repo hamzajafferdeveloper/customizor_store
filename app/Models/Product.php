@@ -29,4 +29,9 @@ class Product extends Model
     {
         return $this->hasOne(SvgTemplate::class);
     }
+
+    public function productType()
+    {
+        return $this->belongsTo(ProductType::class);
+    }
 }

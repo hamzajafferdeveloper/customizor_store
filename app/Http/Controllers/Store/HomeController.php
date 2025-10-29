@@ -7,9 +7,11 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Color;
 use App\Models\LogoCategory;
+use App\Models\Permission;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\ProductColors;
+use App\Models\ProductType;
 use App\Models\Store;
 use App\Models\SvgTemplate;
 use App\Models\SvgTemplatePart;
@@ -60,25 +62,24 @@ class HomeController extends Controller
         $plan = $store->load('plan.permissions');
         $permissions = $plan->plan->permissions->pluck('key')->toArray();
 
-        // dd($permissions);
+        $allPermissions = Permission::pluck('key')->toArray();
+
+        $availablePermission = collect($allPermissions)
+            ->filter(fn ($p) => str_ends_with($p, '_product'))
+            ->values()
+            ->all();
 
         // Map permissions to product types
-        $allowedTypes = [];
-        if (in_array('simple_product', $permissions)) {
-            $allowedTypes[] = 'simple';
-        }
-        if (in_array('starter_product', $permissions)) {
-            $allowedTypes[] = 'starter';
-        }
-        if (in_array('pro_product', $permissions)) {
-            $allowedTypes[] = 'pro';
-        }
-        if (in_array('ultra_product', $permissions)) {
-            $allowedTypes[] = 'ultra';
-        }
+        $allowedTypes = array_values(array_intersect($availablePermission, $permissions));
 
-        // Fetch products based on allowed types
-        $products = $query->whereIn('type', $allowedTypes)
+
+        $productTypeIds = ProductType::whereIn('name', str_replace('_product', '', $allowedTypes))
+            ->pluck('id');
+
+
+        $products = $query
+            ->whereIn('product_type_id', $productTypeIds)
+            ->orWhere('store_id', $store->id)
             ->with('productColors.color')
             ->orderBy('id', 'DESC')
             ->paginate($perPage)
@@ -111,6 +112,16 @@ class HomeController extends Controller
     public function createProduct(string $storeId)
     {
         $store = Store::findOrFail($storeId);
+        $plan = $store->load('plan.permissions');
+        $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
+        $productLimit = $productsPermissions->first()->pivot->limit;
+
+        $numberOfProducts = Product::where('store_id', $storeId)->count();
+        if ($numberOfProducts >= $productLimit) {
+            return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+        }
+
+        $store = Store::findOrFail($storeId);
         $categories = Category::all();
         $colors = Color::all();
         $brands = Brand::all();
@@ -126,6 +137,17 @@ class HomeController extends Controller
 
     public function storeProduct(Request $request, string $storeId)
     {
+
+        $store = Store::findOrFail($storeId);
+        $plan = $store->load('plan.permissions');
+        $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
+        $productLimit = $productsPermissions->first()->pivot->limit;
+
+        $numberOfProducts = Product::where('store_id', $storeId)->count();
+        if ($numberOfProducts >= $productLimit) {
+            return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:100',
             'price' => 'required|numeric|min:0',
@@ -145,23 +167,23 @@ class HomeController extends Controller
         $category = Category::findOrFail($request->categories_id);
 
         // ✅ Create base slug
-        $rawSlug = $brand->slug_short . $category->slug_short;
+        $rawSlug = $brand->slug_short.$category->slug_short;
         $originalSlug = Str::slug($rawSlug);
         $slug = $originalSlug;
         $count = 1;
 
         while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
+            $slug = $originalSlug.'-'.$count;
             $count++;
         }
 
         // ✅ Auto-generate unique SKU
         // Format: ANB-BRN-CAT-0001
         $basePrefix = 'ANB';
-        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)) . strtoupper(substr($category->slug_short, 0, 3));
-        $prefix = $basePrefix . '-' . $baseSku . '-';
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
+        $prefix = $basePrefix.'-'.$baseSku.'-';
 
-        $lastProduct = Product::where('sku', 'like', $prefix . '%')
+        $lastProduct = Product::where('sku', 'like', $prefix.'%')
             ->orderBy('sku', 'desc')
             ->first();
 
@@ -172,7 +194,7 @@ class HomeController extends Controller
             $nextNumber = '0001';
         }
 
-        $sku = $prefix . $nextNumber;
+        $sku = $prefix.$nextNumber;
 
         // Clean up arrays
         $validated['sizes'] = array_filter($validated['sizes']);
@@ -196,7 +218,7 @@ class HomeController extends Controller
             'price' => $validated['price'],
             'price_type' => $validated['price_type'],
             'user_id' => auth()->id(),
-            'type' => 'simple',
+            'product_type_id' => 0,
             'image' => $product_image,
             'sizes' => json_encode(array_values($validated['sizes'])),
             'materials' => json_encode(array_values($validated['materials'])),
@@ -268,12 +290,12 @@ class HomeController extends Controller
             $product->image = $product_image;
         }
 
-                $brand = Brand::findOrFail($validated['brand_id']);
+        $brand = Brand::findOrFail($validated['brand_id']);
         $category = Category::findOrFail($validated['categories_id']);
 
         // ✅ Only regenerate slug if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $rawSlug = $brand->slug_short . $category->slug_short;
+            $rawSlug = $brand->slug_short.$category->slug_short;
             $originalSlug = Str::slug($rawSlug);
             $slug = $originalSlug;
             $count = 1;
@@ -282,21 +304,21 @@ class HomeController extends Controller
                 ->where('id', '!=', $product->id)
                 ->exists()) {
 
-                $slug = $originalSlug . '-' . $count;
+                $slug = $originalSlug.'-'.$count;
                 $count++;
             }
 
-            $product->slug = 'ANB-' . $slug;
+            $product->slug = 'ANB-'.$slug;
         }
 
         // ✅ Only regenerate SKU if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
 
             $basePrefix = 'ANB';
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)) . strtoupper(substr($category->slug_short, 0, 3));
-            $prefix = $basePrefix . '-' . $baseSku . '-';
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
+            $prefix = $basePrefix.'-'.$baseSku.'-';
 
-            $lastProduct = Product::where('sku', 'like', $prefix . '%')
+            $lastProduct = Product::where('sku', 'like', $prefix.'%')
                 ->orderBy('sku', 'desc')
                 ->first();
 
@@ -307,7 +329,7 @@ class HomeController extends Controller
                 $nextNumber = '0001';
             }
 
-            $product->sku = $prefix . $nextNumber;
+            $product->sku = $prefix.$nextNumber;
         }
 
         // ✅ Update product fields
