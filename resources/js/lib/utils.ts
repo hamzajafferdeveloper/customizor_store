@@ -44,3 +44,12 @@ export const extractFillMap = (svgText: string): Record<string, string> => {
   }
   return map;
 };
+
+export function decodeBase64(encodedPassword: string): string {
+    try {
+        return atob(encodedPassword); // built-in JS function to decode Base64
+    } catch (error) {
+        console.error("Invalid Base64 string:", error);
+        return "";
+    }
+}

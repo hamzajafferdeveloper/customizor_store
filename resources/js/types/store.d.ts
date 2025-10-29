@@ -14,6 +14,8 @@ export interface StoreData {
     logo: string;
     created_at: string;
     updated_at: string;
+    password: string | null;
+    store_key: string | null;
     [key: string]: unknown;
 }
 

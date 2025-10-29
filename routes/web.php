@@ -9,6 +9,11 @@ use App\Models\Color;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/clear-session', function () {
+    session()->flush(); // removes all session data
+    return back()->with('status', 'All sessions cleared successfully!');
+})->name('session.clear');
+
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');

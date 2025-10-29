@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import StoreLayout from '@/layouts/store-layout';
+import { decodeBase64 } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { StoreData } from '@/types/store';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -34,6 +35,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
     const [publicKey, setPublicKey] = useState(initialPublicKey);
     const [secretKey, setSecretKey] = useState(initialSecretKey);
     const [showSecret, setShowSecret] = useState(false);
+    const [password, setPassword] = useState<string>(decodeBase64(store.store_key || '') || '');
 
     const BannerRef = useRef<HTMLInputElement | null>(null);
 
@@ -130,6 +132,22 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
         });
     };
 
+    const handlePasswordSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        const data = new FormData();
+        data.append('password', password);
+
+        router.post(route('store.password.update', store.id), data, {
+            forceFormData: true,
+            onSuccess: () => {
+                // toast.success('Password updated successfully');
+            },
+            onError: () => {
+                // toast.error('Failed to update password');
+            },
+        });
+    }
+
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
@@ -176,14 +194,14 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                 </div>
             </div>
 
-            <div className="mx-auto mt-24 flex max-w-5xl flex-col gap-8 p-6">
-                {/* Profile Details Card */}
-                <Card className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+            <div className="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-8 p-4 sm:grid-cols-2">
+                {/* Store Details */}
+                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
                     <div className="mb-4 flex w-full justify-between">
                         <h2 className="text-lg font-semibold">Store Details</h2>
                         <Badge className="bg-green-700 text-white">Editable</Badge>
                     </div>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {fields.map(
                             ({ label, key, visible }) =>
                                 visible && (
@@ -200,8 +218,8 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                     </div>
                 </Card>
 
-                {/* Payment Info */}
-                <Card className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                {/* Stripe Payment Keys */}
+                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
                     <div className="mb-4 flex w-full justify-between">
                         <h2 className="text-lg font-semibold">Stripe Payment Keys</h2>
                         <Badge className="bg-green-700 text-white">Editable</Badge>
@@ -233,12 +251,30 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                     </form>
                 </Card>
 
-                <Card className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                {/* Password & Users */}
+                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                    <div className="mb-4 flex w-full justify-between">
+                        <h2 className="text-lg font-semibold">Password & Users</h2>
+                        <Badge className="bg-green-700 text-white">Editable</Badge>
+                    </div>
+                    <form onSubmit={handlePasswordSave} className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                            <Label>Password</Label>
+                            <Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter new password" />
+                        </div>
+                        <Button type="submit" className="mt-2 w-full">
+                            Save
+                        </Button>
+                    </form>
+                </Card>
+
+                {/* Account Info */}
+                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
                     <div className="mb-4 flex w-full justify-between">
                         <h2 className="text-lg font-semibold">Account Info</h2>
                         <Badge className="bg-red-700 text-white">System</Badge>
                     </div>
-                    <div className="grid grid-cols-2 gap-6 text-sm">
+                    <div className="grid grid-cols-1 gap-6 text-sm sm:grid-cols-2">
                         <div>
                             <p className="text-muted-foreground">Status</p>
                             <p className="font-semibold capitalize">{formData.status || 'N/A'}</p>
@@ -263,11 +299,11 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                 </Card>
 
                 {/* Buttons */}
-                <div className="flex w-full gap-2">
-                    <Link className="w-1/2" href={route('upgrade.form', store.id)}>
+                <div className="flex w-full flex-col gap-3 sm:col-span-2 sm:flex-row">
+                    <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.id)}>
                         <Button className="w-full">Upgrade</Button>
                     </Link>
-                    <Link className="w-1/2" href={route('renew.form', store.id)}>
+                    <Link className="w-full sm:w-1/2" href={route('renew.form', store.id)}>
                         <Button className="w-full hover:bg-gray-800/20" variant="outline">
                             Renew
                         </Button>

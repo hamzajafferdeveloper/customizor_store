@@ -19,6 +19,8 @@ class Store extends Model
         'status',
         'bio',
         'plan_expiry_date',
+        'password',
+        'store_key',
     ];
 
     public function user()
@@ -45,4 +47,10 @@ class Store extends Model
     {
         return $this->hasOne(StoreStripeKey::class);
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'store_users');
+    }
+
 }

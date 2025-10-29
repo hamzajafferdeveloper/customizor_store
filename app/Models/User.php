@@ -52,7 +52,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->is_paid;
     }
 
+    // Store of Users
     public function store(){
         $this->hasMany(Store::class);
+    }
+
+    // Many-to-Many relationship with Store
+    public function stores()
+    {
+        return $this->belongsToMany(Store::class, 'store_user');
     }
 }

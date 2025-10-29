@@ -10,6 +10,7 @@ use App\Models\Store;
 use App\Models\StoreBanner;
 use App\Models\StoreStripeKey;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -268,5 +269,56 @@ class StoreController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Order not found.');
         }
+    }
+
+    public function updateStorePassword(Request $request, string $storeId)
+    {
+        try {
+            $request->validate([
+                'password' => 'required|string|min:6',
+            ]);
+
+            $store = Store::findOrFail($storeId);
+            $store->password = bcrypt($request->password);
+            $store->store_key = base64_encode($request->password);
+            $store->save();
+
+            return redirect()->back()->with('success', 'Store password updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Store not found.');
+        }
+    }
+
+    public function loginToStore(Request $request, string $storeId)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        $user = auth()->user();
+        $store = Store::findOrFail($storeId);
+
+        // Step 1: Check if user belongs to the store (many-to-many relation)
+        $isMember = $store->users()->where('user_id', $user->id)->exists();
+
+        if (! $isMember) {
+            return redirect()->back()->withErrors([
+                'password' => 'You are not authorized to access this store.',
+            ]);
+        }
+
+        if (! Hash::check($request->password, $store->password)) {
+            return back()->withErrors([
+                'password' => 'Incorrect store password.',
+            ]);
+        }
+        // Step 3: Success — continue logic
+        // (e.g., mark session, redirect to dashboard, etc.)
+        session(['store_logged_in' => $store->id]);
+
+
+
+        return redirect()->route('store.products', $store->id)
+            ->with('success', 'Successfully logged into the store.');
     }
 }

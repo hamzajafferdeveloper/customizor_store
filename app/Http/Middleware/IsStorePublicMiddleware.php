@@ -23,11 +23,19 @@ class IsStorePublicMiddleware
 
         $user = auth()->user();
         if ($store && $store->type === 'protected') {
+            // If the store is protected, check if the user is the owner
             if($user && $store->user_id === $user->id){
                 return $next($request);
             }
-            return abort(403, 'Unathorized Access');
-        } 
+
+            if (session('store_logged_in') === $store->id) {
+                return $next($request);
+            }
+
+            // If the user is not the owner, return to password access page
+            return redirect()->route('store.access.password', ['storeId' => $storeId]);
+
+        }
         return $next($request);
     }
 }

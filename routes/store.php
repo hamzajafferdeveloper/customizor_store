@@ -7,10 +7,21 @@ use Inertia\Inertia;
 
 Route::get('/user={id}/store/all', [StoreController::class, 'allStoreofUser']);
 
+Route::prefix('/{storeId}')->name('store.')->middleware(['auth'])->group(function () {
+    Route::get('/access/store/password', function (string $storeId) {
+        $store = \App\Models\Store::findOrFail($storeId);
+
+        return Inertia::render('store/access-store-password', ['store' => $store]);
+    })->name('access.password');
+
+    Route::post('/user/login', [StoreController::class, 'loginToStore'])->name('user.login');
+});
+
 Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isStoreActive'])->group(function () {
 
     Route::get('/products', [HomeController::class, 'products'])->name('products');
     Route::get('/product/{sku}', [HomeController::class, 'showProduct'])->name('product.show');
+    Route::post('/password/update', [StoreController::class, 'updateStorePassword'])->name('password.update');
 
     Route::middleware('isStoreAdmin')->group(function () {
         Route::get('/dashboard', [StoreController::class, 'dashboard'])->name('dashboard');
