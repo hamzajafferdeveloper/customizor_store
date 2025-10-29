@@ -452,7 +452,7 @@ class ProductController extends Controller
                 $svgContent = Storage::disk('public')->get($create_own_product->template);
                 $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
                 $logoGallery = LogoCategory::with('logos')->get();
-                $parts = PartsCategory::with('parts')->get();
+                $parts = PartsCategory::where('own_product_id', $create_own_product->id)->with('parts')->get();
 
                 return Inertia::render('home/product/create-your-product', [
                     'template' => $svgContent,

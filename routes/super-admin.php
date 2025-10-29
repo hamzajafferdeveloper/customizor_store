@@ -85,7 +85,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
         Route::post('/fonts/{font}/assign-plans', [FontController::class, 'assignPlans'])->name('superadmin.fonts.assignPlans');
     });
 
-    Route::prefix('/parts')->group(function () {
+    Route::prefix('/{product_id}/parts')->group(function () {
         // Route for Parts Categories
         Route::get('/categories', [PartController::class, 'categories'])->name('superadmin.parts.categories');
         Route::post('/category', [PartController::class, 'createCategory'])->name('superadmin.parts.create.category');

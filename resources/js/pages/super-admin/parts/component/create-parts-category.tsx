@@ -11,16 +11,18 @@ import { FormEventHandler } from 'react';
 type Props = {
     open: boolean;
     onOpenChange: () => void;
+    product_id: string;
 };
 
-export default function CreateCategoryModal({ open, onOpenChange }: Props) {
+export default function CreateCategoryModal({ open, onOpenChange, product_id }: Props) {
+    //@ts-ignore
     const { data, setData, post, processing, errors, reset } = useForm<Required<CategoryForm>>({
         name: '',
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('superadmin.parts.create.category'));
+        post(route('superadmin.parts.create.category', { product_id: product_id }));
         onOpenChange()
     };
 

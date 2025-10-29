@@ -12,9 +12,10 @@ type Props = {
     open: boolean;
     onOpenChange: () => void;
     categoryId: number;
+    product_id: string;
 };
 
-export default function CreatePartModal({ open, onOpenChange, categoryId }: Props) {
+export default function CreatePartModal({ open, onOpenChange, categoryId, product_id }: Props) {
     const { data, setData, post, processing, errors, reset } = useForm<Required<LogoForm>>({
         category_id: categoryId,
         name: '',
@@ -33,7 +34,7 @@ export default function CreatePartModal({ open, onOpenChange, categoryId }: Prop
         formData.append('category_id', String(categoryId));
         formData.append('source', fileInput);
 
-        post(route('superadmin.parts.create', categoryId), {
+        post(route('superadmin.parts.create', { product_id: product_id, id: categoryId }), {
             // @ts-expect-error
             data: formData,
             forceFormData: true,

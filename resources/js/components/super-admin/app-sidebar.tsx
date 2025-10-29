@@ -44,11 +44,6 @@ const mainNavItems: NavItem[] = [
         href: '/font',
         icon: FileType2Icon,
     },
-        {
-        title: 'Parts',
-        href: '/parts/categories',
-        icon: Component,
-    },
     {
         title: 'Create Your Own Product',
         href: '/create-your-own-product/index',

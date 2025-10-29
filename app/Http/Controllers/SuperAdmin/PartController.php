@@ -3,26 +3,27 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Storage;
 use App\Models\Part;
 use App\Models\PartsCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class PartController extends Controller
 {
-    public function categories(Request $request)
+    public function categories(Request $request, string $product_id)
     {
         $perPage = $request->input('per_page', 10);
         $query = PartsCategory::query();
-        $categories = $query->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+        $categories = $query->where('own_product_id', $product_id)->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
 
         return Inertia::render('super-admin/parts/parts-category', [
-            'categories' => $categories
+            'categories' => $categories,
+            'product_id' => $product_id,
         ]);
     }
 
-    public function parts(Request $request, string $id)
+    public function parts(Request $request, string $product_id, string $id)
     {
         $perPage = $request->input('per_page', 10);
         $query = Part::query();
@@ -31,25 +32,27 @@ class PartController extends Controller
 
         return Inertia::render('super-admin/parts/parts', [
             'parts' => $parts,
-            'category' => $category
+            'category' => $category,
+            'product_id' => $product_id,
         ]);
     }
 
-    public function createCategory(Request $request)
+    public function createCategory(Request $request, string $product_id)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
         ]);
 
         PartsCategory::create([
-            'name' => $validated['name']
+            'name' => $validated['name'],
+            'own_product_id' => $product_id,
         ]);
 
-        return redirect()->route('superadmin.parts.categories')->with('success', 'Category created successfully!');
+        return redirect()->route('superadmin.parts.categories', $product_id)->with('success', 'Category created successfully!');
 
     }
 
-    public function editCategory(Request $request, string $id)
+    public function editCategory(Request $request, string $product_id, string $id)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -58,22 +61,26 @@ class PartController extends Controller
         $category = PartsCategory::findOrFail($id);
 
         $category->update([
-            'name' => $validated['name']
+            'name' => $validated['name'],
         ]);
 
-        return redirect()->route('superadmin.parts.categories')->with('success', 'Category updated successfully!');
+        return redirect()
+            ->route('superadmin.parts.categories', $product_id)
+            ->with('success', 'Category updated successfully!');
     }
 
-    public function destroyCategory(string $id)
+    public function destroyCategory(string $product_id, string $id)
     {
         $category = PartsCategory::findOrFail($id);
 
         $category->delete();
 
-        return redirect()->route('superadmin.parts.categories')->with('success', 'Category updated successfully!');
+        return redirect()
+            ->route('superadmin.parts.categories', $product_id)
+            ->with('success', 'Category deleted successfully!');
     }
 
-    public function createParts(Request $request, string $id)
+    public function createParts(Request $request, string $product_id, string $id)
     {
         $validated = $request->validate([
             'category_id' => 'required|integer|exists:parts_categories,id',
@@ -81,10 +88,9 @@ class PartController extends Controller
             'source' => 'required|file|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-
         if ($request->hasFile('source')) {
             $file = $request->file('source');
-            $filename = time() . '-' . $file->getClientOriginalName();
+            $filename = time().'-'.$file->getClientOriginalName();
             $source = $file->storeAs('parts', $filename, 'public');
         }
 
@@ -94,10 +100,10 @@ class PartController extends Controller
             'path' => $source,
         ]);
 
-        return redirect()->route('superadmin.parts.index', $id)->with('success', 'Part created successfully!');
+        return redirect()->route('superadmin.parts.index', ['product_id' => $product_id, 'id' => $validated['category_id']])->with('success', 'Part created successfully!');
     }
 
-    public function destroyPart(string $id)
+    public function destroyPart(string $id )
     {
         $part = Part::findOrFail($id);
 

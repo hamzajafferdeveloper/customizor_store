@@ -341,6 +341,7 @@ export default function CreateProductCanvas({
                 svgContainerId: 'svg-container',
                 uploadedItems,
                 uploadedPart,
+                // @ts-ignore
                 svgOverlayBox: { width: svgOverlayBox.width, height: svgOverlayBox.height },
                 zoom,
                 pan,

@@ -4,13 +4,13 @@ import TableHeaderCustom from '@/components/table-header';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { type Category } from '@/types/data';
 import { PartPagination } from '@/types/pagination';
-import { Head, router, usePage, } from '@inertiajs/react';
-import { EllipsisVertical, Trash2 } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, EllipsisVertical, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import SuperAdminLayout from '@/layouts/super-admin-layout';
 import CreatePartModal from './component/create-part';
 
 type FlashProps = {
@@ -18,7 +18,7 @@ type FlashProps = {
     error?: string;
 };
 
-export default function Parts({ parts, category }: { parts: PartPagination, category: Category }) {
+export default function Parts({ parts, category, product_id }: { parts: PartPagination; category: Category; product_id: string }) {
     const page = usePage();
     const flash = (page.props as { flash?: FlashProps }).flash;
 
@@ -35,7 +35,7 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
 
     const handlePerPageChange = (value: number) => {
         setPerPage(value);
-        router.get(`/parts/category=${category.id}`, { per_page: value }, { preserveState: true });
+        router.get(`/${product_id}/parts/category=${category.id}`, { per_page: value }, { preserveState: true });
     };
 
     const handlePageChange = (url: string | null) => {
@@ -48,7 +48,7 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
 
     const handleDelete = () => {
         if (selectedPart) {
-            router.delete(route('superadmin.parts.destroy', selectedPart?.id));
+            router.delete(route('superadmin.parts.destroy', { id: selectedPart?.id, product_id: product_id }));
             setConfirmOpen(false);
         } else {
             toast.error('SomeThing Went Wrong. Please Try Again later!');
@@ -60,6 +60,12 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
             <Head title="Category" />
             <div className="flex-1 overflow-x-auto p-4">
                 <div className="mx-auto max-w-xl rounded-lg border p-4 shadow">
+                    {/* <div> */}
+                        <Link className="text-sm hover:underline" href={route('superadmin.parts.categories', { product_id: product_id })}>
+                            <ArrowLeft className="mr-2 inline-block h-4 w-4 cursor-pointer" />
+                            <span className="cursor-pointer">Back to Category List</span>
+                        </Link>
+                    {/* </div> */}
 
                     <TableHeaderCustom
                         btnText="Create"
@@ -67,11 +73,10 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
                         setSearchValue={setSearchValue}
                         btnType="button"
                         btnFunc={() => {
-
                             setOpenCreatePartModal(!openCreatePartModal);
                         }}
                         searchTxt="Search Category by Name..."
-                        heading='All Parts'
+                        heading="All Parts"
                         desc={`List all of parts related to ${category.name}`}
                         // desc2={`Total No of Color is: ${categories.total}`}
                     />
@@ -91,9 +96,7 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
                                     <TableCell>
                                         <img src={`/storage/${part.path}`} className="h-10 w-10" />
                                     </TableCell>
-                                    <TableCell>
-                                        {part.name}
-                                    </TableCell>
+                                    <TableCell>{part.name}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>
@@ -133,12 +136,7 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
                             ))}
                         </TableBody>
                     </Table>
-                    <CustomTableFooter
-                        perPage={perPage}
-                        handlePerPageChange={handlePerPageChange}
-                        handlePageChange={handlePageChange}
-                        data={parts}
-                    />
+                    <CustomTableFooter perPage={perPage} handlePerPageChange={handlePerPageChange} handlePageChange={handlePageChange} data={parts} />
                 </div>
             </div>
 
@@ -152,7 +150,14 @@ export default function Parts({ parts, category }: { parts: PartPagination, cate
                 onConfirm={handleDelete}
             />
 
-            {openCreatePartModal && <CreatePartModal open={openCreatePartModal} onOpenChange={() => setOpenCreatePartModal(false)} categoryId={category.id} />}
+            {openCreatePartModal && (
+                <CreatePartModal
+                    open={openCreatePartModal}
+                    product_id={product_id}
+                    onOpenChange={() => setOpenCreatePartModal(false)}
+                    categoryId={category.id}
+                />
+            )}
             {/*{editOpen && selectedCategory && (*/}
             {/*    <EditCategoryModal*/}
             {/*        open={editOpen}*/}

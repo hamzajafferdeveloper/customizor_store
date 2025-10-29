@@ -8,7 +8,7 @@ import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { FlashProps } from '@/types';
 import { Category, CreateOwnProductType } from '@/types/data';
 import { CreateOwnProductPagination } from '@/types/pagination';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { EllipsisVertical, Pen, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -83,7 +83,9 @@ const CreateYourOwnProduct = ({ categories, CreateOwnProduct }: { categories: Ca
                         <TableBody>
                             {filterData.map((cop) => (
                                 <TableRow key={cop.id}>
-                                    <TableCell>{cop.category.name}</TableCell>
+                                    <TableCell>
+                                        <Link href={route('superadmin.parts.categories', { 'product_id' : cop.id })} className='hover:underline' >{cop.category.name}</Link>
+                                    </TableCell>
                                     <TableCell>
                                         <img src={`/storage/${cop.image}`} className="h-20 w-20" alt="" />
                                     </TableCell>

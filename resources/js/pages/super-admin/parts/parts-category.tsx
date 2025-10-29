@@ -7,7 +7,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { type Category } from '@/types/data';
 import { CategoryPagination } from '@/types/pagination';
 import { Head, router, usePage, Link } from '@inertiajs/react';
-import { EllipsisVertical, Pen, Trash2 } from 'lucide-react';
+import { ArrowLeft, EllipsisVertical, Pen, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import EditCategoryModal from '@/pages/super-admin/parts/component/edit-parts-category';
@@ -19,7 +19,7 @@ type FlashProps = {
     error?: string;
 };
 
-export default function GalleryCategory({ categories }: { categories: CategoryPagination }) {
+export default function GalleryCategory({ categories, product_id }: { categories: CategoryPagination; product_id: string }) {
     const page = usePage();
     const flash = (page.props as { flash?: FlashProps }).flash;
 
@@ -37,7 +37,7 @@ export default function GalleryCategory({ categories }: { categories: CategoryPa
 
     const handlePerPageChange = (value: number) => {
         setPerPage(value);
-        router.get('/parts/categories', { per_page: value }, { preserveState: true });
+        router.get(`/${product_id}/parts/categories`, { per_page: value }, { preserveState: true });
     };
 
     const handlePageChange = (url: string | null) => {
@@ -50,7 +50,7 @@ export default function GalleryCategory({ categories }: { categories: CategoryPa
 
     const handleDelete = () => {
         if (selectedCategory) {
-            router.delete(route('superadmin.parts.delete.category', selectedCategory?.id));
+            router.delete(route('superadmin.parts.delete.category', { id: selectedCategory?.id, product_id: product_id } ));
             setConfirmOpen(false);
         } else {
             toast.error('SomeThing Went Wrong. Please Try Again later!');
@@ -62,6 +62,13 @@ export default function GalleryCategory({ categories }: { categories: CategoryPa
             <Head title="Category" />
             <div className="flex-1 overflow-x-auto p-4">
                 <div className="mx-auto max-w-xl rounded-lg border p-4 shadow">
+
+                    <div>
+                        <Link className='hover:underline text-sm' href={route('superadmin.create-your-own-product.index')}>
+                            <ArrowLeft className="inline-block h-4 w-4 mr-2 cursor-pointer" />
+                            <span className="cursor-pointer">Back to Create Your Own Product</span>
+                        </Link>
+                    </div>
 
                     <TableHeaderCustom
                         btnText="Create"
@@ -89,7 +96,7 @@ export default function GalleryCategory({ categories }: { categories: CategoryPa
                             {filterData.map((category) => (
                                 <TableRow key={category.id}>
                                     <TableCell>
-                                        <Link href={route('superadmin.parts.index', category.id)} >{category.name}</Link>
+                                        <Link href={route('superadmin.parts.index', {  product_id: product_id, id: category.id})} >{category.name}</Link>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
@@ -149,11 +156,12 @@ export default function GalleryCategory({ categories }: { categories: CategoryPa
                 onConfirm={handleDelete}
             />
 
-            {openCreateCategoryModal && <CreateCategoryModal open={openCreateCategoryModal} onOpenChange={() => setOpenCreateCategoryModal(false)} />}
+            {openCreateCategoryModal && <CreateCategoryModal open={openCreateCategoryModal} product_id={product_id} onOpenChange={() => setOpenCreateCategoryModal(false)} />}
             {editOpen && selectedCategory && (
                 <EditCategoryModal
                     open={editOpen}
                     selectedCategory={selectedCategory}
+                    product_id={product_id}
                     onOpenChange={() => {
                         setEditOpen(false);
                         setSelectedCategory(null);

@@ -13,16 +13,18 @@ type Props = {
     open: boolean;
     onOpenChange: () => void;
     selectedCategory: Category;
+    product_id: string;
 };
 
-export default function EditCategoryModal({ open, onOpenChange, selectedCategory }: Props) {
+export default function EditCategoryModal({ open, onOpenChange, selectedCategory, product_id }: Props) {
+    //@ts-ignore
     const { data, setData, put, processing, errors, reset } = useForm<Required<CategoryForm>>({
         name: selectedCategory.name,
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(route('superadmin.parts.edit.category', selectedCategory.id));
+        put(route('superadmin.parts.edit.category', { product_id: product_id, id: selectedCategory.id }));
         onOpenChange();
     };
 
