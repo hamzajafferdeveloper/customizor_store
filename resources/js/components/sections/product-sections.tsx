@@ -34,6 +34,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
         return matchesSearch && matchesCategory;
     });
     const [createOwnProductImage, setCreateOwnProductImage] = useState<string>('/storage/create-your-own-product-base.png');
+    const [showCreateOwnProduct, setShowCreateOwnProduct] = useState<boolean>(true);
 
     const clearFilters = () => {
         router.get(baseUrl, {}, { preserveScroll: true });
@@ -42,10 +43,11 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
     useEffect(() => {
         const category = categories.find((c) => c.id === selectedCategoryId);
         if (category?.own_product_image?.image) {
-            console.log(category.own_product_image.image)
             setCreateOwnProductImage(`/storage/${category.own_product_image.image}`);
+            setShowCreateOwnProduct(true);
         } else {
             setCreateOwnProductImage('/storage/create-your-own-product-base.png');
+            setShowCreateOwnProduct(false);
         }
     }, [selectedCategoryId]);
 
@@ -122,18 +124,20 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
             </div>
 
             <section className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                <Card
-                    onClick={() => router.get(route('design.product' , { categoryId:  selectedCategoryId }), {}, { preserveScroll: true })}
-                    className="flex min-w-0 cursor-pointer flex-col justify-between transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
-                >
-                    <CardHeader className="p-2">
-                        <img src={createOwnProductImage} alt={createOwnProductImage} className="rounded-md object-cover" />
-                    </CardHeader>
-                    <CardContent className="flex flex-col">
-                        <h1 className="font-semibold">Design your own product</h1>
-                        <div className="flex flex-wrap gap-2"></div>
-                    </CardContent>
-                </Card>
+                {showCreateOwnProduct && (
+                    <Card
+                        onClick={() => router.get(route('design.product', { categoryId: selectedCategoryId }), {}, { preserveScroll: true })}
+                        className="flex min-w-0 cursor-pointer flex-col justify-between transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
+                    >
+                        <CardHeader className="p-2">
+                            <img src={createOwnProductImage} alt={createOwnProductImage} className="rounded-md object-cover" />
+                        </CardHeader>
+                        <CardContent className="flex flex-col">
+                            <h1 className="font-semibold">Design your own product</h1>
+                            <div className="flex flex-wrap gap-2"></div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {filterData.length > 0 ? (
                     filterData.map((product) => {
