@@ -1,3 +1,5 @@
+import { Plan } from "./data";
+
 export interface StoreData {
     id: number;
     name: string;
@@ -16,6 +18,7 @@ export interface StoreData {
     updated_at: string;
     password: string | null;
     store_key: string | null;
+    plan: Plan;
     [key: string]: unknown;
 }
 

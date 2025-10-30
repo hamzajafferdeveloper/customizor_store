@@ -1,3 +1,4 @@
+import ManageUserModal from '@/components/store/manage-suer-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -36,8 +37,12 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
     const [secretKey, setSecretKey] = useState(initialSecretKey);
     const [showSecret, setShowSecret] = useState(false);
     const [password, setPassword] = useState<string>(decodeBase64(store.store_key || '') || '');
+    const [openManageUserModal, setOpenManageUserModal] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
 
     const BannerRef = useRef<HTMLInputElement | null>(null);
+
+    // Animate modal open / close with GSAP
 
     const fields: { label: string; key: keyof StoreData; type?: 'text' | 'number' | 'email' | 'file'; visible: boolean }[] = [
         { label: 'Store Name', key: 'name', type: 'text', visible: true },
@@ -70,6 +75,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
         if (currentField === 'logo' && selectedFile) {
             data.append('logo', selectedFile);
         } else if (currentField) {
+            // @ts-ignore
             data.append(currentField, tempValue);
         }
 
@@ -146,7 +152,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                 // toast.error('Failed to update password');
             },
         });
-    }
+    };
 
     const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -166,190 +172,220 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
     };
 
     return (
-        <StoreLayout store={store}>
-            <Head title="Store Profile" />
-            {/* Profile Header */}
-            <div className="relative">
-                {/* Gradient Banner */}
-                <div
-                    className="flex h-56 w-full justify-end gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-center text-white"
-                    style={{
-                        backgroundImage: bannerPreview ? `url(${bannerPreview})` : '',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                    }}
-                >
-                    <input type="file" accept="image/*" ref={BannerRef} className="hidden" onChange={handleBannerChange} />
-                    <PenBox className="m-2 cursor-pointer" onClick={() => BannerRef.current?.click()} />
+        <>
+            <StoreLayout store={store}>
+                <Head title="Store Profile" />
+                {/* Profile Header */}
+                <div className="relative">
+                    {/* Gradient Banner */}
+                    <div
+                        className="flex h-56 w-full justify-end gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-center text-white"
+                        style={{
+                            backgroundImage: bannerPreview ? `url(${bannerPreview})` : '',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <input type="file" accept="image/*" ref={BannerRef} className="hidden" onChange={handleBannerChange} />
+                        <PenBox className="m-2 cursor-pointer" onClick={() => BannerRef.current?.click()} />
+                    </div>
+
+                    {/* Logo Section */}
+                    <div className="absolute inset-x-0 -bottom-20 flex justify-center">
+                        <img
+                            src={filePreview ? filePreview : formData.logo ? `/storage/${formData.logo}` : '/placeholder.png'}
+                            alt="Store Logo"
+                            className="h-44 w-44 cursor-pointer rounded-full border-4 border-white object-cover shadow-lg transition hover:opacity-90"
+                            onClick={() => handleFieldClick('logo')}
+                        />
+                    </div>
                 </div>
 
-                {/* Logo Section */}
-                <div className="absolute inset-x-0 -bottom-20 flex justify-center">
-                    <img
-                        src={filePreview ? filePreview : formData.logo ? `/storage/${formData.logo}` : '/placeholder.png'}
-                        alt="Store Logo"
-                        className="h-44 w-44 cursor-pointer rounded-full border-4 border-white object-cover shadow-lg transition hover:opacity-90"
-                        onClick={() => handleFieldClick('logo')}
-                    />
-                </div>
-            </div>
-
-            <div className="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-8 p-4 sm:grid-cols-2">
-                {/* Store Details */}
-                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
-                    <div className="mb-4 flex w-full justify-between">
-                        <h2 className="text-lg font-semibold">Store Details</h2>
-                        <Badge className="bg-green-700 text-white">Editable</Badge>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        {fields.map(
-                            ({ label, key, visible }) =>
-                                visible && (
-                                    <div
-                                        key={key}
-                                        className="flex cursor-pointer items-center justify-between gap-2 rounded-md border p-3 transition hover:bg-muted"
-                                        onClick={() => handleFieldClick(key)}
-                                    >
-                                        <p className="font-medium">{label}</p>
-                                        <p className="max-w-[200px] truncate text-right text-muted-foreground">{formData[key] || 'Click to add'}</p>
-                                    </div>
-                                ),
-                        )}
-                    </div>
-                </Card>
-
-                {/* Stripe Payment Keys */}
-                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
-                    <div className="mb-4 flex w-full justify-between">
-                        <h2 className="text-lg font-semibold">Stripe Payment Keys</h2>
-                        <Badge className="bg-green-700 text-white">Editable</Badge>
-                    </div>
-                    <form onSubmit={handleStripeSave} className="space-y-4">
-                        <div className="flex flex-col gap-1">
-                            <Label>Publishable Key</Label>
-                            <Input type="text" value={publicKey} onChange={(e) => setPublicKey(e.target.value)} placeholder="Enter publishable key" />
+                <div className="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-8 p-4 sm:grid-cols-2">
+                    {/* Store Details */}
+                    <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                        <div className="mb-4 flex w-full justify-between">
+                            <h2 className="text-lg font-semibold">Store Details</h2>
+                            <Badge className="bg-green-700 text-white">Editable</Badge>
                         </div>
-                        <div className="relative flex flex-col gap-1">
-                            <Label>Secret Key</Label>
-                            <Input
-                                type={showSecret ? 'text' : 'password'}
-                                value={secretKey}
-                                onChange={(e) => setSecretKey(e.target.value)}
-                                placeholder="Enter secret key"
-                            />
-                            <button
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            {fields.map(
+                                ({ label, key, visible }) =>
+                                    visible && (
+                                        <div
+                                            key={key}
+                                            className="flex cursor-pointer items-center justify-between gap-2 rounded-md border p-3 transition hover:bg-muted"
+                                            onClick={() => handleFieldClick(key)}
+                                        >
+                                            <p className="font-medium">{label}</p>
+                                            <p className="max-w-[200px] truncate text-right text-muted-foreground">
+                                                {formData[key] || 'Click to add'}
+                                            </p>
+                                        </div>
+                                    ),
+                            )}
+                        </div>
+                    </Card>
+
+                    {/* Stripe Payment Keys */}
+                    <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                        <div className="mb-4 flex w-full justify-between">
+                            <h2 className="text-lg font-semibold">Stripe Payment Keys</h2>
+                            <Badge className="bg-green-700 text-white">Editable</Badge>
+                        </div>
+                        <form onSubmit={handleStripeSave} className="space-y-4">
+                            <div className="flex flex-col gap-1">
+                                <Label>Publishable Key</Label>
+                                <Input
+                                    type="text"
+                                    value={publicKey}
+                                    onChange={(e) => setPublicKey(e.target.value)}
+                                    placeholder="Enter publishable key"
+                                />
+                            </div>
+                            <div className="relative flex flex-col gap-1">
+                                <Label>Secret Key</Label>
+                                <Input
+                                    type={showSecret ? 'text' : 'password'}
+                                    value={secretKey}
+                                    onChange={(e) => setSecretKey(e.target.value)}
+                                    placeholder="Enter secret key"
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute top-[30px] right-2 text-gray-400 hover:text-gray-600"
+                                    onClick={() => setShowSecret(!showSecret)}
+                                >
+                                    {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                            <Button type="submit" className="mt-2 w-full cursor-pointer">
+                                Save
+                            </Button>
+                        </form>
+                    </Card>
+
+                    {/* Password & Users */}
+                    <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                        <div className="mb-4 flex w-full justify-between">
+                            <h2 className="text-lg font-semibold">Password & Users</h2>
+                            <Badge className="bg-green-700 text-white">Editable</Badge>
+                        </div>
+                        <form onSubmit={handlePasswordSave} className="space-y-4">
+                            <div className="flex flex-col gap-1">
+                                <Label>Password</Label>
+                                <Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter new password" />
+                            </div>
+                            <Button
                                 type="button"
-                                className="absolute top-[30px] right-2 text-gray-400 hover:text-gray-600"
-                                onClick={() => setShowSecret(!showSecret)}
+                                variant="outline"
+                                onClick={() => setOpenManageUserModal(true)}
+                                className="w-full cursor-pointer hover:bg-gray-800/20"
                             >
-                                {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                        </div>
-                        <Button type="submit" className="mt-2 w-full">
-                            Save
-                        </Button>
-                    </form>
-                </Card>
+                                Manage Users
+                            </Button>
+                            <Button type="submit" className="mt-2 w-full cursor-pointer">
+                                Save
+                            </Button>
+                        </form>
+                    </Card>
 
-                {/* Password & Users */}
-                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
-                    <div className="mb-4 flex w-full justify-between">
-                        <h2 className="text-lg font-semibold">Password & Users</h2>
-                        <Badge className="bg-green-700 text-white">Editable</Badge>
-                    </div>
-                    <form onSubmit={handlePasswordSave} className="space-y-4">
-                        <div className="flex flex-col gap-1">
-                            <Label>Password</Label>
-                            <Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter new password" />
+                    {/* Account Info */}
+                    <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                        <div className="mb-4 flex w-full justify-between">
+                            <h2 className="text-lg font-semibold">Account Info</h2>
+                            <Badge className="bg-red-700 text-white">System</Badge>
                         </div>
-                        <Button type="submit" className="mt-2 w-full">
-                            Save
-                        </Button>
-                    </form>
-                </Card>
-
-                {/* Account Info */}
-                <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
-                    <div className="mb-4 flex w-full justify-between">
-                        <h2 className="text-lg font-semibold">Account Info</h2>
-                        <Badge className="bg-red-700 text-white">System</Badge>
-                    </div>
-                    <div className="grid grid-cols-1 gap-6 text-sm sm:grid-cols-2">
-                        <div>
-                            <p className="text-muted-foreground">Status</p>
-                            <p className="font-semibold capitalize">{formData.status || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="mb-2 text-muted-foreground">Store Type</p>
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium">Public</span>
-                                <Switch checked={formData.type === 'protected'} onCheckedChange={(checked) => handleTypeChange(checked)} />
-                                <span className="text-sm font-medium">Protected</span>
+                        <div className="grid grid-cols-1 gap-6 text-sm sm:grid-cols-2">
+                            <div>
+                                <p className="text-muted-foreground">Status</p>
+                                <p className="font-semibold capitalize">{formData.status || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="mb-2 text-muted-foreground">Store Type</p>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium">Public</span>
+                                    <Switch checked={formData.type === 'protected'} onCheckedChange={(checked) => handleTypeChange(checked)} />
+                                    <span className="text-sm font-medium">Protected</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">Plan</p>
+                                <p className="font-semibold">{store?.plan?.name || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">Created At</p>
+                                <p className="font-semibold">{formData.created_at ? new Date(formData.created_at).toLocaleDateString() : 'N/A'}</p>
                             </div>
                         </div>
-                        <div>
-                            <p className="text-muted-foreground">Plan</p>
-                            <p className="font-semibold">{store?.plan?.name || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">Created At</p>
-                            <p className="font-semibold">{formData.created_at ? new Date(formData.created_at).toLocaleDateString() : 'N/A'}</p>
-                        </div>
-                    </div>
-                </Card>
+                    </Card>
 
-                {/* Buttons */}
-                <div className="flex w-full flex-col gap-3 sm:col-span-2 sm:flex-row">
-                    <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.id)}>
-                        <Button className="w-full">Upgrade</Button>
-                    </Link>
-                    <Link className="w-full sm:w-1/2" href={route('renew.form', store.id)}>
-                        <Button className="w-full hover:bg-gray-800/20" variant="outline">
-                            Renew
-                        </Button>
-                    </Link>
+                    {/* Buttons */}
+                    <div className="flex w-full flex-col gap-3 sm:col-span-2 sm:flex-row">
+                        <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.id)}>
+                            <Button className="w-full cursor-pointer">Upgrade</Button>
+                        </Link>
+                        <Link className="w-full sm:w-1/2" href={route('renew.form', store.id)}>
+                            <Button className="w-full cursor-pointer hover:bg-gray-800/20" variant="outline">
+                                Renew
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
-            </div>
 
-            {/* Edit Modal */}
-            <Dialog open={openModal} onOpenChange={setOpenModal}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Edit {currentLabel}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        {currentField && (
-                            <>
-                                {getInputType(currentField) === 'file' ? (
-                                    <div className="flex flex-col items-center gap-4">
-                                        {filePreview ? (
-                                            <img src={filePreview} alt="Preview" className="h-24 w-24 rounded-full border object-cover" />
-                                        ) : (
-                                            <img
-                                                src={`/storage/${formData.logo}` || '/placeholder.png'}
-                                                alt="Logo"
-                                                className="h-24 w-24 rounded-full border object-cover"
-                                            />
-                                        )}
-                                        <Input type="file" accept="image/*" onChange={handleFileChange} />
-                                    </div>
-                                ) : currentField === 'bio' ? (
-                                    <Textarea value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="w-full" />
-                                ) : (
-                                    <Input type={getInputType(currentField)} value={tempValue} onChange={(e) => setTempValue(e.target.value)} />
-                                )}
-                            </>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpenModal(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSave}>Save</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </StoreLayout>
+                {/* Edit Modal */}
+                <Dialog open={openModal} onOpenChange={setOpenModal}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Edit {currentLabel}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            {currentField && (
+                                <>
+                                    {getInputType(currentField) === 'file' ? (
+                                        <div className="flex flex-col items-center gap-4">
+                                            {filePreview ? (
+                                                <img src={filePreview} alt="Preview" className="h-24 w-24 rounded-full border object-cover" />
+                                            ) : (
+                                                <img
+                                                    src={`/storage/${formData.logo}` || '/placeholder.png'}
+                                                    alt="Logo"
+                                                    className="h-24 w-24 rounded-full border object-cover"
+                                                />
+                                            )}
+                                            <Input type="file" accept="image/*" onChange={handleFileChange} />
+                                        </div>
+                                    ) : currentField === 'bio' ? (
+                                        <Textarea value={tempValue} onChange={(e) => setTempValue(e.target.value)} className="w-full" />
+                                    ) : (
+                                        <Input type={getInputType(currentField)} value={tempValue} onChange={(e) => setTempValue(e.target.value)} />
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" className="cursor-pointer" onClick={() => setOpenModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button className="cursor-pointer" onClick={handleSave}>
+                                Save
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Manage User Modal */}
+            </StoreLayout>
+            {(openManageUserModal || isVisible) && (
+                <ManageUserModal
+                    openManageUserModal={openManageUserModal}
+                    setOpenManageUserModal={setOpenManageUserModal}
+                    isVisible={isVisible}
+                    setIsVisible={setIsVisible}
+                    storeId={store.id}
+                />
+            )}
+        </>
     );
 };
 

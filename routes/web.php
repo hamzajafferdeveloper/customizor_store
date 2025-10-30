@@ -29,6 +29,7 @@ Route::get('/upgrade/mail', function() {
 });
 
 
+
 Route::get('/category-for-related-products', [HomeController::class, 'categoryForRelatedProducts'])->name('category.for.related.product');
 Route::get('/product-for-related-products', [HomeController::class, 'productForRelatedProducts'])->name('product.for.related.product');
 
@@ -91,7 +92,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/buy-physical-product/{id}', [BuyPhysicalProductController::class, 'show'])->name('buy.physical.product.show');
 
 });
-
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

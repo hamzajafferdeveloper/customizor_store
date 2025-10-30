@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Store\HomeController;
 use App\Http\Controllers\Store\StoreController;
+use App\Http\Controllers\Store\StoreUserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -45,6 +46,13 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
         Route::get('/edit/template/template-id={id}', [HomeController::class, 'editTemplate'])->name('product.edit.template');
         Route::put('/update/template/template-id={id}', [HomeController::class, 'updateTemplate'])->name('product.update.template');
         Route::post('/update/stripe/update', [StoreController::class, 'updateStripe'])->name('stripe.update');
+
+        Route::get('/all/users', [StoreUserController::class, 'AllUsers'])->name('users');
+        Route::get('/users', [StoreUserController::class, 'storeUsers'])->name('users');
+        Route::post('/add/user/{userId}', [StoreUserController::class, 'addUserToStore'])->name('add.user');
+        Route::delete('/remove/user/{userId}', [StoreUserController::class, 'removeUserFromStore'])->name('remove.user');
+
+
     });
     Route::get('/product/{id}/customize', [HomeController::class, 'customizeProduct'])->name('product.customizer');
 });
