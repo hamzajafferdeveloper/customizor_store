@@ -295,7 +295,7 @@ const renderAdminActions = (product: Product) => (
                     ? route('superadmin.product.edit.template', {
                           id: product.template.id,
                       })
-                    : route('superadmin.product.add.template', product.sku)
+                    : route('superadmin.product.add.template', product.slug)
             }
         >
             <Layers className="h-5 w-5" />
