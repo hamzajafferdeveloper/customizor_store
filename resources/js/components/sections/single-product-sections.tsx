@@ -217,7 +217,7 @@ const SingleProductSection = ({
                 </div>
             </div>
 
-            <RelatedProductsSection />
+            <RelatedProductsSection store={store} />
             <ConfirmDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}

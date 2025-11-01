@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Category, Product } from '@/types/data';
+import { StoreData } from '@/types/store';
 import { Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
-export default function RelatedProductsSection() {
+export default function RelatedProductsSection({ store }: { store?: StoreData }) {
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -34,14 +35,14 @@ export default function RelatedProductsSection() {
         if (!selectedCategory) return;
         setLoading(true); // ✅ start loading
 
-        fetch(`/product-for-related-products?category=${selectedCategory}`)
+        fetch(`/product-for-related-products?category=${selectedCategory}&store_id=${store?.id ?? ''}`)
             .then((response) => response.json())
             .then((data) => {
                 const payload = Array.isArray(data) ? data : (data.products ?? []);
                 setProducts(payload);
             })
             .catch(() => setProducts([]))
-            .finally(() => setLoading(false)); // ✅ stop loading
+            .finally(() => setLoading(false));
     }, [selectedCategory]);
 
     // measure & position underline
@@ -134,7 +135,7 @@ export default function RelatedProductsSection() {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                 {product.slug}
                             </h3>
-                            <Link href={`/product/${product.slug}`} className="mt-2 bg-gray-900/90 py-2 px-4 rounded-md text-white dark:bg-white dark:text-gray-900 w-full cursor-pointer">View</Link>
+                            <Link href={store ? `/${store.id}/product/${product.sku}` : `/product/${product.sku}`} className="mt-2 bg-gray-900/90 py-2 px-4 rounded-md text-white dark:bg-white dark:text-gray-900 w-full cursor-pointer">View</Link>
                         </div>
                     ))
                 )}

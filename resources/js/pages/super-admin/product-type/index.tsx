@@ -58,7 +58,7 @@ export default function Brands({ product_types }: { product_types: CategoryPagin
     };
 
     return (
-        <SuperAdminLayout breadcrumbs={[{ title: 'All Category', href: '/category' }]}>
+        <SuperAdminLayout breadcrumbs={[{ title: 'All Product Type', href: '/product-type' }]}>
             <Head title="Category" />
             <div className="flex-1 overflow-x-auto p-4">
                 <div className="mx-auto max-w-xl rounded-lg border p-4 shadow">

@@ -5,9 +5,12 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\LogoCategory;
+use App\Models\Permission;
 use App\Models\Plan;
 use App\Models\Product;
+use App\Models\ProductType;
 use App\Models\SoldProduct;
+use App\Models\Store;
 use App\Models\StoreStripeKey;
 use App\Models\SvgTemplate;
 use Illuminate\Http\Request;
@@ -77,11 +80,41 @@ class HomeController extends Controller
     public function productForRelatedProducts(Request $request)
     {
         $category = $request->input('category');
+        if($request->input('store_id')){
 
-        $products = Product::where('categories_id', $category)
-            ->latest() // same as orderBy('created_at', 'desc')
+            $store_id = $request->input('store_id');
+            $store = Store::with('banner')->findOrFail($store_id);
+
+            $plan = $store->load('plan.permissions');
+            $permissions = $plan->plan->permissions->pluck('key')->toArray();
+
+            $allPermissions = Permission::pluck('key')->toArray();
+
+            $availablePermission = collect($allPermissions)
+                ->filter(fn ($p) => str_ends_with($p, '_product'))
+                ->values()
+                ->all();
+
+            // Map permissions to product types
+            $allowedTypes = array_values(array_intersect($availablePermission, $permissions));
+
+            $productTypeIds = ProductType::whereIn('name', str_replace('_product', '', $allowedTypes))
+            ->pluck('id');
+
+            $products = Product::where('categories_id', $category)
+                ->whereIn('product_type_id', $productTypeIds)
+                ->orWhere('store_id', $store->id)
+                ->latest()
+                ->take(10)
+                ->get();
+        } else {
+            $products = Product::where('categories_id', $category)
+            ->latest()
             ->take(10)
             ->get();
+        }
+
+
 
         return response()->json([
             'products' => $products,
