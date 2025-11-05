@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('products', function (Blueprint $table) {
             $table->dropColumn('type');
-            $table->foreignId('product_type_id')->after('slug')->constrained('product_types')->onDelete('cascade');
+            $table->foreignId('product_type_id')->after('slug')->nullable()->constrained('product_types')->nullOnDelete();
         });
     }
 

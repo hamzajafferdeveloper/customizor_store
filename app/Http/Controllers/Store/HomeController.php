@@ -219,7 +219,7 @@ class HomeController extends Controller
             'price' => $validated['price'],
             'price_type' => $validated['price_type'],
             'user_id' => auth()->id(),
-            'product_type_id' => 0,
+            'product_type_id' => null,
             'image' => $product_image,
             'sizes' => json_encode(array_values($validated['sizes'])),
             'materials' => json_encode(array_values($validated['materials'])),
