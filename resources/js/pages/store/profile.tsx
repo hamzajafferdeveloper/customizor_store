@@ -1,4 +1,5 @@
 import ManageUserModal from '@/components/store/manage-suer-modal';
+import PermissionModal from '@/components/store/permissions-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,6 +20,8 @@ import { toast } from 'react-toastify';
 const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: StoreData; initialPublicKey: string; initialSecretKey: string }) => {
     const page = usePage<SharedData>();
     const { flash } = page.props;
+    const { auth } = page.props;
+    const USER = auth?.user;
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -39,6 +42,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
     const [password, setPassword] = useState<string>(decodeBase64(store.store_key || '') || '');
     const [openManageUserModal, setOpenManageUserModal] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const [openPermissionModal, setOpenPermissionModal] = useState<boolean>(false);
 
     const BannerRef = useRef<HTMLInputElement | null>(null);
 
@@ -227,70 +231,76 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                         </div>
                     </Card>
 
-                    {/* Stripe Payment Keys */}
-                    <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
-                        <div className="mb-4 flex w-full justify-between">
-                            <h2 className="text-lg font-semibold">Stripe Payment Keys</h2>
-                            <Badge className="bg-green-700 text-white">Editable</Badge>
-                        </div>
-                        <form onSubmit={handleStripeSave} className="space-y-4">
-                            <div className="flex flex-col gap-1">
-                                <Label>Publishable Key</Label>
-                                <Input
-                                    type="text"
-                                    value={publicKey}
-                                    onChange={(e) => setPublicKey(e.target.value)}
-                                    placeholder="Enter publishable key"
-                                />
+                    {USER && USER.id === store.user_id && (
+                        <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                            <div className="mb-4 flex w-full justify-between">
+                                <h2 className="text-lg font-semibold">Stripe Payment Keys</h2>
+                                <Badge className="bg-green-700 text-white">Editable</Badge>
                             </div>
-                            <div className="relative flex flex-col gap-1">
-                                <Label>Secret Key</Label>
-                                <Input
-                                    type={showSecret ? 'text' : 'password'}
-                                    value={secretKey}
-                                    onChange={(e) => setSecretKey(e.target.value)}
-                                    placeholder="Enter secret key"
-                                />
-                                <button
+                            <form onSubmit={handleStripeSave} className="space-y-4">
+                                <div className="flex flex-col gap-1">
+                                    <Label>Publishable Key</Label>
+                                    <Input
+                                        type="text"
+                                        value={publicKey}
+                                        onChange={(e) => setPublicKey(e.target.value)}
+                                        placeholder="Enter publishable key"
+                                    />
+                                </div>
+                                <div className="relative flex flex-col gap-1">
+                                    <Label>Secret Key</Label>
+                                    <Input
+                                        type={showSecret ? 'text' : 'password'}
+                                        value={secretKey}
+                                        onChange={(e) => setSecretKey(e.target.value)}
+                                        placeholder="Enter secret key"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute top-[30px] right-2 text-gray-400 hover:text-gray-600"
+                                        onClick={() => setShowSecret(!showSecret)}
+                                    >
+                                        {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                <Button type="submit" className="mt-2 w-full cursor-pointer">
+                                    Save
+                                </Button>
+                            </form>
+                        </Card>
+                    )}
+
+                    {USER && USER.id === store.user_id && (
+                        <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+                            <div className="mb-4 flex w-full justify-between">
+                                <h2 className="text-lg font-semibold">Password & Users</h2>
+                                <Badge className="bg-green-700 text-white">Editable</Badge>
+                            </div>
+                            <form onSubmit={handlePasswordSave} className="space-y-4">
+                                <div className="flex flex-col gap-1">
+                                    <Label>Password</Label>
+                                    <Input
+                                        type="text"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Enter new password"
+                                    />
+                                </div>
+                                <Button
                                     type="button"
-                                    className="absolute top-[30px] right-2 text-gray-400 hover:text-gray-600"
-                                    onClick={() => setShowSecret(!showSecret)}
+                                    variant="outline"
+                                    onClick={() => setOpenManageUserModal(true)}
+                                    className="w-full cursor-pointer hover:bg-gray-800/20"
                                 >
-                                    {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                            <Button type="submit" className="mt-2 w-full cursor-pointer">
-                                Save
-                            </Button>
-                        </form>
-                    </Card>
+                                    Manage Users
+                                </Button>
+                                <Button type="submit" className="mt-2 w-full cursor-pointer">
+                                    Save
+                                </Button>
+                            </form>
+                        </Card>
+                    )}
 
-                    {/* Password & Users */}
-                    <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
-                        <div className="mb-4 flex w-full justify-between">
-                            <h2 className="text-lg font-semibold">Password & Users</h2>
-                            <Badge className="bg-green-700 text-white">Editable</Badge>
-                        </div>
-                        <form onSubmit={handlePasswordSave} className="space-y-4">
-                            <div className="flex flex-col gap-1">
-                                <Label>Password</Label>
-                                <Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter new password" />
-                            </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setOpenManageUserModal(true)}
-                                className="w-full cursor-pointer hover:bg-gray-800/20"
-                            >
-                                Manage Users
-                            </Button>
-                            <Button type="submit" className="mt-2 w-full cursor-pointer">
-                                Save
-                            </Button>
-                        </form>
-                    </Card>
-
-                    {/* Account Info */}
                     <Card className="w-full rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
                         <div className="mb-4 flex w-full justify-between">
                             <h2 className="text-lg font-semibold">Account Info</h2>
@@ -318,19 +328,24 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                                 <p className="font-semibold">{formData.created_at ? new Date(formData.created_at).toLocaleDateString() : 'N/A'}</p>
                             </div>
                         </div>
+                        <Button className="cursor-pointer" onClick={() => setOpenPermissionModal(true)}>
+                            Permissions
+                        </Button>
                     </Card>
 
                     {/* Buttons */}
-                    <div className="flex w-full flex-col gap-3 sm:col-span-2 sm:flex-row">
-                        <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.id)}>
-                            <Button className="w-full cursor-pointer">Upgrade</Button>
-                        </Link>
-                        <Link className="w-full sm:w-1/2" href={route('renew.form', store.id)}>
-                            <Button className="w-full cursor-pointer hover:bg-gray-800/20" variant="outline">
-                                Renew
-                            </Button>
-                        </Link>
-                    </div>
+                    {USER && USER.id === store.user_id && (
+                        <div className="flex w-full flex-col gap-3 sm:col-span-2 sm:flex-row">
+                            <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.id)}>
+                                <Button className="w-full cursor-pointer">Upgrade</Button>
+                            </Link>
+                            <Link className="w-full sm:w-1/2" href={route('renew.form', store.id)}>
+                                <Button className="w-full cursor-pointer hover:bg-gray-800/20" variant="outline">
+                                    Renew
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Edit Modal */}
@@ -385,6 +400,8 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                     storeId={store.id}
                 />
             )}
+
+            {openPermissionModal && <PermissionModal open={openPermissionModal} onOpenChange={setOpenPermissionModal} storeId={store.id} />}
         </>
     );
 };

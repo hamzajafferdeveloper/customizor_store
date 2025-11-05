@@ -13,7 +13,7 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 
-const FilterProductContent = ({ colors, baseUrl }: { colors: Color[], baseUrl: string }) => {
+const FilterProductContent = ({ colors, baseUrl, product_type }: { colors: Color[], baseUrl: string; product_type: Category[] }) => {
     const [searchColor, setSearchColor] = useState<string>('');
     const [selectedColors, setSelectedColors] = useState<Color[]>([]);
     const [selectedType, setSelectedType] = useState<string | undefined>();
@@ -73,11 +73,11 @@ const FilterProductContent = ({ colors, baseUrl }: { colors: Color[], baseUrl: s
                     onChange={(e) => setSelectedType(e.target.value)}
                     className="w-full rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white text-sm"
                 >
-                    <option value="">Select type</option>
-                    <option value="simple">Simple</option>
-                    <option value="starter">Starter</option>
-                    <option value="pro">Pro</option>
-                    <option value="ultra">Ultra</option>
+                    {product_type.map((type) => (
+                        <option key={type.id} value={type.id}>
+                            {type.name}
+                        </option>
+                    ))}
                 </select>
             </div>
 

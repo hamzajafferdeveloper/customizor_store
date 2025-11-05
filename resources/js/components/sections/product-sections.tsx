@@ -23,9 +23,10 @@ type Props = {
     showProductRoute: string;
     store?: StoreData;
     page_type: string;
+    product_type: Category[];
 };
 
-const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl, createProductUrl, showProductRoute, store, page_type }: Props) => {
+const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl, createProductUrl, showProductRoute, store, page_type, product_type }: Props) => {
     const [searchValue, setSearchValue] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const filterData = products.data.filter((product) => {
@@ -87,7 +88,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                             </Button>
                         </SheetTrigger>
                         <SheetContent>
-                            <FilterProductContent baseUrl={baseUrl} colors={colors} />
+                            <FilterProductContent baseUrl={baseUrl} colors={colors} product_type={product_type} />
                         </SheetContent>
                     </Sheet>
                     {hasFilter && (

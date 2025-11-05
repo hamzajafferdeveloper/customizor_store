@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Route;
 
 // Route Only for Super Admin
 Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/settings', [\App\Http\Controllers\SuperAdmin\SettingController::class, 'index'])->name('superadmin.settings.index');
+    Route::post('/settings/update', [\App\Http\Controllers\SuperAdmin\SettingController::class, 'update'])->name('superadmin.settings.update');
 
     // Route For Store
     Route::get('/admin/plans', [PlansController::class, 'index'])->name('superadmin.plans.index');

@@ -31,6 +31,8 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    site_title: string;
+    site_logo: string;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     flash: FlashProps;

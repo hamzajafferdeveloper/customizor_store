@@ -5,8 +5,10 @@ export interface Category {
     name: string;
     slug_short: string;
     own_product_image: CreateOwnProductType;
+    products_count: number;
     created_at: string;
     updated_at: string;
+
 }
 
 export interface Brand {

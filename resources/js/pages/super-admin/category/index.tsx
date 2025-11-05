@@ -7,7 +7,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { type Category } from '@/types/data';
 import { CategoryPagination } from '@/types/pagination';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { EllipsisVertical, Pen, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -82,6 +82,7 @@ export default function Category({ categories }: { categories: CategoryPaginatio
                             <TableRow>
                                 <TableHead>Category Name</TableHead>
                                 <TableHead>Category Slug Short</TableHead>
+                                <TableHead>No. of Products</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -90,6 +91,7 @@ export default function Category({ categories }: { categories: CategoryPaginatio
                                 <TableRow key={category.id}>
                                     <TableCell>{category.name}</TableCell>
                                     <TableCell>{category.slug_short}</TableCell>
+                                    <Link href={route('product.index', {_query: { category_id: category.id }})}>{category.products_count}</Link>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>
@@ -110,18 +112,20 @@ export default function Category({ categories }: { categories: CategoryPaginatio
                                                     </DropdownMenuItem>
                                                 </Button>
 
-                                                <Button
-                                                    variant="ghost"
-                                                    className="mt-1 flex w-full justify-start bg-red-400/20"
-                                                    onClick={() => {
-                                                        setSelectedCategory(category);
-                                                        setConfirmOpen(true);
-                                                    }}
-                                                >
-                                                    <DropdownMenuItem className="cursor-pointer">
-                                                        <Trash2 className="text-red-900" /> <p className="text-red-900">Delete</p>
-                                                    </DropdownMenuItem>
-                                                </Button>
+                                                {category.products_count === 0 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="mt-1 flex w-full justify-start bg-red-400/20"
+                                                        onClick={() => {
+                                                            setSelectedCategory(category);
+                                                            setConfirmOpen(true);
+                                                        }}
+                                                    >
+                                                        <DropdownMenuItem className="cursor-pointer">
+                                                            <Trash2 className="text-red-900" /> <p className="text-red-900">Delete</p>
+                                                        </DropdownMenuItem>
+                                                    </Button>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

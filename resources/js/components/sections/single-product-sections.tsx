@@ -185,7 +185,7 @@ const SingleProductSection = ({
                     <p className="text-xs">SKU: {product.sku}</p>
 
                     <div className="flex flex-wrap gap-2">
-                        <Tag label="Product Type" value={product.type} />
+                        {/* <Tag label="Product Type" value={product.type} /> */}
                         <Tag label="Product Price" value={product.price} />
                     </div>
 

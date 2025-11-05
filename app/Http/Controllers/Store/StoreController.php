@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Store;
 
 use App\Http\Controllers\Controller;
+use App\Models\Permission;
 use App\Models\Product;
 use App\Models\SoldPhysicalProduct;
 use App\Models\SoldProduct;
@@ -320,5 +321,23 @@ class StoreController extends Controller
 
         return redirect()->route('store.products', $store->id)
             ->with('success', 'Successfully logged into the store.');
+    }
+
+    public function permissions(string $storeId){
+        try {
+            $store = Store::findOrFail($storeId);
+            $store_permission = $store->plan->permissions;
+            $permission = Permission::all();
+
+            return response()->json([
+                'store_permissions' => $store_permission,
+                'all_permissions' => $permission
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch permissions',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

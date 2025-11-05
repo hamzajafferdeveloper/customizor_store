@@ -21,6 +21,11 @@ class PaymentController extends Controller
     public function showPaymentForm($planId)
     {
         $user = auth()->user();
+
+        if(Store::where('user_id', $user->id)->exists()){
+            return redirect()->route('home')->with('error', 'You already have a store.');
+        }
+
         $plan = Plan::findOrFail($planId);
 
         // If user is already paid, check if they already bought this plan
@@ -124,6 +129,7 @@ class PaymentController extends Controller
 
     public function confirmation(Request $request)
     {
+        dd($request->all());
         try {
             $plan = Plan::findOrFail($request->input('planId'));
 

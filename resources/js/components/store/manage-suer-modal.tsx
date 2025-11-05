@@ -121,6 +121,7 @@ const ManageUserModal = ({
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'same-origin',
             });
 
             if (!res.ok) {
@@ -153,6 +154,7 @@ const ManageUserModal = ({
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'same-origin',
             });
 
             if (!res.ok) throw new Error('Failed to delete user');

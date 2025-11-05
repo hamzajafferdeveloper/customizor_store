@@ -1,6 +1,9 @@
+import { SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
 import { SVGAttributes } from 'react';
 
 export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
+    const siteLogo = usePage<SharedData>().props.site_title;
     return (
         // <svg {...props} viewBox="0 0 40 42" xmlns="http://www.w3.org/2000/svg">
         //     <path

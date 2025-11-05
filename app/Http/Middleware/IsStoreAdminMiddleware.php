@@ -19,12 +19,16 @@ class IsStoreAdminMiddleware
         $storeId = $request->route('storeId');
         $user = auth()->user();
 
+        if($user->type == 'admin'){
+            return $next($request);
+        }
+
         if (!$user) {
             return abort(403, 'Unauthorized Access');
         }
 
         // Fetch all stores for this user
-        $stores = Store::where('user_id', $user->id)->pluck('id'); // only IDs for performance
+        $stores = Store::where('user_id', $user->id)->pluck('id');
 
         // ✅ Check if $storeId exists in user's stores
         if (!$stores->contains($storeId)) {

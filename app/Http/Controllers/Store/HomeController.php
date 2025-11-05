@@ -48,7 +48,7 @@ class HomeController extends Controller
 
         // Filter by product type
         if ($request->has('type')) {
-            $query->where('type', $request->input('type'));
+            $query->where('product_type_id', $request->input('type'));
         }
 
         // Filter by selected color IDs
@@ -93,6 +93,7 @@ class HomeController extends Controller
             'products' => $products,
             'categories' => $categories,
             'colors' => $colors,
+            'product_types' => ProductType::all(),
         ]);
     }
 

@@ -15,6 +15,7 @@ class IsAdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+
         if($request->user()->type == 'user'){
             return abort('403', 'UnAthorized Access');
         }

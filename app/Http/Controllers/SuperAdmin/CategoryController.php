@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,6 +18,10 @@ class CategoryController extends Controller
         $perPage = $request->input('per_page', 10);
         $query = Category::query();
         $categories = $query->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+        // Append product count to each category
+        foreach ($categories as $category) {
+            $category->products_count = Product::where('categories_id', $category->id)->count();
+        }
         return Inertia::render('super-admin/category/index', [
             'categories' => $categories
         ]);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\ProductType;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +16,10 @@ class ProductTypeController extends Controller
         $perPage = $request->input('per_page', 10);
         $query = ProductType::query();
         $product_types = $query->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+
+        foreach ($product_types as $product_type) {
+            $product_type->products_count = Product::where('product_type_id', $product_type->id)->count();
+        }
 
         return Inertia::render('super-admin/product-type/index', [
             'product_types' => $product_types,

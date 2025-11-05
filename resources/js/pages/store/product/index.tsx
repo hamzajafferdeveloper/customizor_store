@@ -14,9 +14,10 @@ type Props = {
     categories: Category[];
     colors: Color[];
     page_type: string;
+    product_types: Category[];
 };
 
-export default function Welcome({ store, products, categories, colors, page_type }: Props) {
+export default function Welcome({ store, products, categories, colors, page_type, product_types }: Props) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const { flash } = page.props;
@@ -42,6 +43,7 @@ export default function Welcome({ store, products, categories, colors, page_type
                 createProductUrl={route('store.product.create', { storeId: store.id })}
                 showProductRoute="store.product.show"
                 page_type={page_type}
+                product_type={product_types}
             />
         </StoreLayout>
     );

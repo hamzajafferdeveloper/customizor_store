@@ -22,6 +22,10 @@ class IsStorePublicMiddleware
         // dd($store->load('plan'), $store->load('paymentDetail'));
 
         $user = auth()->user();
+
+        if($user->type == 'admin'){
+            return $next($request);
+        }
         if ($store && $store->type === 'protected') {
             // If the store is protected, check if the user is the owner
             if($user && $store->user_id === $user->id){

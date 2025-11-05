@@ -7,7 +7,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { type Category } from '@/types/data';
 import { CategoryPagination } from '@/types/pagination';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { EllipsisVertical, Pen, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -81,15 +81,17 @@ export default function Brands({ product_types }: { product_types: CategoryPagin
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Product Type Name</TableHead>
-
+                                <TableHead>No. of Products</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filterData.map((brand) => (
-                                <TableRow key={brand.id}>
-                                    <TableCell>{brand.name}</TableCell>
-
+                            {filterData.map((type) => (
+                                <TableRow key={type.id}>
+                                    <TableCell>{type.name}</TableCell>
+                                    <TableCell>
+                                        <Link href={route('product.index', {_query: { type: type.id }})}>{type.products_count}</Link>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>
@@ -101,7 +103,7 @@ export default function Brands({ product_types }: { product_types: CategoryPagin
                                                     variant="ghost"
                                                     className="flex w-full cursor-pointer justify-start bg-gray-400/20 text-gray-900"
                                                     onClick={() => {
-                                                        setSelectedProductTpye(brand);
+                                                        setSelectedProductTpye(type);
                                                         setEditOpen(true);
                                                     }}
                                                 >
@@ -110,18 +112,20 @@ export default function Brands({ product_types }: { product_types: CategoryPagin
                                                     </DropdownMenuItem>
                                                 </Button>
 
-                                                <Button
-                                                    variant="ghost"
-                                                    className="mt-1 flex w-full justify-start bg-red-400/20"
-                                                    onClick={() => {
-                                                        setSelectedProductTpye(brand);
-                                                        setConfirmOpen(true);
-                                                    }}
-                                                >
-                                                    <DropdownMenuItem className="cursor-pointer">
-                                                        <Trash2 className="text-red-900" /> <p className="text-red-900">Delete</p>
-                                                    </DropdownMenuItem>
-                                                </Button>
+                                                {type.products_count === 0 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="mt-1 flex w-full justify-start bg-red-400/20"
+                                                        onClick={() => {
+                                                            setSelectedProductTpye(type);
+                                                            setConfirmOpen(true);
+                                                        }}
+                                                    >
+                                                        <DropdownMenuItem className="cursor-pointer">
+                                                            <Trash2 className="text-red-900" /> <p className="text-red-900">Delete</p>
+                                                        </DropdownMenuItem>
+                                                    </Button>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

@@ -38,7 +38,7 @@ class ProductController extends Controller
 
         // Filter by product type
         if ($request->has('type')) {
-            $query->where('type', $request->input('type'));
+            $query->where('product_type_id', $request->input('type'));
         }
 
         // Filter by selected color IDs
@@ -52,12 +52,14 @@ class ProductController extends Controller
         $products = $query->where('store_id', null)->with('productColors.color')->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
         $categories = Category::with('ownProductImage')->get();
         $colors = Color::all();
+        $product_types = ProductType::all();
 
         return Inertia::render('home/product/index', [
             'products' => $products,
             'categories' => $categories,
             'colors' => $colors,
             'page_type' => 'home',
+            'product_types' => $product_types
         ]);
     }
 

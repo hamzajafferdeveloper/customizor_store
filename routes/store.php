@@ -23,6 +23,7 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
     Route::get('/products', [HomeController::class, 'products'])->name('products');
     Route::get('/product/{sku}', [HomeController::class, 'showProduct'])->name('product.show');
     Route::post('/password/update', [StoreController::class, 'updateStorePassword'])->name('password.update');
+    Route::get('/permissions', [StoreController::class, 'permissions'])->name('permissions');
 
     Route::middleware('isStoreAdmin')->group(function () {
         Route::get('/dashboard', [StoreController::class, 'dashboard'])->name('dashboard');
