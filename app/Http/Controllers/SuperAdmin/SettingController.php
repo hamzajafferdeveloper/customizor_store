@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ExtraPermissionApprovedMail;
+use App\Models\RequestExtraPermission;
 use App\Models\Setting;
+use App\Models\StoreExtraPermission;
 use Cache;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Mail;
 
 class SettingController extends Controller
 {
@@ -59,4 +63,66 @@ class SettingController extends Controller
             return back()->withErrors('error', 'Failed To update settings');
         }
     }
+
+    public function getExtraPermissionRequest(Request $request)
+    {
+        try {
+            $search = $request->input('search');
+            $status = $request->input('status');
+            $sort = $request->input('sort', 'desc');
+
+            $requests = RequestExtraPermission::with(['store', 'permission'])
+                ->when($search, function ($query, $search) {
+                    $query->whereHas('store', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('id', 'like', "%{$search}%");
+                    })->orWhereHas('permission', function ($q) use ($search) {
+                        $q->where('key', 'like', "%{$search}%");
+                    });
+                })
+                ->when($status, function ($query, $status) {
+                    if ($status !== 'all') {
+                        $query->where('status', $status);
+                    }
+                })
+                ->orderBy('created_at', $sort)
+                ->paginate(10)
+                ->withQueryString();
+
+            return Inertia::render('super-admin/extra-permission-request', [
+                'requests' => $requests,
+                'filters' => [
+                    'search' => $search,
+                    'status' => $status,
+                    'sort' => $sort,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed To get extra permission request');
+        }
+    }
+
+
+public function approveExtraPermissionRequest(string $id)
+{
+    try {
+        $request = RequestExtraPermission::with(['store', 'permission'])->findOrFail($id);
+
+        $request->update(['status' => 'approved']);
+
+        StoreExtraPermission::create([
+            'store_id' => $request->store_id,
+            'permission_id' => $request->permission_id,
+        ]);
+
+        // ✅ Send email to store owner
+        if ($request->store && $request->store->email) {
+            Mail::to($request->store->email)->send(new ExtraPermissionApprovedMail($request));
+        }
+
+        return back()->with('success', 'Extra permission request approved successfully.');
+    } catch (\Exception $e) {
+        return back()->with('error', 'Failed to approve extra permission request.');
+    }
+}
 }

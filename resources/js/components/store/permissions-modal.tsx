@@ -1,10 +1,13 @@
-import { LoaderCircleIcon, X, CheckCircle2, CircleOff } from "lucide-react";
+import { router } from "@inertiajs/react";
+import { LoaderCircleIcon, X, CheckCircle2, CircleOff, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type Permission = {
   id: number;
   key: string;
   description: string;
+  limit: string | null;
+  permission_id: number;
   pivot?: {
     is_enabled?: number;
   };
@@ -21,6 +24,8 @@ const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
   const [storePermissions, setStorePermissions] = useState<Permission[]>([]);
+  const [requestedPermissions, setRequestedPermissions] = useState<Permission[]>([]);
+  const [storeExtraPermissions, setStoreExtraPermissions] = useState<Permission[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -30,6 +35,8 @@ const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
         .then((data) => {
           setAllPermissions(data.all_permissions || []);
           setStorePermissions(data.store_permissions || []);
+          setRequestedPermissions(data.requested_permissions || []);
+          setStoreExtraPermissions(data.store_extra_permissions || []);
           setIsLoading(false);
         });
     }
@@ -39,13 +46,28 @@ const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
     if (e.target === overlayRef.current) onOpenChange(false);
   };
 
+  console.log('storePermissions', storePermissions);
+  console.log('requestedPermissions', requestedPermissions);
+  console.log('storeExtraPermissions', storeExtraPermissions);
+
   const hasPermission = (permissionId: number) => {
-    return storePermissions.some((p) => p.id === permissionId);
+    return storePermissions.some((p) => p.id === permissionId) || storeExtraPermissions.some((p) => p.permission_id === permissionId);
+  };
+
+  const hasRequestedPermission = (permissionId: number) => {
+    return requestedPermissions.some((p) => p.permission_id === permissionId);
   };
 
   const handleRequestPermission = (permissionId: number) => {
-    // You can update this to send an API call later
-    alert(`Request sent for permission ID: ${permissionId}`);
+    router.post(`/${storeId}/request-extra-permission/${permissionId}`, {}, {
+      onSuccess: () => {
+        // Add to requestedPermissions list optimistically
+        const requested = allPermissions.find(p => p.id === permissionId);
+        if (requested && !hasRequestedPermission(permissionId)) {
+          setRequestedPermissions(prev => [...prev, requested]);
+        }
+      }
+    });
   };
 
   return (
@@ -77,6 +99,7 @@ const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {allPermissions.map((permission) => {
               const active = hasPermission(permission.id);
+              const requested = hasRequestedPermission(permission.id);
 
               return (
                 <div
@@ -84,6 +107,8 @@ const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
                   className={`rounded-xl border p-4 shadow-sm transition-all ${
                     active
                       ? "border-green-400 bg-green-50"
+                      : requested
+                      ? "border-yellow-400 bg-yellow-50"
                       : "border-gray-200 bg-gray-50"
                   }`}
                 >
@@ -96,21 +121,31 @@ const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
                         {permission.description}
                       </p>
                     </div>
+
                     {active ? (
                       <CheckCircle2 className="text-green-500 h-5 w-5" />
+                    ) : requested ? (
+                      <Clock className="text-yellow-500 h-5 w-5" />
                     ) : (
                       <CircleOff className="text-gray-400 h-5 w-5" />
                     )}
                   </div>
 
                   {/* Footer Button */}
-                  {!active && (
+                  {!active && !requested && (
                     <button
                       onClick={() => handleRequestPermission(permission.id)}
                       className="mt-3 w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
                     >
                       Request Access
                     </button>
+                  )}
+
+                  {/* Requested State */}
+                  {requested && !active && (
+                    <div className="mt-3 w-full rounded-md bg-yellow-200 px-3 py-2 text-sm font-medium text-yellow-800 text-center">
+                      Requested
+                    </div>
                   )}
                 </div>
               );

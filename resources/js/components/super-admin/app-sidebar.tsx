@@ -78,6 +78,11 @@ const mainNavItems: NavItem[] = [
         title: 'Settings',
         href: '/settings',
         icon: Settings,
+    },
+    {
+        title: 'Extra Permission Request',
+        href: '/get-extra-permission-request',
+        icon: Settings,
     }
 ];
 

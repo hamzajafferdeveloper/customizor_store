@@ -21,6 +21,9 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
     Route::get('/settings', [\App\Http\Controllers\SuperAdmin\SettingController::class, 'index'])->name('superadmin.settings.index');
     Route::post('/settings/update', [\App\Http\Controllers\SuperAdmin\SettingController::class, 'update'])->name('superadmin.settings.update');
 
+    Route::get('/get-extra-permission-request', [\App\Http\Controllers\SuperAdmin\SettingController::class, 'getExtraPermissionRequest'])->name('get.extra.permission.request');
+    Route::post('/approve-extra-permission-request/{id}', [\App\Http\Controllers\SuperAdmin\SettingController::class, 'approveExtraPermissionRequest'])->name('update.extra.permission.request');
+
     // Route For Store
     Route::get('/admin/plans', [PlansController::class, 'index'])->name('superadmin.plans.index');
     Route::post('/admin/plans/store', [PlansController::class, 'store'])->name('superadmin.plan.store');

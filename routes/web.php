@@ -60,6 +60,8 @@ Route::get('product-price-type/{id}', function ($id) {
     return response()->json(['message', 'No Product Found'], 404);
 });
 
+Route::get('/all-stores', [HomeController::class, 'allStores'])->name('all.stores');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Payment Routes
     Route::get('/checkout/plan-id={planId}', [PaymentController::class, 'showPaymentForm'])->name('checkout.form');

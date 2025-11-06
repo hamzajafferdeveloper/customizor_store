@@ -23,7 +23,7 @@ class IsStorePublicMiddleware
 
         $user = auth()->user();
 
-        if($user->type == 'admin'){
+        if($user && $user->type == 'admin'){
             return $next($request);
         }
         if ($store && $store->type === 'protected') {

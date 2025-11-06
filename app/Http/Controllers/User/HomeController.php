@@ -249,4 +249,53 @@ class HomeController extends Controller
             'selectedUrlType' => $selectedType, // frontend can use this for tab highlight
         ]);
     }
+
+public function allStores()
+{
+    $stores = Store::with(['plan.permissions', 'extraPermissions.permission'])->get();
+
+    foreach ($stores as $store) {
+        // Get plan + extra permissions
+        $planPermissions = $store->plan
+            ? $store->plan->permissions->pluck('key')->toArray()
+            : [];
+
+        $extraPermissions = $store->extraPermissions
+            ->pluck('permission.key')
+            ->filter()
+            ->toArray();
+
+        // Merge + unique
+        $allPermissions = array_unique(array_merge($planPermissions, $extraPermissions));
+
+        // Count store products
+        $createdProductsCount = Product::where('store_id', $store->id)->count();
+
+        // Determine allowed products from permissions
+        $allowedProducts = 0;
+        foreach ($allPermissions as $perm) {
+            $type = str_replace('_product', '', $perm);
+            $productType = ProductType::where('name', $type)->first();
+
+            if ($productType) {
+                $allowedProducts += $productType->products()->count();
+            }
+        }
+
+        // Calculate total (created + allowed)
+        $totalProducts = $allowedProducts === 'unlimited'
+            ? 'unlimited'
+            : $createdProductsCount + $allowedProducts;
+
+        // Attach computed attributes
+        $store->total_products = $totalProducts;
+        $store->permissions = $allPermissions;
+        $store->plan_name = $store->plan->name ?? 'No Plan';
+    }
+
+    return Inertia::render('home/all-stores', [
+        'stores' => $stores,
+    ]);
+}
+
 }

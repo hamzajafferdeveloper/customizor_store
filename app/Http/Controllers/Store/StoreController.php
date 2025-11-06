@@ -3,17 +3,23 @@
 namespace App\Http\Controllers\Store;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RequestPermissionMail;
 use App\Models\Permission;
 use App\Models\Product;
+use App\Models\RequestExtraPermission;
 use App\Models\SoldPhysicalProduct;
 use App\Models\SoldProduct;
 use App\Models\Store;
 use App\Models\StoreBanner;
+use App\Models\StoreExtraPermission;
 use App\Models\StoreStripeKey;
+use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Mail;
 
 class StoreController extends Controller
 {
@@ -317,27 +323,52 @@ class StoreController extends Controller
         // (e.g., mark session, redirect to dashboard, etc.)
         session(['store_logged_in' => $store->id]);
 
-
-
         return redirect()->route('store.products', $store->id)
             ->with('success', 'Successfully logged into the store.');
     }
 
-    public function permissions(string $storeId){
+    public function permissions(string $storeId)
+    {
         try {
             $store = Store::findOrFail($storeId);
-            $store_permission = $store->plan->permissions;
-            $permission = Permission::all();
+            $store_permissions = $store->plan->permissions;
+            $permissions = Permission::all();
+            $requested_permissions = RequestExtraPermission::where('store_id', $store->id)->where('status', 'pending')->get();
+            $store_extra_permissions = StoreExtraPermission::where('store_id', $store->id)->get();
 
             return response()->json([
-                'store_permissions' => $store_permission,
-                'all_permissions' => $permission
+                'store_permissions' => $store_permissions,
+                'all_permissions' => $permissions,
+                'requested_permissions' => $requested_permissions,
+                'store_extra_permissions' => $store_extra_permissions
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to fetch permissions',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function requestExtraPermission(string $storeId, string $permission_id)
+    {
+        try {
+            // Create the permission request
+            $request_permission = RequestExtraPermission::create([
+                'store_id' => $storeId,
+                'permission_id' => $permission_id,
+                'status' => 'pending',
+            ]);
+
+            // Fetch all admin users
+            $admin = User::where('type', 'admin')->first();
+
+            Mail::to($admin->email)->send(new RequestPermissionMail($request_permission));
+
+            return redirect()->back()->with('success', 'Request sent successfully and admins have been notified.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Something went wrong while sending request.');
         }
     }
 }

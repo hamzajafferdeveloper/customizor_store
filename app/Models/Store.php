@@ -53,4 +53,9 @@ class Store extends Model
         return $this->belongsToMany(User::class, 'store_users');
     }
 
+    public function extraPermissions()
+    {
+        return $this->hasMany(StoreExtraPermission::class);
+    }
+
 }

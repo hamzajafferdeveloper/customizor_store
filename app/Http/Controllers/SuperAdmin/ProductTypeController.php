@@ -58,27 +58,44 @@ class ProductTypeController extends Controller
 
         $product_type = ProductType::findOrFail($id);
 
-        Permission::firstOrCreate([
-            'key' => $validated['name'].'_product',
-            'description' => 'Can use ' . $validated['name'] . ' product',
-        ]);
+        // Find the old permission key before updating
+        $oldPermissionKey = $product_type->name . '_product';
 
+        // Update the Product Type
         $product_type->update([
             'name' => $validated['name'],
         ]);
 
-        return redirect()->route('product-type.index')->with('success', 'brand updated successfully!');
+        // Update the permission key and description
+        $permission = Permission::where('key', $oldPermissionKey)->first();
+
+        if ($permission) {
+            $permission->update([
+                'key' => $validated['name'] . '_product',
+                'description' => 'Can use ' . $validated['name'] . ' product',
+            ]);
+        } else {
+            // If not found, create it
+            Permission::create([
+                'key' => $validated['name'] . '_product',
+                'description' => 'Can use ' . $validated['name'] . ' product',
+            ]);
+        }
+
+        return redirect()->route('product-type.index')->with('success', 'Product type updated successfully!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $product_type = ProductType::findOrFail($id);
 
+        // Delete related permission
+        $permissionKey = $product_type->name . '_product';
+        Permission::where('key', $permissionKey)->delete();
+
+        // Delete product type
         $product_type->delete();
 
-        return redirect()->route('product-type.index')->with('success', 'brand deleted successfully!');
+        return redirect()->route('product-type.index')->with('success', 'Product type and permission deleted successfully!');
     }
 }

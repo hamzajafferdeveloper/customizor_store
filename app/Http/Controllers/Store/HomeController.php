@@ -15,6 +15,7 @@ use App\Models\ProductType;
 use App\Models\Store;
 use App\Models\SvgTemplate;
 use App\Models\SvgTemplatePart;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -61,6 +62,14 @@ class HomeController extends Controller
 
         $plan = $store->load('plan.permissions');
         $permissions = $plan->plan->permissions->pluck('key')->toArray();
+        $extraPermissions = $store->extraPermissions()
+            ->with('permission')
+            ->get()
+            ->pluck('permission.key')
+            ->filter()
+            ->toArray();
+
+        $permissions = array_merge($permissions, $extraPermissions);
 
         $allPermissions = Permission::pluck('key')->toArray();
 
@@ -72,10 +81,8 @@ class HomeController extends Controller
         // Map permissions to product types
         $allowedTypes = array_values(array_intersect($availablePermission, $permissions));
 
-
         $productTypeIds = ProductType::whereIn('name', str_replace('_product', '', $allowedTypes))
             ->pluck('id');
-
 
         $products = $query
             ->whereIn('product_type_id', $productTypeIds)
@@ -112,131 +119,140 @@ class HomeController extends Controller
 
     public function createProduct(string $storeId)
     {
-        $store = Store::findOrFail($storeId);
-        $plan = $store->load('plan.permissions');
-        $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
-        $productLimit = $productsPermissions->first()->pivot->limit;
+        try {
 
-        $numberOfProducts = Product::where('store_id', $storeId)->count();
-        if ($numberOfProducts >= $productLimit) {
-            return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+            $store = Store::findOrFail($storeId);
+            $plan = $store->load('plan.permissions');
+            $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
+            $productLimit = $productsPermissions->first()->pivot->limit;
+
+            $numberOfProducts = Product::where('store_id', $storeId)->count();
+            if ($numberOfProducts >= $productLimit) {
+                return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+            }
+
+            $store = Store::findOrFail($storeId);
+            $categories = Category::all();
+            $colors = Color::all();
+            $brands = Brand::all();
+
+            // Render the create product view
+            return Inertia::render('store/product/create', [
+                'store' => $store,
+                'categories' => $categories,
+                'colors' => $colors,
+                'brands' => $brands,
+            ]);
+        } catch (Exception $e) {
+            return redirect()->route('store.products', $storeId)->with('error', 'UnExpected Error.');
         }
-
-        $store = Store::findOrFail($storeId);
-        $categories = Category::all();
-        $colors = Color::all();
-        $brands = Brand::all();
-
-        // Render the create product view
-        return Inertia::render('store/product/create', [
-            'store' => $store,
-            'categories' => $categories,
-            'colors' => $colors,
-            'brands' => $brands,
-        ]);
     }
 
     public function storeProduct(Request $request, string $storeId)
     {
 
-        $store = Store::findOrFail($storeId);
-        $plan = $store->load('plan.permissions');
-        $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
-        $productLimit = $productsPermissions->first()->pivot->limit;
+        try {
+            $store = Store::findOrFail($storeId);
+            $plan = $store->load('plan.permissions');
+            $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
+            $productLimit = $productsPermissions->first()->pivot->limit;
 
-        $numberOfProducts = Product::where('store_id', $storeId)->count();
-        if ($numberOfProducts >= $productLimit) {
-            return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
-        }
+            $numberOfProducts = Product::where('store_id', $storeId)->count();
+            if ($numberOfProducts >= $productLimit) {
+                return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+            }
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:100',
-            'price' => 'required|numeric|min:0',
-            'price_type' => 'required|in:physical,digital',
-            'brand_id' => 'required|integer|exists:brands,id',
-            'sizes' => 'required|array|min:1',
-            'sizes.*' => 'required|string|max:20',
-            'materials' => 'required|array|min:1',
-            'materials.*' => 'required|string|max:30',
-            'colors' => 'required|array|min:1',
-            'colors.*' => 'required|integer|exists:colors,id',
-            'categories_id' => 'required|integer|exists:categories,id',
-            'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
-
-        $brand = Brand::findOrFail($request->brand_id);
-        $category = Category::findOrFail($request->categories_id);
-
-        // ✅ Create base slug
-        $rawSlug = $brand->slug_short.$category->slug_short;
-        $originalSlug = Str::slug($rawSlug);
-        $slug = $originalSlug;
-        $count = 1;
-
-        while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug.'-'.$count;
-            $count++;
-        }
-
-        // ✅ Auto-generate unique SKU
-        // Format: ANB-BRN-CAT-0001
-        $basePrefix = 'ANB';
-        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
-        $prefix = $basePrefix.'-'.$baseSku.'-';
-
-        $lastProduct = Product::where('sku', 'like', $prefix.'%')
-            ->orderBy('sku', 'desc')
-            ->first();
-
-        if ($lastProduct) {
-            $lastNumber = (int) substr($lastProduct->sku, -4);
-            $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $nextNumber = '0001';
-        }
-
-        $sku = $prefix.$nextNumber;
-
-        // Clean up arrays
-        $validated['sizes'] = array_filter($validated['sizes']);
-        $validated['materials'] = array_filter($validated['materials']);
-        $validated['colors'] = array_filter($validated['colors']);
-
-        // Store Image
-        $product_image = null;
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time().'-'.$file->getClientOriginalName();
-            $product_image = $file->storeAs('product', $filename, 'public');
-        }
-
-        // Create Product
-        $product = Product::create([
-            'title' => $validated['title'],
-            'sku' => $sku, // ✅ Added SKU
-            'slug' => $slug,
-            'store_id' => $storeId,
-            'price' => $validated['price'],
-            'price_type' => $validated['price_type'],
-            'user_id' => auth()->id(),
-            'product_type_id' => null,
-            'image' => $product_image,
-            'sizes' => json_encode(array_values($validated['sizes'])),
-            'materials' => json_encode(array_values($validated['materials'])),
-            'categories_id' => $validated['categories_id'],
-            'brand_id' => $validated['brand_id'],
-        ]);
-
-        // Attach Colors
-        foreach (array_filter($validated['colors']) as $colorId) {
-            ProductColors::create([
-                'product_id' => $product->id,
-                'color_id' => $colorId,
+            $validated = $request->validate([
+                'title' => 'required|string|max:100',
+                'price' => 'required|numeric|min:0',
+                'price_type' => 'required|in:physical,digital',
+                'brand_id' => 'required|integer|exists:brands,id',
+                'sizes' => 'required|array|min:1',
+                'sizes.*' => 'required|string|max:20',
+                'materials' => 'required|array|min:1',
+                'materials.*' => 'required|string|max:30',
+                'colors' => 'required|array|min:1',
+                'colors.*' => 'required|integer|exists:colors,id',
+                'categories_id' => 'required|integer|exists:categories,id',
+                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             ]);
-        }
 
-        return redirect()->route('store.products', $storeId)
-            ->with('success', 'Product created successfully!');
+            $brand = Brand::findOrFail($request->brand_id);
+            $category = Category::findOrFail($request->categories_id);
+
+            // ✅ Create base slug
+            $rawSlug = $brand->slug_short.$category->slug_short;
+            $originalSlug = Str::slug($rawSlug);
+            $slug = $originalSlug;
+            $count = 1;
+
+            while (Product::where('slug', $slug)->exists()) {
+                $slug = $originalSlug.'-'.$count;
+                $count++;
+            }
+
+            // ✅ Auto-generate unique SKU
+            // Format: ANB-BRN-CAT-0001
+            $basePrefix = 'ANB';
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
+            $prefix = $basePrefix.'-'.$baseSku.'-';
+
+            $lastProduct = Product::where('sku', 'like', $prefix.'%')
+                ->orderBy('sku', 'desc')
+                ->first();
+
+            if ($lastProduct) {
+                $lastNumber = (int) substr($lastProduct->sku, -4);
+                $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $nextNumber = '0001';
+            }
+
+            $sku = $prefix.$nextNumber;
+
+            // Clean up arrays
+            $validated['sizes'] = array_filter($validated['sizes']);
+            $validated['materials'] = array_filter($validated['materials']);
+            $validated['colors'] = array_filter($validated['colors']);
+
+            // Store Image
+            $product_image = null;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $filename = time().'-'.$file->getClientOriginalName();
+                $product_image = $file->storeAs('product', $filename, 'public');
+            }
+
+            // Create Product
+            $product = Product::create([
+                'title' => $validated['title'],
+                'sku' => $sku, // ✅ Added SKU
+                'slug' => $slug,
+                'store_id' => $storeId,
+                'price' => $validated['price'],
+                'price_type' => $validated['price_type'],
+                'user_id' => auth()->id(),
+                'product_type_id' => null,
+                'image' => $product_image,
+                'sizes' => json_encode(array_values($validated['sizes'])),
+                'materials' => json_encode(array_values($validated['materials'])),
+                'categories_id' => $validated['categories_id'],
+                'brand_id' => $validated['brand_id'],
+            ]);
+
+            // Attach Colors
+            foreach (array_filter($validated['colors']) as $colorId) {
+                ProductColors::create([
+                    'product_id' => $product->id,
+                    'color_id' => $colorId,
+                ]);
+            }
+
+            return redirect()->route('store.products', $storeId)
+                ->with('success', 'Product created successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('store.products', $storeId)->with('error', 'UnExpected Error: '.$e->getMessage());
+        }
     }
 
     public function editProduct(string $storeId, string $sku)
@@ -488,7 +504,22 @@ class HomeController extends Controller
     public function customizeProduct(string $storeId, string $id)
     {
         $store = Store::findOrFail($storeId);
-        $storePermissions = Plan::with('permissions', 'fonts')->where('id', $store->plan_id)->first();
+        $storePermissions = Plan::with('permissions', 'fonts')
+            ->where('id', $store->plan_id)
+            ->first();
+
+        $planPermissions = $storePermissions
+            ? $storePermissions->permissions->pluck('key')->toArray()
+            : [];
+        $extraPermissions = $store->extraPermissions()
+            ->with('permission')
+            ->get()
+            ->pluck('permission.key')
+            ->filter()
+            ->toArray();
+
+        $allPermissions = array_unique(array_merge($planPermissions, $extraPermissions));
+
         $template = SvgTemplate::with('part')->findOrFail($id);
         $logoGallery = LogoCategory::with('logos')->get();
 
@@ -496,7 +527,7 @@ class HomeController extends Controller
             'store' => $store,
             'template' => $template,
             'logoGallery' => $logoGallery,
-            'permissions' => $storePermissions,
+            'permissions' => $allPermissions,
         ]);
     }
 }

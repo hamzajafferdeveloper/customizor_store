@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'site_title' => app('siteSettings')['title'] ?? 'Site Title',
-            'site_logo' =>  '/storage/'. app('siteSettings')['logo'] ?? '/storage/red-pepper-resturant.png',
+            // 'site_logo' =>  app('siteSettings')['logo'] && '/storage/'. app('siteSettings')['logo'] ?? '/storage/red-pepper-resturant.png',
             'auth' => [
                 'user' => $request->user(),
             ],

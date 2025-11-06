@@ -6,7 +6,7 @@ export function StoreInfo({ store, showEmail = false }: { store: StoreData; show
     const getInitials = useInitials();
 
     return (
-        <div className='flex gap-2'>
+        <div className='flex items-center gap-2'>
             <Avatar className="h-8 w-8 overflow-hidden rounded-full">
                 <AvatarImage src={`/storage/${store.logo}`} alt={store.name} />
                 <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">

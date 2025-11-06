@@ -129,7 +129,6 @@ class PaymentController extends Controller
 
     public function confirmation(Request $request)
     {
-        dd($request->all());
         try {
             $plan = Plan::findOrFail($request->input('planId'));
 

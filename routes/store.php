@@ -53,6 +53,7 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isSto
         Route::post('/add/user/{userId}', [StoreUserController::class, 'addUserToStore'])->name('add.user');
         Route::delete('/remove/user/{userId}', [StoreUserController::class, 'removeUserFromStore'])->name('remove.user');
 
+        Route::post('/request-extra-permission/{permission_id}', [StoreController::class, 'requestExtraPermission'])->name('request.extra.permission');
 
     });
     Route::get('/product/{id}/customize', [HomeController::class, 'customizeProduct'])->name('product.customizer');

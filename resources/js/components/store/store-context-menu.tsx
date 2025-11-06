@@ -35,7 +35,7 @@ export function StoreMenuContent({ store }: UserMenuContentProps) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                    <Link className="block w-full" href={route('store.profile', store.id)} as="button" prefetch onClick={cleanup}>
+                    <Link className="block w-full cursor-pointer" href={route('store.profile', store.id)} as="button" prefetch onClick={cleanup}>
                         <Settings className="mr-2" />
                         Settings
                     </Link>
