@@ -23,9 +23,9 @@ use Str;
 
 class HomeController extends Controller
 {
-    public function index(Request $request, string $storeId)
+    public function index(Request $request, string $storeSlug)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
 
         // Render the store dashboard view
         return Inertia::render('store/dashboard', [
@@ -35,9 +35,9 @@ class HomeController extends Controller
         ]);
     }
 
-    public function products(Request $request, string $storeId)
+    public function products(Request $request, string $storeSlug)
     {
-        $store = Store::with('banner')->findOrFail($storeId);
+        $store = Store::with('banner')->where('slug', $storeSlug)->first();
 
         $perPage = $request->input('per_page', 10);
         $query = Product::query();
@@ -104,9 +104,9 @@ class HomeController extends Controller
         ]);
     }
 
-    public function showProduct(string $storeId, string $sku)
+    public function showProduct(string $storeSlug, string $sku)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
         $product = Product::where('sku', $sku)->with('productColors.color', 'template')->firstOrFail();
 
         // Render the store product detail view
@@ -117,21 +117,21 @@ class HomeController extends Controller
         ]);
     }
 
-    public function createProduct(string $storeId)
+    public function createProduct(string $storeSlug)
     {
         try {
 
-            $store = Store::findOrFail($storeId);
+            $store = Store::where('slug', $storeSlug)->first();
             $plan = $store->load('plan.permissions');
             $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
             $productLimit = $productsPermissions->first()->pivot->limit;
 
-            $numberOfProducts = Product::where('store_id', $storeId)->count();
+            $numberOfProducts = Product::where('store_id', $store->id)->count();
             if ($numberOfProducts >= $productLimit) {
-                return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+                return redirect()->route('store.products', $storeSlug)->with('error', 'You have reached the maximum limit of products.');
             }
 
-            $store = Store::findOrFail($storeId);
+            $store = Store::where('slug', $storeSlug)->first();
             $categories = Category::all();
             $colors = Color::all();
             $brands = Brand::all();
@@ -144,22 +144,22 @@ class HomeController extends Controller
                 'brands' => $brands,
             ]);
         } catch (Exception $e) {
-            return redirect()->route('store.products', $storeId)->with('error', 'UnExpected Error.');
+            return redirect()->route('store.products', $storeSlug)->with('error', 'UnExpected Error.');
         }
     }
 
-    public function storeProduct(Request $request, string $storeId)
+    public function storeProduct(Request $request, string $storeSlug)
     {
 
         try {
-            $store = Store::findOrFail($storeId);
+            $store = Store::where('slug', $storeSlug)->first();
             $plan = $store->load('plan.permissions');
             $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
             $productLimit = $productsPermissions->first()->pivot->limit;
 
-            $numberOfProducts = Product::where('store_id', $storeId)->count();
+            $numberOfProducts = Product::where('store_id', $store->id)->count();
             if ($numberOfProducts >= $productLimit) {
-                return redirect()->route('store.products', $storeId)->with('error', 'You have reached the maximum limit of products.');
+                return redirect()->route('store.products', $storeSlug)->with('error', 'You have reached the maximum limit of products.');
             }
 
             $validated = $request->validate([
@@ -228,7 +228,7 @@ class HomeController extends Controller
                 'title' => $validated['title'],
                 'sku' => $sku, // ✅ Added SKU
                 'slug' => $slug,
-                'store_id' => $storeId,
+                'store_id' => $store->id,
                 'price' => $validated['price'],
                 'price_type' => $validated['price_type'],
                 'user_id' => auth()->id(),
@@ -248,23 +248,23 @@ class HomeController extends Controller
                 ]);
             }
 
-            return redirect()->route('store.products', $storeId)
+            return redirect()->route('store.products', $storeSlug)
                 ->with('success', 'Product created successfully!');
         } catch (\Exception $e) {
-            return redirect()->route('store.products', $storeId)->with('error', 'UnExpected Error: '.$e->getMessage());
+            return redirect()->route('store.products', $storeSlug)->with('error', 'UnExpected Error: '.$e->getMessage());
         }
     }
 
-    public function editProduct(string $storeId, string $sku)
+    public function editProduct(string $storeSlug, string $sku)
     {
-        $store = Store::findOrFail($storeId);
-        $product = Product::with('productColors.color')->where('sku', $sku)->where('store_id', $storeId)->firstOrFail();
+        $store = Store::where('slug', $storeSlug)->first();
+        $product = Product::with('productColors.color')->where('sku', $sku)->where('store_id', $store->id)->firstOrFail();
         $categories = Category::all();
         $colors = Color::all();
         $brands = Brand::all();
 
         if ($product->user_id !== auth()->id()) {
-            return redirect()->route('store.products', $storeId)->with('error', 'You do not have permission to edit this product.');
+            return redirect()->route('store.products', $storeSlug)->with('error', 'You do not have permission to edit this product.');
         }
 
         // Render the edit product view
@@ -277,7 +277,7 @@ class HomeController extends Controller
         ]);
     }
 
-    public function updateProduct(Request $request, string $storeId, string $id)
+    public function updateProduct(Request $request, string $storeSlug, string $id)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -371,11 +371,11 @@ class HomeController extends Controller
             }
         }
 
-        return redirect()->route('store.products', $storeId)
+        return redirect()->route('store.products', $storeSlug)
             ->with('success', 'Product updated successfully!');
     }
 
-    public function destroyProduct(string $storeId, string $id)
+    public function destroyProduct(string $storeSlug, string $id)
     {
         $product = Product::findOrFail($id);
 
@@ -391,17 +391,17 @@ class HomeController extends Controller
         // Delete the product
         $product->delete();
 
-        return redirect()->route('store.products', $storeId)
+        return redirect()->route('store.products', $storeSlug)
             ->with('success', 'Product deleted successfully!');
     }
 
-    public function addTemplate(string $storeId, string $slug)
+    public function addTemplate(string $storeSlug, string $slug)
     {
-        $store = Store::findOrFail($storeId);
-        $product = Product::where('slug', $slug)->where('store_id', $storeId)->firstOrFail();
+        $store = Store::where('slug', $storeSlug)->first();
+        $product = Product::where('slug', $slug)->where('store_id', $store->id)->firstOrFail();
 
         if ($product->user_id !== auth()->id()) {
-            return redirect()->route('store.products', $storeId)->with('error', 'You do not have permission to add a template to this product.');
+            return redirect()->route('store.products', $storeSlug)->with('error', 'You do not have permission to add a template to this product.');
         }
 
         // Render the add template view
@@ -411,9 +411,8 @@ class HomeController extends Controller
         ]);
     }
 
-    public function storeTemplate(Request $request, string $storeId, string $id)
+    public function storeTemplate(Request $request, string $storeSlug, string $id)
     {
-        // dd($request->all());
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'name' => 'required|string',
@@ -445,17 +444,17 @@ class HomeController extends Controller
             ]);
         }
 
-        return redirect()->route('store.products', $storeId)->with('success', 'Product SVG template added successfully!');
+        return redirect()->route('store.products', $storeSlug)->with('success', 'Product SVG template added successfully!');
     }
 
-    public function editTemplate(string $storeId, string $id)
+    public function editTemplate(string $storeSlug, string $id)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
         $template = SvgTemplate::with('part')->findOrFail($id);
-        $product = Product::where('id', $template->product_id)->where('store_id', $storeId)->firstOrFail();
+        $product = Product::where('id', $template->product_id)->where('store_id', $storeSlug)->firstOrFail();
 
-        if ((int) $product->store_id !== (int) $storeId) {
-            return redirect()->route('store.products', $storeId)->with('error', 'You do not have permission to edit this template.');
+        if ((int) $product->store_id !== (int) $storeSlug) {
+            return redirect()->route('store.products', $storeSlug)->with('error', 'You do not have permission to edit this template.');
         }
 
         // Render the edit template view
@@ -465,11 +464,11 @@ class HomeController extends Controller
         ]);
     }
 
-    public function updateTemplate(Request $request, string $storeId, string $id)
+    public function updateTemplate(Request $request, string $storeSlug, string $id)
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'svg' => 'required|string', // assuming raw SVG string
+            'svg' => 'required|string',
             'parts' => 'required|array',
             'parts.*.part_id' => 'required|string',
             'parts.*.name' => 'required|string',
@@ -498,12 +497,12 @@ class HomeController extends Controller
             );
         }
 
-        return redirect()->route('store.products', $storeId)->with('success', 'Product SVG template updated successfully!');
+        return redirect()->route('store.products', $storeSlug)->with('success', 'Product SVG template updated successfully!');
     }
 
-    public function customizeProduct(string $storeId, string $id)
+    public function customizeProduct(string $storeSlug, string $id)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
         $storePermissions = Plan::with('permissions', 'fonts')
             ->where('id', $store->plan_id)
             ->first();

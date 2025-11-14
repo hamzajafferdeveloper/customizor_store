@@ -23,9 +23,9 @@ use Mail;
 
 class StoreController extends Controller
 {
-    public function dashboard(string $storeId, Request $request)
+    public function dashboard(string $storeSlug, Request $request)
     {
-        $store = Store::with('banner')->findOrFail($storeId);
+        $store = Store::with('banner')->where('slug', $storeSlug)->first();
 
         $months = collect(range(5, 0))->map(function ($i) {
             return now()->subMonths($i)->format('Y-m'); // Last 6 months
@@ -75,10 +75,10 @@ class StoreController extends Controller
             ->orderBy('date')
             ->get();
 
-        $totalProducts = Product::where('store_id', $storeId)->count();
+        $totalProducts = Product::where('store_id', $storeSlug)->count();
 
-        $totalDigitalProductSold = SoldProduct::where('store_id', $storeId)->sum('price');
-        $totalPhysicalProductSold = SoldPhysicalProduct::where('store_id', $storeId)->sum('price');
+        $totalDigitalProductSold = SoldProduct::where('store_id', $storeSlug)->sum('price');
+        $totalPhysicalProductSold = SoldPhysicalProduct::where('store_id', $storeSlug)->sum('price');
 
         $totalRevenue = $totalDigitalProductSold + $totalPhysicalProductSold;
 
@@ -122,9 +122,9 @@ class StoreController extends Controller
         ]);
     }
 
-    public function singleOrder(string $storeId, string $id)
+    public function singleOrder(string $storeSlug, string $id)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
         $order = SoldPhysicalProduct::findOrFail($id);
 
         return Inertia::render('store/order/show', [
@@ -148,9 +148,9 @@ class StoreController extends Controller
         }
     }
 
-    public function profile(string $storeId)
+    public function profile(string $storeSlug)
     {
-        $store = Store::with('banner')->findOrFail($storeId);
+        $store = Store::with('banner')->where('slug', $storeSlug)->first();
         $stripeKey = StoreStripeKey::where('store_id', $store->id)->first();
 
         return Inertia::render('store/profile', [
@@ -160,9 +160,9 @@ class StoreController extends Controller
         ]);
     }
 
-    public function updateProfile(Request $request, string $storeId)
+    public function updateProfile(Request $request, string $storeSlug)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
 
         // Validate input dynamically
         $validated = $request->validate([
@@ -193,15 +193,16 @@ class StoreController extends Controller
         return redirect()->back();
     }
 
-    public function banner(Request $request, string $storeId)
+    public function banner(Request $request, string $storeSlug)
     {
         // Validate request
         $validated = $request->validate([
             'banner' => 'required|file|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        $store = Store::where('slug', $storeSlug)->first();
         // Find existing banner for this store
-        $storeBanner = StoreBanner::where('store_id', $storeId)->first();
+        $storeBanner = StoreBanner::where('store_id', $store->id)->first();
 
         // Store the uploaded file in 'public/banners'
         $filePath = $request->file('banner')->store('banners', 'public');
@@ -218,16 +219,16 @@ class StoreController extends Controller
         } else {
             // If no banner exists, create a new record
             StoreBanner::create([
-                'store_id' => $storeId,
+                'store_id' => $storeSlug,
                 'path' => $filePath,
             ]);
         }
 
-        return redirect()->route('store.dashboard', $storeId)->with('success', 'Banner Added Or Updated Successfully');
+        return redirect()->route('store.dashboard', $storeSlug)->with('success', 'Banner Added Or Updated Successfully');
 
     }
 
-    public function updateStripe(Request $request, string $storeId)
+    public function updateStripe(Request $request, string $storeSlug)
     {
         // Validate request
         $validated = $request->validate([
@@ -236,10 +237,10 @@ class StoreController extends Controller
         ]);
 
         // Ensure the store exists
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
 
         // Check if Stripe keys already exist for this store
-        $stripeKeys = StoreStripeKey::where('store_id', $storeId)->first();
+        $stripeKeys = StoreStripeKey::where('store_id', $store->id)->first();
 
         if ($stripeKeys) {
             // Update existing keys
@@ -278,32 +279,32 @@ class StoreController extends Controller
         }
     }
 
-    public function updateStorePassword(Request $request, string $storeId)
+    public function updateStorePassword(Request $request, string $storeSlug)
     {
         try {
             $request->validate([
                 'password' => 'required|string|min:6',
             ]);
 
-            $store = Store::findOrFail($storeId);
+            $store = Store::where('slug', $storeSlug)->first();
             $store->password = bcrypt($request->password);
             $store->store_key = base64_encode($request->password);
             $store->save();
 
             return redirect()->back()->with('success', 'Store password updated successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Store not found.');
+            return redirect()->back()->with('error', 'Something went wrong.');
         }
     }
 
-    public function loginToStore(Request $request, string $storeId)
+    public function loginToStore(Request $request, string $storeSlug)
     {
         $request->validate([
             'password' => 'required|string',
         ]);
 
         $user = auth()->user();
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
 
         // Step 1: Check if user belongs to the store (many-to-many relation)
         $isMember = $store->users()->where('user_id', $user->id)->exists();
@@ -327,10 +328,10 @@ class StoreController extends Controller
             ->with('success', 'Successfully logged into the store.');
     }
 
-    public function permissions(string $storeId)
+    public function permissions(string $storeSlug)
     {
         try {
-            $store = Store::findOrFail($storeId);
+            $store = Store::where('slug', $storeSlug)->first();
             $store_permissions = $store->plan->permissions;
             $permissions = Permission::all();
             $requested_permissions = RequestExtraPermission::where('store_id', $store->id)->where('status', 'pending')->get();
@@ -351,12 +352,12 @@ class StoreController extends Controller
         }
     }
 
-    public function requestExtraPermission(string $storeId, string $permission_id)
+    public function requestExtraPermission(string $storeSlug, string $permission_id)
     {
         try {
             // Create the permission request
             $request_permission = RequestExtraPermission::create([
-                'store_id' => $storeId,
+                'store_id' => $storeSlug,
                 'permission_id' => $permission_id,
                 'status' => 'pending',
             ]);

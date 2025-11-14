@@ -43,7 +43,7 @@ export default function Welcome({ store, stats, orders }: Props) {
         setUpdatingOrderId(orderId);
 
         router.post(
-            `/${store.id}/order/${orderId}/update-status`,
+            `/${store.slug}/order/${orderId}/update-status`,
             { status: newStatus },
             {
                 preserveScroll: true,
@@ -224,7 +224,7 @@ export default function Welcome({ store, stats, orders }: Props) {
                                 {filteredOrders.map((order) => (
                                     <TableRow key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                                         <TableCell>
-                                            <Link href={`/${store.id}/order/show/${order.id}`}>{order.product.title}</Link>
+                                            <Link href={`/${store.slug}/order/show/${order.id}`}>{order.product.title}</Link>
                                         </TableCell>
                                         <TableCell>${order.price.toFixed(2)}</TableCell>
                                         <TableCell>

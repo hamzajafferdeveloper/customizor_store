@@ -37,6 +37,7 @@ export interface Product {
     sku: string;
     slug: string;
     product_type_id: string;
+    type: string;
     sizes: string[];
     materials: string[];
     product_colors: productColors[];

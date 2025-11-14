@@ -224,7 +224,7 @@ const AddTemplateSection = ({ product, store }: { product: Product; store?: Stor
             parts: selectedParts,
         };
         if (store) {
-            router.post(route('store.product.store.template', { storeId: store.id, slug: product.slug }), payload);
+            router.post(route('store.product.store.template', { storeSlug: store.slug , slug: product.slug }), payload);
         } else {
             router.post(route('superadmin.product.store.template', product.id), payload);
         }

@@ -16,8 +16,8 @@ class IsStorePublicMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $storeId = $request->route('storeId');
-        $store = Store::findOrFail($storeId);
+        $storeSlug = $request->route('storeSlug');
+        $store = Store::where('slug', $storeSlug)->first();
 
         // dd($store->load('plan'), $store->load('paymentDetail'));
 
@@ -37,7 +37,7 @@ class IsStorePublicMiddleware
             }
 
             // If the user is not the owner, return to password access page
-            return redirect()->route('store.access.password', ['storeId' => $storeId]);
+            return redirect()->route('store.access.password', ['storeSlug' => $storeSlug]);
 
         }
         return $next($request);

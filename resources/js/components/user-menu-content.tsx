@@ -44,7 +44,7 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
                     <div className="flex flex-col gap-2">
                         <UserInfo user={user} showEmail={true} />
                         {stores?.map((store, index) => (
-                            <Link key={index} href={`/${store.id}/dashboard`}>
+                            <Link key={index} href={`/${store.slug}/dashboard`}>
                                 <StoreInfo store={store} showEmail={true} />
                             </Link>
                         ))}

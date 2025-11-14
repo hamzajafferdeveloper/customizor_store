@@ -74,17 +74,17 @@ class PaymentController extends Controller
         return Inertia::location($session->url);
     }
 
-    public function showUpgradeForm($storeId)
+    public function showUpgradeForm($storeSlug)
     {
         $plans = Plan::where('id', '!=', 1)->get();
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
 
         $user = auth()->user();
         if ($store->user_id === $user->id) {
             return Inertia::render('home/payment/upgrade', [
                 'stripeKey' => config('services.stripe.key'),
                 'plans' => $plans,
-                'storeId' => $storeId,
+                'storeId' => $store->id,
             ]);
         } else {
             return abort(403, 'Unathorized Access');
@@ -92,9 +92,9 @@ class PaymentController extends Controller
 
     }
 
-    public function showRenewForm($storeId)
+    public function showRenewForm($storeSlug)
     {
-        $store = Store::findOrFail($storeId);
+        $store = Store::where('slug', $storeSlug)->first();
 
         $plan = $store->load('plan');
 
@@ -103,7 +103,7 @@ class PaymentController extends Controller
             return Inertia::render('home/payment/renew', [
                 'stripeKey' => config('services.stripe.key'),
                 'plan' => $plan->plan,
-                'storeId' => $storeId,
+                'storeId' => $store->id,
             ]);
         } else {
             return abort(403, 'Unathorized Access');
@@ -201,7 +201,7 @@ class PaymentController extends Controller
             'status' => 'active',
         ]);
 
-        return redirect()->route('store.dashboard', $request->input('store_id'));
+        return redirect()->route('store.dashboard', $store->slug);
     }
 
     public function renewConfirmation(Request $request)

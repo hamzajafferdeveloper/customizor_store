@@ -26,7 +26,7 @@ const EditProductSection = ({
     colors: Color[];
     store?: StoreData;
     brands: Brand[];
-    productTypes: any[];
+    productTypes?: any[];
 }) => {
     const [imagePreview, setImagePreview] = useState<string | null>(product.image ? `/storage/${product.image}` : null);
     const fileRef = useRef<HTMLInputElement | null>(null);
@@ -92,7 +92,7 @@ const EditProductSection = ({
         e.preventDefault();
 
         if (store) {
-            post(route('store.product.update', { storeId: store.id, id: product.id }), {
+            post(route('store.product.update', { storeSlug : store.slug, id: product.id }), {
                 forceFormData: true, // This will internally convert data to FormData (including file/array handling)
                 onError: (err) => console.error(err), // optional for debugging
                 onSuccess: () => console.log('Submitted successfully!'),
@@ -135,7 +135,7 @@ const EditProductSection = ({
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="w-full justify-start" tabIndex={5}>
-                                                {brands.find((c) => c.id === data.brand_id)?.name || 'Select Brand'}
+                                                {brands.find((b) => b.id === data.brand_id)?.name || 'Select Brand'}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[300px] p-0">
@@ -288,7 +288,7 @@ const EditProductSection = ({
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-start" tabIndex={8}>
                                                     {data.type
-                                                        ? productTypes.find((ptype) => ptype.id === data.type)?.name || 'Select Product Type'
+                                                        ? productTypes?.find((ptype) => ptype.id === data.type)?.name || 'Select Product Type'
                                                         : 'Select Product Type'}
                                                 </Button>
                                             </PopoverTrigger>
@@ -299,7 +299,7 @@ const EditProductSection = ({
                                                         <CommandEmpty>No results found.</CommandEmpty>
                                                         <CommandGroup>
                                                             {productTypes &&
-                                                                productTypes.map((ptype) => (
+                                                                productTypes?.map((ptype) => (
                                                                     <CommandItem key={ptype.id} onSelect={() => setData('type', ptype.id)}>
                                                                         {ptype.name}
                                                                     </CommandItem>

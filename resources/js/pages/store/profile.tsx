@@ -84,7 +84,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
         }
 
         // Send the request
-        router.post(route('store.profile.update', store.id), data, {
+        router.post(route('store.profile.update', { storeSlug: store.slug }), data, {
             forceFormData: true,
             onSuccess: () => {
                 if (currentField === 'logo' && selectedFile) {
@@ -107,7 +107,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
         data.append('stripe_public_key', publicKey);
         data.append('stripe_secret_key', secretKey);
 
-        router.post(route('store.stripe.update', store.id), data, {
+        router.post(route('store.stripe.update', { storeSlug: store.slug }), data, {
             forceFormData: true,
             onSuccess: () => {
                 // Optionally show a toast
@@ -130,7 +130,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
         const data = new FormData();
         data.append('type', newType);
 
-        router.post(route('store.profile.update', store.id), data, {
+        router.post(route('store.profile.update', { storeSlug: store.slug }), data, {
             forceFormData: true,
             onSuccess: () => {
                 setFormData((prev) => ({ ...prev, type: newType }));
@@ -147,7 +147,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
         const data = new FormData();
         data.append('password', password);
 
-        router.post(route('store.password.update', store.id), data, {
+        router.post(route('store.password.update', { storeSlug: store.slug }), data, {
             forceFormData: true,
             onSuccess: () => {
                 // toast.success('Password updated successfully');
@@ -171,7 +171,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
             const formData = new FormData();
             formData.append('banner', file);
 
-            router.post(route('store.banner', store.id), formData);
+            router.post(route('store.banner', { storeSlug: store.slug }), formData);
         }
     };
 
@@ -336,10 +336,10 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                     {/* Buttons */}
                     {USER && USER.id === store.user_id && (
                         <div className="flex w-full flex-col gap-3 sm:col-span-2 sm:flex-row">
-                            <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.id)}>
+                            <Link className="w-full sm:w-1/2" href={route('upgrade.form', store.slug)}>
                                 <Button className="w-full cursor-pointer">Upgrade</Button>
                             </Link>
-                            <Link className="w-full sm:w-1/2" href={route('renew.form', store.id)}>
+                            <Link className="w-full sm:w-1/2" href={route('renew.form', store.slug)}>
                                 <Button className="w-full cursor-pointer hover:bg-gray-800/20" variant="outline">
                                     Renew
                                 </Button>
@@ -397,11 +397,11 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
                     setOpenManageUserModal={setOpenManageUserModal}
                     isVisible={isVisible}
                     setIsVisible={setIsVisible}
-                    storeId={store.id}
+                    storeSlug={store.slug}
                 />
             )}
 
-            {openPermissionModal && <PermissionModal open={openPermissionModal} onOpenChange={setOpenPermissionModal} storeId={store.id} />}
+            {openPermissionModal && <PermissionModal open={openPermissionModal} onOpenChange={setOpenPermissionModal} storeSlug={store.slug} />}
         </>
     );
 };

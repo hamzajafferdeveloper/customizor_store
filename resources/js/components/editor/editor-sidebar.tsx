@@ -29,6 +29,7 @@ type Props = {
     setSelectedItemId: React.Dispatch<React.SetStateAction<string | null>>;
     template: Template;
     svgFile: string;
+    actionPerformed: boolean
 };
 
 export function EditorSidebar({
@@ -46,6 +47,7 @@ export function EditorSidebar({
     setSelectedItemId,
     template,
     svgFile,
+    actionPerformed,
 }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [showBar, setShowBar] = useState<'layerbar' | 'textbar' | 'logobar' | 'colorbar'>('textbar');
@@ -59,7 +61,7 @@ export function EditorSidebar({
     // ✅ Function to get permission or fallback for admin
     const getPermission = (key: string) => {
         if (isAdmin) return { is_enabled: true, limit: 'unlimited' };
-        const permission = Allowedpermissions.permissions.find((p) => p.key === key);
+        const permission = Allowedpermissions?.permissions?.find((p) => p.key === key) ?? null;
         return {
             is_enabled: permission?.pivot?.is_enabled || false,
             limit: permission?.pivot?.limit || null,
@@ -106,8 +108,6 @@ export function EditorSidebar({
                 setProductType(data.productPriceType);
             });
     }, []);
-
-
 
     return (
         <aside className="mt-2 h-full w-full space-y-2 lg:flex">
@@ -184,7 +184,7 @@ export function EditorSidebar({
                         )
                     )}
                 </div>
-                {productType === 'physical' && (
+                {actionPerformed && productType === 'physical' && (
                     <>
                         {auth.user ? (
                             <Button className="cursor-pointer lg:ml-2" onClick={() => setShowProceedToCheckOutModal(true)}>
@@ -199,7 +199,12 @@ export function EditorSidebar({
                 )}
             </div>
             {showProceedToCheckOutModal && (
-                <ProceedToCheckout open={showProceedToCheckOutModal} svgFile={svgFile} product_id={template.product_id} onOpenChange={() => setShowProceedToCheckOutModal(false)} />
+                <ProceedToCheckout
+                    open={showProceedToCheckOutModal}
+                    svgFile={svgFile}
+                    product_id={template.product_id}
+                    onOpenChange={() => setShowProceedToCheckOutModal(false)}
+                />
             )}
         </aside>
     );

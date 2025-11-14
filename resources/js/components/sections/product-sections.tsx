@@ -148,7 +148,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
                             <Card
                                 key={product.id}
                                 onClick={() =>
-                                    router.get(route(showProductRoute, { sku: product.sku, storeId: store?.id }), {}, { preserveScroll: true })
+                                    router.get(route(showProductRoute, { sku: product.sku, storeSlug: store?.slug }), {}, { preserveScroll: true })
                                 }
                                 className="relative min-w-0 cursor-pointer transition hover:bg-gray-200/90 dark:hover:bg-gray-800/90"
                             >

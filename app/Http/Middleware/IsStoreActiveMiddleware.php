@@ -11,25 +11,34 @@ class IsStoreActiveMiddleware
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $storeId = $request->route('storeId');
+        $storeSlug = $request->route('storeSlug');
 
-        $store = Store::findOrFail($storeId);
+        // If slug is missing → 404
+        if (!$storeSlug) {
+            abort(404, 'Store not found.');
+        }
 
-        // dd($store->status);
+        // Find store
+        $store = Store::where('slug', $storeSlug)->first();
+
+        // If no store found → 404
+        if (!$store) {
+            abort(404, 'Store not found.');
+        }
 
         $user = auth()->user();
-        if ($user) {
-            if ($user->id != $store->user_id && $store->status == 'inactive') {
-                return abort(403, 'Store is not active');
-            }
-        } else {
-            if ($store->status == 'inactive') {
-                return abort(403, 'Store is not active');
+
+        /**
+         * Rules:
+         * - If guest AND store inactive → block
+         * - If logged-in user BUT not owner AND store inactive → block
+         */
+        if ($store->status === 'inactive') {
+            if (!$user || $user->id !== $store->user_id) {
+                abort(403, 'This store is not active.');
             }
         }
 

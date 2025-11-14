@@ -133,9 +133,9 @@ export default function RelatedProductsSection({ store }: { store?: StoreData })
                                 className="mb-3 h-40 w-40 rounded-lg object-cover"
                             />
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                {product.slug}
+                                {product.title}
                             </h3>
-                            <Link href={store ? `/${store.id}/product/${product.sku}` : `/product/${product.sku}`} className="mt-2 bg-gray-900/90 py-2 px-4 rounded-md text-white dark:bg-white dark:text-gray-900 w-full cursor-pointer">View</Link>
+                            <Link href={store ? `/${store.slug}/product/${product.sku}` : `/product/${product.sku}`} className="mt-2 bg-gray-900/90 py-2 px-4 rounded-md text-white dark:bg-white dark:text-gray-900 w-full cursor-pointer">View</Link>
                         </div>
                     ))
                 )}

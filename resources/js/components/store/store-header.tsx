@@ -32,7 +32,7 @@ export function StoreHeader({ breadcrumbs = [], store }: AppHeaderProps) {
     const mainNavItems: NavItem[] = [
         {
             title: 'Products',
-            href: `/${store.id}/products`,
+            href: `/${store.slug}/products`,
             icon: Box,
         },
     ];

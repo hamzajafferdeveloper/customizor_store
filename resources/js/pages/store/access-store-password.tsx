@@ -16,7 +16,7 @@ export default function AccessStorePassword({ store }: Props) {
 
     const submit: React.FormEventHandler<HTMLFormElement> = (e) => {
         e.preventDefault();
-        post(route('store.user.login', store.id), {
+        post(route('store.user.login', { storeSlug: store.slug }), {
             // @ts-ignore
             password: data.password,
         });

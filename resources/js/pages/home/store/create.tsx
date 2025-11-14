@@ -1,14 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { Head, useForm } from '@inertiajs/react';
-import { ChangeEvent } from 'react';
+import { allCountries } from 'country-telephone-data';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { ChangeEvent, useState } from 'react';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 
-export default function CreateStore() {
+export default function CreateStore({ storeName }: { storeName: string[] }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
@@ -20,6 +27,10 @@ export default function CreateStore() {
         bio: '',
     });
 
+    const [selectedCountryISO2, setSelectedCountryISO2] = useState('');
+    const [open, setOpen] = useState(false);
+    const [showNameUniqueError, setShowNameUniqueError] = useState(false);
+
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setData('logo', e.target.files[0]);
@@ -28,9 +39,22 @@ export default function CreateStore() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (showNameUniqueError) {
+            return;
+        }
+
         post(route('store.store'), {
             forceFormData: true,
         });
+    };
+
+    const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const name = e.target.value;
+        setData('name', name);
+
+        const exists = storeName.includes(name);
+        setShowNameUniqueError(exists);
     };
 
     return (
@@ -70,22 +94,57 @@ export default function CreateStore() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <Label htmlFor="country">Country</Label>
-                                    <Input
-                                        id="country"
-                                        value={data.country}
-                                        onChange={(e) => setData('country', e.target.value)}
-                                        placeholder="Enter country"
-                                    />
+                                    <Popover open={open} onOpenChange={setOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
+                                                {data.country ? allCountries.find((c) => c.name === data.country)?.name : 'Select country...'}
+
+                                                <ChevronsUpDown className="opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[200px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search framework..." className="h-9" />
+                                                <CommandList>
+                                                    <CommandEmpty>No framework found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {allCountries.map((c) => (
+                                                            <CommandItem
+                                                                key={c.name}
+                                                                value={c.name}
+                                                                onSelect={(currentValue) => {
+                                                                    setData('country', currentValue);
+                                                                    setSelectedCountryISO2(c.iso2);
+                                                                    setOpen(false);
+                                                                }}
+                                                            >
+                                                                {c.name}
+                                                                <Check
+                                                                    className={cn('ml-auto', data.country === c.name ? 'opacity-100' : 'opacity-0')}
+                                                                />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     {errors.country && <p className="text-sm text-red-500">{errors.country}</p>}
                                 </div>
 
                                 <div>
                                     <Label htmlFor="phone">Phone</Label>
-                                    <Input
-                                        id="phone"
+                                    <PhoneInput
+                                        country={selectedCountryISO2}
                                         value={data.phone}
-                                        onChange={(e) => setData('phone', e.target.value)}
-                                        placeholder="Enter phone number"
+                                        onChange={(value, data) => {
+                                            setData('phone', value);
+                                        }}
+                                        inputProps={{
+                                            name: 'phone',
+                                            id: 'phone',
+                                            required: true,
+                                        }}
                                     />
                                     {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                                 </div>

@@ -55,7 +55,7 @@ const SingleProductSection = ({
     const handleDelete = () => {
         const isOwner = auth?.user?.id === product.user_id;
         if (store) {
-            if (isOwner) router.delete(route('store.product.delete', { storeId: store.id, id: product.id }));
+            if (isOwner) router.delete(route('store.product.delete', { storeSlug : store.slug, id: product.id }));
             else toast.error('You are not authorized to delete this product.');
         } else router.delete(route('superadmin.product.destroy', product.id));
 
@@ -81,7 +81,7 @@ const SingleProductSection = ({
                 ? route('customizer', product.template.id)
                 : '#'
             : product?.template?.id
-              ? route('store.product.customizer', { storeId: store?.id, id: product.template.id })
+              ? route('store.product.customizer', { storeSlug: store?.slug, id: product.template.id })
               : '#';
 
     const isOwnerOrStore = product.user_id === auth?.user?.id || store?.id === product.store_id;
@@ -171,7 +171,7 @@ const SingleProductSection = ({
                     />
 
                     {/* Owner/Admin actions */}
-                    {store?.id === product.store_id ? renderStoreActions(store, product) : isAdmin && renderAdminActions(product)}
+                    {store?.id === product.store_id ? renderStoreActions(store, product, setConfirmOpen) : isAdmin && renderAdminActions(product, setConfirmOpen)}
                 </div>
             </div>
 
@@ -259,21 +259,27 @@ const safeParseArray = (val: any): string[] => {
 };
 
 // 🔧 Action Renderers
-const renderStoreActions = (store: StoreData, product: Product) => (
+const renderStoreActions = (store: StoreData, product: Product, setConfirmOpen: React.Dispatch<React.SetStateAction<boolean>>) => (
     <>
-        <Link href={route('store.product.edit', { storeId: store.id, sku: product.sku })}>
+        <Link href={route('store.product.edit', { storeSlug : store.slug, sku: product.sku })}>
             <Pen className="h-5 w-5" />
         </Link>
-        <Trash2 className="h-5 w-5 text-red-500" />
+        <button
+            onClick={() => {
+                setConfirmOpen(true);
+            }}
+        >
+            <Trash2 className="h-5 w-5 text-red-500" />
+        </button>
         <Link
             href={
                 product.template
                     ? route('store.product.edit.template', {
-                          storeId: store.id,
+                          storeSlug : store.slug,
                           id: product.template.id,
                       })
                     : route('store.product.add.template', {
-                          storeId: store.id,
+                          storeSlug : store.slug,
                           slug: product.slug,
                       })
             }
@@ -283,12 +289,18 @@ const renderStoreActions = (store: StoreData, product: Product) => (
     </>
 );
 
-const renderAdminActions = (product: Product) => (
+const renderAdminActions = (product: Product, setConfirmOpen: React.Dispatch<React.SetStateAction<boolean>>) => (
     <>
         <Link href={route('superadmin.product.edit', product.sku)}>
             <Pen className="h-5 w-5" />
         </Link>
-        <Trash2 className="h-5 w-5 text-red-500" />
+        <button
+            onClick={() => {
+                setConfirmOpen(true);
+            }}
+        >
+            <Trash2 className="h-5 w-5 text-red-500" />
+        </button>
         <Link
             href={
                 product.template

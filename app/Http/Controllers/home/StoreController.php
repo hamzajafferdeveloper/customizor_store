@@ -20,9 +20,12 @@ class StoreController extends Controller
             return redirect()->route('home')->with('error', 'You must buy a store to create info of store.');
         }
 
+        $storeName = Store::pluck('name')->toArray();
+
         return Inertia::render('home/store/create', [
             'title' => 'Create Store',
             'description' => 'Create your store to start selling products.',
+            'storeName' => $storeName
         ]);
     }
 
@@ -46,6 +49,15 @@ class StoreController extends Controller
 
         $plan = Plan::findOrFail($paymentDetails->plan_id);
 
+        $slug = Str::slug($request->name);
+        $uniqueSlug = $slug;
+        $counter = 1;
+
+        while (Store::where('slug', $uniqueSlug)->exists()) {
+            $uniqueSlug = $slug.'-'.$counter;
+            $counter++;
+        }
+
         $expiryDate = $plan->billing_cycle === 'yearly'
             ? now()->addYear()->toDateString()
             : now()->addMonth()->toDateString();
@@ -58,6 +70,7 @@ class StoreController extends Controller
                 'payment_detail_id' => $paymentDetails->id,
                 'email' => $validatedData['email'],
                 'country' => $validatedData['country'],
+                'slug' => $uniqueSlug,
                 'phone' => $validatedData['phone'],
                 'plan_expiry_date' => $expiryDate,
                 'logo' => $request->file('logo')

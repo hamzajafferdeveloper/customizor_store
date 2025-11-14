@@ -11,7 +11,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Box, CircleUserIcon, DollarSignIcon, LayoutGrid, Menu, PanelTopDashed, ShoppingBag } from 'lucide-react';
+import { BookOpen, Box, DollarSignIcon, LayoutGrid, Menu, PanelTopDashed, ShoppingBag } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './super-admin/app-logo-icon';
 
@@ -32,20 +32,22 @@ const mainNavItems: NavItem[] = [
         icon: BookOpen,
     },
     {
-        title: 'All Stores',
-        href: '/all-stores',
-        icon: ShoppingBag,
-    },
-    {
         title: 'Pricing',
         href: '/pricing',
         icon: DollarSignIcon,
     },
     {
+        title: 'All Stores',
+        href: '/all-stores',
+        icon: ShoppingBag,
+        secure: true,
+    },
+    {
         title: 'Buyed Products',
         href: '/buy-products',
         icon: PanelTopDashed,
-    }
+        secure: true,
+    },
 ];
 
 const rightNavItems: NavItem[] = [];
@@ -60,6 +62,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
+
     return (
         <>
             <div className="border-b border-sidebar-border/80">
@@ -81,7 +84,11 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
                                             {mainNavItems.map((item) => (
-                                                <Link key={item.title} href={item.href} className="flex items-center space-x-2 font-medium">
+                                                <Link
+                                                    key={item.title}
+                                                    href={item.href}
+                                                    className={item.secure ? 'hidden' : 'flex items-center space-x-2 font-medium'}
+                                                >
                                                     {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
                                                     <span>{item.title}</span>
                                                 </Link>
@@ -116,24 +123,27 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                     <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                                {mainNavItems.map((item, index) => (
-                                    <NavigationMenuItem key={index} className="relative flex h-full items-center">
-                                        <Link
-                                            href={item.href}
-                                            className={cn(
-                                                navigationMenuTriggerStyle(),
-                                                page.url === item.href && activeItemStyles,
-                                                'h-9 cursor-pointer px-3',
+                                {mainNavItems
+                                    .filter((item) => !(item.secure && !auth.user)) // hide secure items for guests
+                                    .map((item, index) => (
+                                        <NavigationMenuItem key={index} className="relative flex h-full items-center">
+                                            <Link
+                                                href={item.href}
+                                                className={cn(
+                                                    navigationMenuTriggerStyle(),
+                                                    page.url === item.href && activeItemStyles,
+                                                    'h-9 cursor-pointer px-3',
+                                                )}
+                                            >
+                                                {item.icon && <Icon iconNode={item.icon} className="mr-2 h-4 w-4" />}
+                                                {item.title}
+                                            </Link>
+
+                                            {page.url === item.href && (
+                                                <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white" />
                                             )}
-                                        >
-                                            {item.icon && <Icon iconNode={item.icon} className="mr-2 h-4 w-4" />}
-                                            {item.title}
-                                        </Link>
-                                        {page.url === item.href && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
-                                        )}
-                                    </NavigationMenuItem>
-                                ))}
+                                        </NavigationMenuItem>
+                                    ))}
                             </NavigationMenuList>
                         </NavigationMenu>
                     </div>
@@ -185,9 +195,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         ) : (
                             <Link href="/login" className="">
                                 {/* <CircleUserIcon className="cursor-pointer" /> */}
-                                <Button className="">
-                                    Login
-                                </Button>
+                                <Button className="">Login</Button>
                             </Link>
                         )}
                     </div>

@@ -16,7 +16,8 @@ class IsStoreAdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $storeId = $request->route('storeId');
+        $storeSlug = $request->route('storeSlug');
+        $storeId = Store::where('slug', $storeSlug)->first()->id;
         $user = auth()->user();
 
         if($user && $user->type == 'admin'){

@@ -2,24 +2,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import gsap from 'gsap';
-import { LoaderCircleIcon, Trash2, X } from 'lucide-react';
+import { Construction, LoaderCircleIcon, Trash2, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import ConfirmDialog from '../confirm-dialog';
 import { Card } from '../ui/card';
+import PermissionModal from './permissions-modal';
 
 const ManageUserModal = ({
     openManageUserModal,
     setIsVisible,
     isVisible,
     setOpenManageUserModal,
-    storeId,
+    storeSlug,
 }: {
     openManageUserModal: boolean;
     setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
     isVisible: boolean;
     setOpenManageUserModal: React.Dispatch<React.SetStateAction<boolean>>;
-    storeId: number;
+    storeSlug: string;
 }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [dropdownLoading, setDropdownLoading] = useState(false);
@@ -34,6 +35,7 @@ const ManageUserModal = ({
     const usersPerPage = 5;
     const [selectUser, setSelectUser] = useState<number | null>(null);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+    const [openPermissionModal, setOpenPermissionModal] = useState<boolean>(false);
 
     const overlayRef = useRef<HTMLDivElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
@@ -42,7 +44,7 @@ const ManageUserModal = ({
     const fetchUsers = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/${storeId}/users`);
+            const res = await fetch(`/${storeSlug}/users`);
             if (!res.ok) throw new Error('Failed to fetch users');
             const data = await res.json();
             setUsers(data.users || []);
@@ -68,7 +70,7 @@ const ManageUserModal = ({
         const delayDebounceFn = setTimeout(async () => {
             setDropdownLoading(true);
             try {
-                const res = await fetch(`/${storeId}/all/users?search=${encodeURIComponent(searchUser)}`);
+                const res = await fetch(`/${storeSlug}/all/users?search=${encodeURIComponent(searchUser)}`);
                 if (!res.ok) throw new Error('Search request failed');
                 const data = await res.json();
                 setSuggestions(data.users || []);
@@ -114,7 +116,7 @@ const ManageUserModal = ({
         setAddingUserId(id);
         try {
             const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content;
-            const res = await fetch(`/${storeId}/add/user/${id}`, {
+            const res = await fetch(`/${storeSlug}/add/user/${id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -147,7 +149,7 @@ const ManageUserModal = ({
         setDeletingUserId(id);
         try {
             const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content;
-            const res = await fetch(`/${storeId}/remove/user/${id}`, {
+            const res = await fetch(`/${storeSlug}/remove/user/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -275,7 +277,7 @@ const ManageUserModal = ({
                         {/* 🧾 User Table */}
                         <div>
                             <div className="mb-6 flex items-center justify-between">
-                                <h1 className="text-lg font-medium text-gray-700">Users in Store #{storeId}</h1>
+                                <h1 className="text-lg font-medium text-gray-700">Users in Store #{storeSlug}</h1>
                                 <Input
                                     placeholder="Search users..."
                                     value={searchTerm}
@@ -285,7 +287,7 @@ const ManageUserModal = ({
                             </div>
 
                             <Table>
-                                <TableCaption>Users in store #{storeId}</TableCaption>
+                                <TableCaption>Users in store #{storeSlug}</TableCaption>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Name</TableHead>
@@ -300,6 +302,17 @@ const ManageUserModal = ({
                                                 <TableCell>{user.name}</TableCell>
                                                 <TableCell>{user.email}</TableCell>
                                                 <TableCell className="text-right">
+                                                    {/* <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-green-600 hover:text-green-800 cursor-pointer"
+                                                        onClick={() => {
+                                                            setSelectUser(user.id);
+                                                            setOpenPermissionModal(true);
+                                                        }}
+                                                    >
+                                                        <Construction className="h-4 w-4" />
+                                                    </Button> */}
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -308,7 +321,7 @@ const ManageUserModal = ({
                                                             setSelectUser(user.id);
                                                             setOpenConfirmDialog(true);
                                                         }}
-                                                        className="text-red-600 hover:text-red-800"
+                                                        className="text-red-600 hover:text-red-800 cursor-pointer"
                                                     >
                                                         {deletingUserId === user.id ? (
                                                             <LoaderCircleIcon className="h-4 w-4 animate-spin" />
@@ -364,6 +377,9 @@ const ManageUserModal = ({
                         setOpenConfirmDialog(false);
                     }}
                 />
+            )}
+            {openPermissionModal && (
+                <PermissionModal open={openPermissionModal} onOpenChange={setOpenPermissionModal} storeSlug={storeSlug} />
             )}
         </div>
     );

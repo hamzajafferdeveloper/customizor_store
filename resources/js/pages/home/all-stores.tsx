@@ -48,7 +48,7 @@ export default function StoresPage({ stores }: Props) {
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                             {filteredStores.map((store) => (
                                 <Card
-                                    key={store.id}
+                                    key={store.slug}
                                     className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-xl"
                                 >
                                     <CardHeader className="p-0">
@@ -80,7 +80,7 @@ export default function StoresPage({ stores }: Props) {
                                         <p className="mb-1 text-sm text-gray-500">{store.email}</p>
                                         <p className="mb-4 text-sm text-gray-500">Total Products: {store.total_products}</p>
 
-                                        <Link href={`/${store.id}/products`} className="block">
+                                        <Link href={`/${store.slug}/products`} className="block">
                                             <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">View Store</Button>
                                         </Link>
                                     </CardContent>

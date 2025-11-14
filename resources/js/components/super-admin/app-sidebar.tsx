@@ -4,7 +4,7 @@ import { NavMain } from '@/components/super-admin/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BadgePlus, Box, Building, Component, FileType2Icon, Folder, Images, LayoutGrid, List, Palette, PanelTopDashed, Settings, Shapes, ShoppingBasket } from 'lucide-react';
+import { BadgePlus, Box, Building, Component, Construction, FileType2Icon, Folder, Images, LayoutGrid, List, Palette, PanelTopDashed, Settings, Shapes, ShoppingBasket, Store } from 'lucide-react';
 import AppLogo from '../app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -82,7 +82,12 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Extra Permission Request',
         href: '/get-extra-permission-request',
-        icon: Settings,
+        icon: Construction,
+    },
+    {
+        title: 'All Store',
+        href: '/all-stores',
+        icon: Store,
     }
 ];
 

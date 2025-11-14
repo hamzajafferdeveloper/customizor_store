@@ -3,14 +3,15 @@
 use App\Http\Controllers\Store\HomeController;
 use App\Http\Controllers\Store\StoreController;
 use App\Http\Controllers\Store\StoreUserController;
+use App\Models\Store;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/user={id}/store/all', [StoreController::class, 'allStoreofUser']);
 
-Route::prefix('/{storeId}')->name('store.')->middleware(['auth'])->group(function () {
-    Route::get('/access/store/password', function (string $storeId) {
-        $store = \App\Models\Store::findOrFail($storeId);
+Route::prefix('/{storeSlug}')->name('store.')->middleware(['auth'])->group(function () {
+    Route::get('/access/store/password', function (string $storeSlug) {
+        $store = Store::where('slug', $storeSlug)->first();
 
         return Inertia::render('store/access-store-password', ['store' => $store]);
     })->name('access.password');
@@ -18,7 +19,7 @@ Route::prefix('/{storeId}')->name('store.')->middleware(['auth'])->group(functio
     Route::post('/user/login', [StoreController::class, 'loginToStore'])->name('user.login');
 });
 
-Route::prefix('/{storeId}')->name('store.')->middleware(['isStorePublic', 'isStoreActive'])->group(function () {
+Route::prefix('/{storeSlug}')->name('store.')->middleware(['isStorePublic', 'isStoreActive'])->group(function () {
 
     Route::get('/products', [HomeController::class, 'products'])->name('products');
     Route::get('/product/{sku}', [HomeController::class, 'showProduct'])->name('product.show');

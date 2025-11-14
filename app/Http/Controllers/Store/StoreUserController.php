@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 
 class StoreUserController extends Controller
 {
-    public function AllUsers(Request $request, $storeId)
+    public function AllUsers(Request $request, $storeSlug)
     {
         // Optional search query
         $search = $request->input('search');
@@ -39,10 +39,11 @@ class StoreUserController extends Controller
         ], 200);
     }
 
-    public function storeUsers($storeId)
+    public function storeUsers($storeSlug)
     {
         try {
-            $users = StoreUser::where('store_id', $storeId)
+            $store = Store::where('slug', $storeSlug)->first();
+            $users = StoreUser::where('store_id', $store->id)
                 ->with('user')
                 ->get()
                 ->pluck('user');
@@ -60,15 +61,16 @@ class StoreUserController extends Controller
         }
     }
 
-    public function addUserToStore($storeId, $userId)
+    public function addUserToStore($storeSlug, $userId)
     {
         try {
+            $store = Store::where('slug', $storeSlug)->first();
+
             StoreUser::create([
-                'store_id' => $storeId,
+                'store_id' => $store->id,
                 'user_id' => $userId,
             ]);
 
-            $store = Store::findOrFail($storeId);
             $password = base64_decode($store->store_key);
 
             $user = User::findOrFail($userId);
@@ -87,10 +89,10 @@ class StoreUserController extends Controller
         }
     }
 
-    public function removeUserFromStore($storeId, $userId)
+    public function removeUserFromStore($storeSlug, $userId)
     {
         try {
-            $storeUser = StoreUser::where('store_id', $storeId)
+            $storeUser = StoreUser::where('store_id', $storeSlug)
                 ->where('user_id', $userId)
                 ->first();
 

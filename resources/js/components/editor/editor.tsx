@@ -1,5 +1,3 @@
-
-
 import EditorCanvas from '@/components/editor/editor-canvas';
 import { EditorSidebar } from '@/components/editor/editor-sidebar';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -113,6 +111,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
     const [openColorMenu, setOpenColorMenu] = useState<string>('');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [svgFile, setSvgFile] = useState<string>('');
+    const [actionPerformed, setActionPerformed] = useState<boolean>(false);
     const [svgOverlayBox, setSvgOverlayBox] = useState<{
         left: number;
         top: number;
@@ -300,6 +299,12 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
         run();
     }, [uploadedItems, svgOverlayBox]);
 
+
+    useEffect(() => {
+        const hasActions = canUndo || canRedo;
+        setActionPerformed(hasActions);
+    }, [canUndo, canRedo]);
+
     return (
         <main className="flex flex-col p-2 lg:flex-row">
             <div className="order-1 flex-1 p-4 lg:order-2">
@@ -342,6 +347,7 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
                     setSelectedItemId={setSelectedItemId}
                     template={template}
                     svgFile={svgFile}
+                    actionPerformed={actionPerformed}
                 />
             </div>
         </main>

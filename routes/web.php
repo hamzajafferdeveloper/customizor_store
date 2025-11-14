@@ -60,13 +60,13 @@ Route::get('product-price-type/{id}', function ($id) {
     return response()->json(['message', 'No Product Found'], 404);
 });
 
-Route::get('/all-stores', [HomeController::class, 'allStores'])->name('all.stores');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/all-stores', [HomeController::class, 'allStores'])->name('all.stores');
     // Payment Routes
     Route::get('/checkout/plan-id={planId}', [PaymentController::class, 'showPaymentForm'])->name('checkout.form');
-    Route::get('/upgrade/store-id={storeId}', [PaymentController::class, 'showUpgradeForm'])->name('upgrade.form');
-    Route::get('/renew/store-id={storeId}', [PaymentController::class, 'showRenewForm'])->name('renew.form');
+    Route::get('/upgrade/{storeSlug}', [PaymentController::class, 'showUpgradeForm'])->name('upgrade.form');
+    Route::get('/renew/{storeSlug}', [PaymentController::class, 'showRenewForm'])->name('renew.form');
 
     Route::post('/payment-intent', [PaymentController::class, 'createIntent'])->name('payment.intent');
     Route::get('/confirmation', [PaymentController::class, 'confirmation'])->name('payment.confirmation');

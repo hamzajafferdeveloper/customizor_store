@@ -76,7 +76,7 @@ const CreateProductSection = ({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         if (store) {
-            post(route('store.product.store', store?.id), {
+            post(route('store.product.store', store?.slug), {
                 forceFormData: true,
                 // onError: (err) => console.error(err),
                 onSuccess: () => console.log('Submitted successfully!'),

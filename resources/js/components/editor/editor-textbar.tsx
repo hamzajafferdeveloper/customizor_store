@@ -55,7 +55,7 @@ export default function EditorTextBar({ AddText, selectedItemId, uploadedItems, 
 
     // ✅ Load custom fonts dynamically
     useEffect(() => {
-        allowedfonts.forEach((font) => {
+        allowedfonts?.forEach((font) => {
             const fontFace = new FontFace(font.name, `url(/storage/${font.path})`);
             fontFace
                 .load()

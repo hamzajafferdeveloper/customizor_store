@@ -11,12 +11,12 @@ export function StoreSidebar({ store }: { store: StoreData }) {
     const mainNavItems: NavItem[] = [
         {
             title: 'Dashboard',
-            href: `/${store.id}/dashboard`,
+            href: `/${store.slug}/dashboard`,
             icon: LayoutGrid,
         },
         {
             title: 'Product',
-            href: `/${store.id}/products`,
+            href: `/${store.slug}/products`,
             icon: Box,
         },
     ];
@@ -27,7 +27,7 @@ export function StoreSidebar({ store }: { store: StoreData }) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={`/${store.id}/dashboard`} prefetch>
+                            <Link href={`/${store.slug}/dashboard`} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

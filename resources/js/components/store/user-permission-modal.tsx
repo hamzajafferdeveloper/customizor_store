@@ -16,10 +16,10 @@ type Permission = {
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  storeSlug: string;
+  storeId: string;
 };
 
-const PermissionModal = ({ open, onOpenChange, storeSlug }: Props) => {
+const PermissionModal = ({ open, onOpenChange, storeId }: Props) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
@@ -30,7 +30,7 @@ const PermissionModal = ({ open, onOpenChange, storeSlug }: Props) => {
   useEffect(() => {
     if (open) {
       setIsLoading(true);
-      fetch(`/${storeSlug}/permissions`)
+      fetch(`/${storeId}/permissions`)
         .then((response) => response.json())
         .then((data) => {
           setAllPermissions(data.all_permissions || []);
@@ -40,7 +40,7 @@ const PermissionModal = ({ open, onOpenChange, storeSlug }: Props) => {
           setIsLoading(false);
         });
     }
-  }, [open, storeSlug]);
+  }, [open, storeId]);
 
   const handleOutsideClick = (e: React.MouseEvent) => {
     if (e.target === overlayRef.current) onOpenChange(false);
@@ -59,7 +59,7 @@ const PermissionModal = ({ open, onOpenChange, storeSlug }: Props) => {
   };
 
   const handleRequestPermission = (permissionId: number) => {
-    router.post(`/${storeSlug}/request-extra-permission/${permissionId}`, {}, {
+    router.post(`/${storeId}/request-extra-permission/${permissionId}`, {}, {
       onSuccess: () => {
         // Add to requestedPermissions list optimistically
         const requested = allPermissions.find(p => p.id === permissionId);
@@ -74,7 +74,7 @@ const PermissionModal = ({ open, onOpenChange, storeSlug }: Props) => {
     <div
       ref={overlayRef}
       onClick={handleOutsideClick}
-      className="fixed inset-0 z-80 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm"
     >
       <div className="relative z-50 h-[90vh] w-[90vw] max-w-5xl overflow-auto rounded-xl border border-gray-300 bg-white p-6 shadow-2xl">
         {/* Header */}

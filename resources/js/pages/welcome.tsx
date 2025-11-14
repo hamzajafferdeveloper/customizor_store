@@ -12,8 +12,6 @@ export default function Welcome() {
     const page = usePage<SharedData>();
     const { flash } = page.props;
 
-    console.log(page);
-
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);

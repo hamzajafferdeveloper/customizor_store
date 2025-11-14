@@ -7,6 +7,7 @@ export interface StoreData {
     email: string;
     country: string;
     phone: string;
+    slug: string;
     type: 'protected' | 'public';
     status: 'active' | 'inactive';
     payment_detail_id: number | null;

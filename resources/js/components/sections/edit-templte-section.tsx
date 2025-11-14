@@ -244,7 +244,7 @@ const EditTemplateSection = ({ template, store }: { template: Template; store?: 
         };
 
         if (store) {
-            router.put(route('store.product.update.template', { storeId: store.id, id: template.id }), payload);
+            router.put(route('store.product.update.template', { storeSlug : store.slug, id: template.id }), payload);
         } else {
             router.put(route('superadmin.product.update.template', template.id), payload);
         }

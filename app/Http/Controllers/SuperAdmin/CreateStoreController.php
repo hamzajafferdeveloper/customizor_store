@@ -7,7 +7,9 @@ use App\Models\Plan;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class CreateStoreController extends Controller
 {
@@ -15,29 +17,44 @@ class CreateStoreController extends Controller
     {
         $storePlan = Plan::all();
         $users = User::where('id', '!=', auth()->user()->id)->get();
+        $storeName = Store::pluck('name')->toArray();
 
         return Inertia::render('super-admin/create-store/index', [
             'storePlan' => $storePlan,
             'users' => $users,
+            'storeName' => $storeName
         ]);
     }
 
     public function store(Request $request)
     {
         try {
-            $request->validate([
-                'name' => 'required|string',
-                'email' => 'required|email',
-                'country' => 'required',
-                'phone' => 'required',
-                'type' => 'required|in:public,protected',
-                'status' => 'required|in:active,inactive',
-                'bio' => 'required',
-                'plan_id' => 'required|exists:plans,id',
-                'user_id' => 'required|exists:users,id',
-            ]);
-
+            try {
+                $validated = $request->validate([
+                    'name'      => 'required|string|max:255',
+                    'email'     => 'required|email|max:255',
+                    'country'   => 'required|string|max:255',
+                    'phone'     => 'required|numeric|digits_between:6,15',
+                    'type'      => 'required|in:public,protected',
+                    'status'    => 'required|in:active,inactive',
+                    'plan_id'   => 'required|exists:plans,id',
+                    'user_id'   => 'required|exists:users,id',
+                    'bio'       => 'required|string',
+                    'logo'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                ]);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                Log::error($e->getMessage());
+            }
             $plan = Plan::findOrFail($request->plan_id);
+
+            $slug = Str::slug($request->name);
+            $uniqueSlug = $slug;
+            $counter = 1;
+
+            while (Store::where('slug', $uniqueSlug)->exists()) {
+                $uniqueSlug = $slug.'-'.$counter;
+                $counter++;
+            }
 
             // Determine expiry date based on billing cycle
             $planExpiryDate = now();
@@ -53,6 +70,7 @@ class CreateStoreController extends Controller
                 'email' => $request->email,
                 'country' => $request->country,
                 'phone' => $request->phone,
+                'slug' => $uniqueSlug,
                 'type' => $request->type,
                 'status' => $request->status,
                 'bio' => $request->bio,

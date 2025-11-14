@@ -67,9 +67,6 @@ function PaymentForm({ plans, storeId }: { plans: Plan[]; storeId: number }) {
             } else if (result.paymentIntent?.status === 'succeeded') {
                 setSuccess(true);
                 setMessage('✅ Payment successful! Upgrading your plan...');
-
-                console.log('store_id:', storeId,
-                    'plan_id:', selectedPlan.id,)
                 // ✅ Step 3: Update store plan via Inertia
                 router.post('/upgrade/confirm', {
                     store_id: storeId,
@@ -191,7 +188,7 @@ export default function UpgradeCheckout({
     return (
         <Elements stripe={stripePromise}>
             <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 dark:bg-black">
-                
+
                 <PaymentForm plans={plans} storeId={storeId} />
             </div>
         </Elements>

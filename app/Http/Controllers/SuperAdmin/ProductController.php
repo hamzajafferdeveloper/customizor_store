@@ -454,7 +454,7 @@ class ProductController extends Controller
 
         try {
             $create_own_product = CreateYourOwnProduct::where('category_id', $categoryId)->first();
-            // dd($create_own_product);
+
             if ($create_own_product->template) {
                 $svgContent = Storage::disk('public')->get($create_own_product->template);
                 $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();

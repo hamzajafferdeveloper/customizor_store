@@ -39,8 +39,8 @@ export default function Welcome({ store, products, categories, colors, page_type
                 hasFilter={hasFilter}
                 auth={auth}
                 store={store}
-                baseUrl={`/${store.id}/products`}
-                createProductUrl={route('store.product.create', { storeId: store.id })}
+                baseUrl={`/${store.slug}/products`}
+                createProductUrl={route('store.product.create', { storeSlug: store.slug })}
                 showProductRoute="store.product.show"
                 page_type={page_type}
                 product_type={product_types}
