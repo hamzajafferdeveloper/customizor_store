@@ -243,6 +243,6 @@ class PaymentController extends Controller
 
         Mail::to($user->email)->send(new RenewSuccessfullMail);
 
-        return redirect()->route('store.dashboard', $request->input('store_id'));
+        return redirect()->route('store.dashboard', $store->slug);
     }
 }
