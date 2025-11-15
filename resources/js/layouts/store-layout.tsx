@@ -16,9 +16,10 @@ export default ({ children, breadcrumbs, store, ...props }: SuperAdminLayoutProp
     const { auth } = usePage<SharedData>().props;
 
     const isStoreAdmin = auth?.user?.id === store.user_id;
+    const isSuperAdmin = auth?.user.type === 'admin'
     return (
         <>
-            {isStoreAdmin ? (
+            {isStoreAdmin || isSuperAdmin ? (
                 <StoreSidebarLayout breadcrumbs={breadcrumbs} store={store} {...props}>
                     {children}
                     <ToastContainer />

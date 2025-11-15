@@ -12,7 +12,7 @@ export default function SuperAdminSidebarLayout({ children, breadcrumbs = [], st
         <AppShell variant="sidebar">
             <StoreSidebar store={store} />
             <AppContent variant="sidebar" className="overflow-x-hidden">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <AppSidebarHeader breadcrumbs={breadcrumbs}  store={store}/>
                 {children}
             </AppContent>
         </AppShell>

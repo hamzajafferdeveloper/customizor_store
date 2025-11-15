@@ -38,10 +38,6 @@ export function StoreSidebar({ store }: { store: StoreData }) {
             <SidebarContent>
                 <NavMain items={mainNavItems} />
             </SidebarContent>
-
-            <SidebarFooter>
-                <NavStore store={store} />
-            </SidebarFooter>
         </Sidebar>
     );
 }

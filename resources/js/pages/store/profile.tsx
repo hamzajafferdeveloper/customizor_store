@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import StoreLayout from '@/layouts/store-layout';
 import { decodeBase64 } from '@/lib/utils';
-import { SharedData } from '@/types';
+import { BreadcrumbItem, SharedData } from '@/types';
 import { StoreData } from '@/types/store';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Eye, EyeOff, PenBox } from 'lucide-react';
@@ -22,6 +22,13 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
     const { flash } = page.props;
     const { auth } = page.props;
     const USER = auth?.user;
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Profile',
+            href: `/${store.slug}/profile`,
+        },
+    ];
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -177,7 +184,7 @@ const StoreProfile = ({ store, initialPublicKey, initialSecretKey }: { store: St
 
     return (
         <>
-            <StoreLayout store={store}>
+            <StoreLayout store={store} breadcrumbs={breadcrumbs}>
                 <Head title="Store Profile" />
                 {/* Profile Header */}
                 <div className="relative">

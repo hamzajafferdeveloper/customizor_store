@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import StoreLayout from '@/layouts/store-layout';
+import { BreadcrumbItem } from '@/types';
 import { Order } from '@/types/data';
 import { StoreData } from '@/types/store';
 import { Head, Link, router } from '@inertiajs/react';
@@ -37,6 +38,13 @@ export default function Welcome({ store, stats, orders }: Props) {
     const [perPage, setPerPage] = useState(orders.per_page);
     const [loading, setLoading] = useState(false);
     const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Dashboard',
+            href: `/${store.slug}/dashboard`,
+        },
+    ];
 
     const handleStatusChange = (orderId: number, newStatus: string) => {
         setLoading(true);
@@ -84,7 +92,7 @@ export default function Welcome({ store, stats, orders }: Props) {
     }, [searchValue, orders.data]);
 
     return (
-        <StoreLayout store={store}>
+        <StoreLayout store={store} breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">

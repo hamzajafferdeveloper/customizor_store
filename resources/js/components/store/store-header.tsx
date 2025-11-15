@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { StoreData } from '@/types/store';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Box, DollarSignIcon, LayoutGrid, Menu } from 'lucide-react';
+import { Box, Layout, Menu, User } from 'lucide-react';
 import AppLogo from '../app-logo';
 import AppLogoIcon from '../super-admin/app-logo-icon';
 
@@ -62,6 +62,14 @@ export function StoreHeader({ breadcrumbs = [], store }: AppHeaderProps) {
                                                     <span>{item.title}</span>
                                                 </Link>
                                             ))}
+                                            {/* <Link href="" className="flex items-center space-x-2 font-medium">
+                                                <Layout className="h-5 w-5" />
+                                                <span>Dashboard</span>
+                                            </Link>
+                                            <Link href="" className="flex items-center space-x-2 font-medium">
+                                                <User className="h-5 w-5" />
+                                                <span>Profile</span>
+                                            </Link> */}
                                         </div>
 
                                         <div className="flex flex-col space-y-4">

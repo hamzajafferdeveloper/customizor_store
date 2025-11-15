@@ -1,6 +1,6 @@
 import ProductSection from '@/components/sections/product-sections';
 import StoreLayout from '@/layouts/store-layout';
-import { type SharedData } from '@/types';
+import { BreadcrumbItem, type SharedData } from '@/types';
 import { Category, Color } from '@/types/data';
 import { ProductPagination } from '@/types/pagination';
 import { StoreData } from '@/types/store';
@@ -29,8 +29,15 @@ export default function Welcome({ store, products, categories, colors, page_type
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'All Products',
+            href: `/${store.slug}/products`,
+        },
+    ];
+
     return (
-        <StoreLayout store={store}>
+        <StoreLayout store={store} breadcrumbs={breadcrumbs}>
             <Head title="Dashboard"></Head>
             <ProductSection
                 products={products}
