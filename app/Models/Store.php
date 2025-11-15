@@ -21,6 +21,7 @@ class Store extends Model
         'plan_expiry_date',
         'password',
         'store_key',
+        'slug'
     ];
 
     public function user()

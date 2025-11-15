@@ -81,7 +81,7 @@ class StoreController extends Controller
                 'bio' => $validatedData['bio'] ?? '',
             ]);
 
-            return redirect()->to('/' . $store->id . '/dashboard')->with('success', 'Store created successfully.');
+            return redirect()->to('/' . $store->slug . '/dashboard')->with('success', 'Store created successfully.');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to create store: ' . $e->getMessage()]);
         }
