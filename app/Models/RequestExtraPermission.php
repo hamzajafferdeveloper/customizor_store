@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RequestExtraPermission extends Model
 {
-    protected $fillable = ['store_id', 'permission_id', 'status'];
+    protected $fillable = ['store_id', 'permission_id', 'status', 'limit'];
 
     public function store()
     {
