@@ -26,7 +26,19 @@ type Props = {
     product_type: Category[];
 };
 
-const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl, createProductUrl, showProductRoute, store, page_type, product_type }: Props) => {
+const ProductSection = ({
+    products,
+    categories,
+    colors,
+    hasFilter,
+    auth,
+    baseUrl,
+    createProductUrl,
+    showProductRoute,
+    store,
+    page_type,
+    product_type,
+}: Props) => {
     const [searchValue, setSearchValue] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const filterData = products.data.filter((product) => {
@@ -51,6 +63,8 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
             setShowCreateOwnProduct(false);
         }
     }, [selectedCategoryId]);
+
+    const freeType = product_type.find((pt) => pt.name.toLocaleLowerCase() === 'free');
 
     return (
         <div>
@@ -142,7 +156,7 @@ const ProductSection = ({ products, categories, colors, hasFilter, auth, baseUrl
 
                 {filterData.length > 0 ? (
                     filterData.map((product) => {
-                        const showCrown = page_type === 'home' && product.type !== 'simple' && auth?.user?.type !== 'admin';
+                        const showCrown = page_type === 'home' && product.product_type_id != freeType?.id && auth?.user?.type !== 'admin';
 
                         return (
                             <Card

@@ -49,7 +49,7 @@ class ProductController extends Controller
             });
         }
 
-        $products = $query->where('store_id', null)->with('productColors.color')->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+        $products = $query->where('store_id', null)->with('productColors.color', 'productType')->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
         $categories = Category::with('ownProductImage')->get();
         $colors = Color::all();
         $product_types = ProductType::all();
@@ -187,7 +187,7 @@ class ProductController extends Controller
      */
     public function show(string $sku)
     {
-        $product = Product::where('sku', $sku)->with('productColors.color', 'template')->first();
+        $product = Product::where('sku', $sku)->with('productColors.color', 'template', 'productType')->first();
         if ($product) {
 
             return Inertia::render('home/product/show', [

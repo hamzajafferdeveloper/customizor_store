@@ -111,7 +111,7 @@ const SingleProductSection = ({
         if (product.price_type === 'digital' && !isProductBought) return renderCheckoutButton();
 
         // 🧵 Physical products → show Customize
-        if (page_type === 'home' && product.type !== 'simple' && !isOwnerOrStore) return renderDisabledCustomize();
+        if (page_type === 'home' && product.product_type?.name.toLocaleLowerCase() !== 'free' && !isOwnerOrStore) return renderDisabledCustomize();
 
         return renderCustomizeButton();
     };

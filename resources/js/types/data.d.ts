@@ -8,7 +8,6 @@ export interface Category {
     products_count: number;
     created_at: string;
     updated_at: string;
-
 }
 
 export interface Brand {
@@ -36,8 +35,11 @@ export interface Product {
     brand_id: number;
     sku: string;
     slug: string;
-    product_type_id: string;
-    type: string;
+    product_type_id: number;
+    product_type: {
+        id: number;
+        name: string;
+    };
     sizes: string[];
     materials: string[];
     product_colors: productColors[];

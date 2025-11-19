@@ -45,7 +45,7 @@ class HomeController extends Controller
     {
         $template = SvgTemplate::with('part')->findOrFail($id);
         $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
-        $product = $template->load('product');
+        $product = $template->load('product.productType');
         $logoGallery = LogoCategory::with('logos')->get();
 
         if (auth()->user() && auth()->user()->type === 'admin') {
@@ -55,7 +55,7 @@ class HomeController extends Controller
                 'permissions' => $storePermissions,
             ]);
         } else {
-            if ($product->product->type != 'simple') {
+            if (strtolower($product->product->productType->name) != 'free') {
                 return abort(403, 'Unathorized Access');
             } else {
                 return Inertia::render('home/product/customizer', [
