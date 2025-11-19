@@ -4,6 +4,8 @@ import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import { StoreData } from '@/types/store';
 import { NavStore } from '../store/nav-store';
 import { NavUser } from '../nav-user';
+import { Button } from '../ui/button';
+import { router } from '@inertiajs/react';
 
 export function AppSidebarHeader({ breadcrumbs = [], store }: { breadcrumbs?: BreadcrumbItemType[]; store?: StoreData }) {
     return (
@@ -12,7 +14,8 @@ export function AppSidebarHeader({ breadcrumbs = [], store }: { breadcrumbs?: Br
                 <SidebarTrigger className="-ml-1" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
-            <div className='w-fit'>
+            <div className='w-fit flex items-center gap-7'>
+                <Button onClick={() => router.visit('/')} variant="outline">Visit Website</Button>
                 {store ? (
                     <NavStore store={store} />
                 ): (

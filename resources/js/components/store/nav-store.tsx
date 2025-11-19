@@ -16,7 +16,7 @@ export function NavStore({ store }: { store: StoreData }) {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent">
-                            <StoreInfo store={store} />
+                            <StoreInfo store={store} showEmail />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>

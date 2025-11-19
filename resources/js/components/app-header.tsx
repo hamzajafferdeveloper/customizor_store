@@ -11,7 +11,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Box, DollarSignIcon, LayoutGrid, Menu, PanelTopDashed, ShoppingBag } from 'lucide-react';
+import { BookOpen, Box, DollarSignIcon, LayoutGrid, Menu, PanelLeftDashed, PanelTopDashed, ShoppingBag } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './super-admin/app-logo-icon';
 
@@ -35,17 +35,25 @@ const mainNavItems: NavItem[] = [
         title: 'Pricing',
         href: '/pricing',
         icon: DollarSignIcon,
+        hide_in_store: true,
     },
     {
         title: 'All Stores',
         href: '/all-stores',
         icon: ShoppingBag,
+        // hide_in_store: true,
         secure: true,
     },
     {
         title: 'Buyed Products',
         href: '/buy-products',
         icon: PanelTopDashed,
+        secure: true,
+    },
+    {
+        title: 'Dashboard',
+        href: '/get-store-dashboard',
+        icon: PanelLeftDashed,
         secure: true,
     },
 ];
@@ -124,7 +132,13 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
                                 {mainNavItems
-                                    .filter((item) => !(item.secure && !auth.user)) // hide secure items for guests
+                                    .filter((item) => {
+                                        if (item.secure && !auth.user) return false;
+
+                                        if (item.hide_in_store && auth.user?.is_paid) return false;
+
+                                        return true;
+                                    })
                                     .map((item, index) => (
                                         <NavigationMenuItem key={index} className="relative flex h-full items-center">
                                             <Link
@@ -177,21 +191,23 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             </div>
                         </div>
                         {auth?.user ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="size-10 rounded-full p-1">
-                                        <Avatar className="size-8 overflow-hidden rounded-full">
-                                            <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                                            <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                                {getInitials(auth.user.name)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56" align="end">
-                                    <UserMenuContent user={auth.user} />
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="size-10 rounded-full p-1">
+                                            <Avatar className="size-8 overflow-hidden rounded-full">
+                                                <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
+                                                <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                                    {getInitials(auth.user.name)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56" align="end">
+                                        <UserMenuContent user={auth.user} />
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </>
                         ) : (
                             <Link href="/login" className="">
                                 {/* <CircleUserIcon className="cursor-pointer" /> */}

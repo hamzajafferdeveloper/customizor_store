@@ -21,6 +21,7 @@ export interface NavItem {
     icon?: LucideIcon | null;
     isActive?: boolean;
     secure?: boolean;
+    hide_in_store?: boolean;
 }
 
 type FlashProps = {

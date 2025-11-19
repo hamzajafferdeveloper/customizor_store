@@ -6,11 +6,13 @@ use App\Http\Controllers\home\StoreController;
 use App\Http\Controllers\SuperAdmin\ProductController;
 use App\Http\Controllers\User\HomeController;
 use App\Models\Color;
+use App\Models\Store;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/clear-session', function () {
     session()->flush(); // removes all session data
+
     return back()->with('status', 'All sessions cleared successfully!');
 })->name('session.clear');
 
@@ -18,17 +20,15 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::get('/checkout/mail', function() {
+Route::get('/checkout/mail', function () {
     return view('mails.payment.checkout');
 });
-Route::get('/renew/mail', function() {
+Route::get('/renew/mail', function () {
     return view('mails.payment.renew');
 });
-Route::get('/upgrade/mail', function() {
+Route::get('/upgrade/mail', function () {
     return view('mails.payment.upgrade');
 });
-
-
 
 Route::get('/category-for-related-products', [HomeController::class, 'categoryForRelatedProducts'])->name('category.for.related.product');
 Route::get('/product-for-related-products', [HomeController::class, 'productForRelatedProducts'])->name('product.for.related.product');
@@ -40,26 +40,27 @@ Route::get('/product', [ProductController::class, 'index'])->name('product.index
 Route::get('/product/{sku}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/design-our-own-product/{categoryId}', [ProductController::class, 'createOwnProduct'])->name('design.product');
 
-Route::get('/all/colors', function (){
+Route::get('/all/colors', function () {
     $colors = Color::all();
-    if($colors){
+    if ($colors) {
         return response()->json([
-            'colors' => $colors
+            'colors' => $colors,
         ], 200);
     }
+
     return response()->json(['message', 'No Color Found'], 404);
 });
 
 Route::get('product-price-type/{id}', function ($id) {
     $product = \App\Models\Product::find($id);
-    if($product){
+    if ($product) {
         return response()->json([
-            'productPriceType' => $product->price_type
+            'productPriceType' => $product->price_type,
         ], 200);
     }
+
     return response()->json(['message', 'No Product Found'], 404);
 });
-
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/all-stores', [HomeController::class, 'allStores'])->name('all.stores');
@@ -86,16 +87,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/buy-product', [HomeController::class, 'buyProduct'])->name('buy.product');
     Route::get('/payment/success', [HomeController::class, 'paymentSuccess'])->name('buy.product');
 
-
     Route::post('/buy-physical-product', [BuyPhysicalProductController::class, 'buyProduct'])->name('buy.physical.product');
     Route::get('/buy-physical-product/success', [BuyPhysicalProductController::class, 'paymentSuccess'])->name('buy.physical.product.success');
     Route::get('/buy-physical-product/cancel', [BuyPhysicalProductController::class, 'paymentCancel'])->name('buy.physical.product.cancel');
 
     Route::get('/buy-physical-product/{id}', [BuyPhysicalProductController::class, 'show'])->name('buy.physical.product.show');
 
+    Route::get('/get-store-dashboard', function () {
+        $user = auth()->user();
+
+        $store = Store::where('user_id', $user->id)->first();
+
+        if ($store) {
+
+            return redirect()->route('store.dashboard', $store->slug);
+        } else {
+            return redirect()->route('pricing')->with('error', 'You do not have a store.');
+        }
+
+    })->name('get.store.dashboard');
+
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
-require __DIR__ . '/super-admin.php';
-require __DIR__ . '/store.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';
+require __DIR__.'/super-admin.php';
+require __DIR__.'/store.php';
