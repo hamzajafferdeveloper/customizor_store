@@ -12,8 +12,9 @@ class Plan extends Model
         'name',
         'description',
         'price',
-        'billing_cycle', // e.g., monthly, yearly
-        'features', // JSON or text field for features
+        'billing_cycle',
+        'features',
+        'display'
     ];
 
     protected $casts = [

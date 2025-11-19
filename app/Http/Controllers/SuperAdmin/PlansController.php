@@ -7,7 +7,6 @@ use App\Models\Permission;
 use App\Models\Plan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
 
 class PlansController extends Controller
 {
@@ -15,6 +14,7 @@ class PlansController extends Controller
     {
         $plans = Plan::with('permissions')->get(); // Fetch all plans from the database
         $permissions = Permission::all(); // Fetch all permissions for the plans
+
         // Logic to display plans
         return Inertia::render('super-admin/plans/index', [
             'plans' => $plans, // Fetch plans from the database or service
@@ -94,5 +94,20 @@ class PlansController extends Controller
         $plan->permissions()->sync($syncData);
 
         return back()->with('success', 'Permissions updated successfully.');
+    }
+
+    public function updateStatus(string $id, Request $request)
+    {
+        try {
+            $plan = Plan::findOrFail($id);
+
+            $plan->update([
+                'display' => $request->display,
+            ]);
+
+            return back()->with('success', 'Plan status updated successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update plan status.');
+        }
     }
 }

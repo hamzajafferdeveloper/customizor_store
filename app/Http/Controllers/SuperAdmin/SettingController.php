@@ -4,9 +4,10 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ExtraPermissionApprovedMail;
+use App\Models\PlanPermission;
 use App\Models\RequestExtraPermission;
 use App\Models\Setting;
-use App\Models\StoreExtraPermission;
+use App\Models\Store;
 use Cache;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -102,27 +103,28 @@ class SettingController extends Controller
         }
     }
 
+    public function approveExtraPermissionRequest(string $id)
+    {
+        try {
+            $request = RequestExtraPermission::with(['store', 'permission'])->findOrFail($id);
 
-public function approveExtraPermissionRequest(string $id)
-{
-    try {
-        $request = RequestExtraPermission::with(['store', 'permission'])->findOrFail($id);
+            $request->update(['status' => 'approved']);
 
-        $request->update(['status' => 'approved']);
+            $store = Store::where('id', $request->store_id)->first();
 
-        StoreExtraPermission::create([
-            'store_id' => $request->store_id,
-            'permission_id' => $request->permission_id,
-        ]);
+            PlanPermission::create([
+                'plan_id' => $store->plan_id,
+                'permission_id' => $request->permission_id,
+                'is_enabled' => 1,
+            ]);
 
-        // ✅ Send email to store owner
-        if ($request->store && $request->store->email) {
-            Mail::to($request->store->email)->send(new ExtraPermissionApprovedMail($request));
+            if ($request->store && $request->store->email) {
+                Mail::to($request->store->email)->send(new ExtraPermissionApprovedMail($request));
+            }
+
+            return back()->with('success', 'Extra permission request approved successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to approve extra permission request.');
         }
-
-        return back()->with('success', 'Extra permission request approved successfully.');
-    } catch (\Exception $e) {
-        return back()->with('error', 'Failed to approve extra permission request.');
     }
-}
 }

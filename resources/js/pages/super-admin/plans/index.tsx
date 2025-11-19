@@ -2,6 +2,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import TableHeaderCustom from '@/components/table-header';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { FlashProps } from '@/types';
@@ -14,7 +15,7 @@ import CreatePlanModal from './compoenents/create-plan';
 import EditPlanModal from './compoenents/edit-plan';
 import PermissionsModal from './compoenents/permissions';
 
-const StoreType = ({ plans, permissions }: { plans: Plan[], permissions: Permission[] }) => {
+const StoreType = ({ plans, permissions }: { plans: Plan[]; permissions: Permission[] }) => {
     const page = usePage();
     const flash = (page.props as { flash?: FlashProps }).flash;
 
@@ -37,6 +38,12 @@ const StoreType = ({ plans, permissions }: { plans: Plan[], permissions: Permiss
         } else {
             toast.error('SomeThing Went Wrong. Please Try Again later!');
         }
+    };
+
+    const handleDisplayChange = (plan: Plan) => {
+        router.put(route('superadmin.plan.update', plan.id), {
+            display: !plan.display,
+        });
     };
 
     const filterData = plans.filter((cat) => cat.name.toLowerCase().includes(searchValue.toLowerCase()));
@@ -64,6 +71,8 @@ const StoreType = ({ plans, permissions }: { plans: Plan[], permissions: Permiss
                             <TableRow>
                                 <TableHead>Plan Name</TableHead>
                                 <TableHead>Plan Price</TableHead>
+                                <TableHead>Display</TableHead>
+
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -72,6 +81,9 @@ const StoreType = ({ plans, permissions }: { plans: Plan[], permissions: Permiss
                                 <TableRow key={plan.id}>
                                     <TableCell>{plan.name}</TableCell>
                                     <TableCell>${plan.price}</TableCell>
+                                    <TableCell>
+                                        <Switch checked={plan.display} onCheckedChange={() => handleDisplayChange(plan)} />
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger>
@@ -87,7 +99,7 @@ const StoreType = ({ plans, permissions }: { plans: Plan[], permissions: Permiss
                                                         setPermissionModalOpen(true);
                                                     }}
                                                 >
-                                                    <DropdownMenuItem className='cursor-pointer'>
+                                                    <DropdownMenuItem className="cursor-pointer">
                                                         <SquareKanban /> Permissions
                                                     </DropdownMenuItem>
                                                 </Button>
@@ -99,7 +111,7 @@ const StoreType = ({ plans, permissions }: { plans: Plan[], permissions: Permiss
                                                         setEditPlanModalOpen(true);
                                                     }}
                                                 >
-                                                    <DropdownMenuItem className='cursor-pointer'>
+                                                    <DropdownMenuItem className="cursor-pointer">
                                                         <Pen /> Edit
                                                     </DropdownMenuItem>
                                                 </Button>

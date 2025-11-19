@@ -86,6 +86,7 @@ export interface Plan {
     name: string;
     description: string;
     price: string;
+    display: boolean;
     billing_cycle: string; // e.g., monthly, yearly
     features: string; // JSON or text field for features
     created_at: string;

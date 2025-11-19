@@ -28,7 +28,7 @@ class HomeController extends Controller
 
     public function pricing()
     {
-        $plans = Plan::where('price', '>', 0)
+        $plans = Plan::where('display', 1)
             ->orderBy('price', 'asc')
             ->get();
 
@@ -80,7 +80,7 @@ class HomeController extends Controller
     public function productForRelatedProducts(Request $request)
     {
         $category = $request->input('category');
-        if($request->input('store_id')){
+        if ($request->input('store_id')) {
 
             $store_id = $request->input('store_id');
             $store = Store::with('banner')->findOrFail($store_id);
@@ -99,7 +99,7 @@ class HomeController extends Controller
             $allowedTypes = array_values(array_intersect($availablePermission, $permissions));
 
             $productTypeIds = ProductType::whereIn('name', str_replace('_product', '', $allowedTypes))
-            ->pluck('id');
+                ->pluck('id');
 
             $products = Product::where('categories_id', $category)
                 ->whereIn('product_type_id', $productTypeIds)
@@ -109,9 +109,9 @@ class HomeController extends Controller
                 ->get();
         } else {
             $products = Product::where('categories_id', $category)
-            ->latest()
-            ->take(10)
-            ->get();
+                ->latest()
+                ->take(10)
+                ->get();
         }
 
         return response()->json([
@@ -297,5 +297,4 @@ class HomeController extends Controller
             'stores' => $stores,
         ]);
     }
-
 }

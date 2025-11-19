@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])->group(function () {
     Route::post('/admin/plans/store', [PlansController::class, 'store'])->name('superadmin.plan.store');
     Route::put('/admin/plans/update/{id}', [PlansController::class, 'update'])->name('superadmin.plan.update');
     Route::delete('/admin/plans/{id}', [PlansController::class, 'destroy'])->name('superadmin.plan.destroy');
+    Route::put('/admin/plans/{id}/update-status', [PlansController::class, 'updateStatus'])->name('superadmin.plan.update');
     Route::post('/plans/{plan}/update-permissions', [PlansController::class, 'updatePermissions'])->name('plans.updatePermissions');
 
     // Route For Category
