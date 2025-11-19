@@ -5,10 +5,11 @@ namespace App\Http\Controllers\home;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentDetail;
 use App\Models\Plan;
+use App\Models\PlanPermission;
 use App\Models\Store;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class StoreController extends Controller
 {
@@ -16,7 +17,7 @@ class StoreController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->is_paid) {
+        if (! $user->is_paid) {
             return redirect()->route('home')->with('error', 'You must buy a store to create info of store.');
         }
 
@@ -25,7 +26,7 @@ class StoreController extends Controller
         return Inertia::render('home/store/create', [
             'title' => 'Create Store',
             'description' => 'Create your store to start selling products.',
-            'storeName' => $storeName
+            'storeName' => $storeName,
         ]);
     }
 
@@ -43,11 +44,32 @@ class StoreController extends Controller
         ]);
 
         $user = auth()->user();
+
         $paymentDetails = PaymentDetail::where('user_id', $user->id)
             ->where('type', 'new')
             ->first();
 
-        $plan = Plan::findOrFail($paymentDetails->plan_id);
+        if (! $paymentDetails) {
+            return back()->withErrors(['error' => 'No active payment details found.']);
+        }
+
+        $originalPlan = Plan::findOrFail($paymentDetails->plan_id);
+
+        $newPlan = $originalPlan->replicate();
+        $newPlan->name = $originalPlan->name.' (Copy for Store: '.$request->name.')';
+        $newPlan->save();
+
+        $originalPermissions = PlanPermission::where('plan_id', $originalPlan->id)->get();
+
+        foreach ($originalPermissions as $perm) {
+
+            PlanPermission::create([
+                'plan_id'        => $newPlan->id,
+                'permission_id'  => $perm->permission_id,
+                'is_enabled'     => $perm->is_enabled,
+                'limit'          => $perm->limit,
+            ]);
+        }
 
         $slug = Str::slug($request->name);
         $uniqueSlug = $slug;
@@ -58,7 +80,7 @@ class StoreController extends Controller
             $counter++;
         }
 
-        $expiryDate = $plan->billing_cycle === 'yearly'
+        $expiryDate = $originalPlan->billing_cycle === 'yearly'
             ? now()->addYear()->toDateString()
             : now()->addMonth()->toDateString();
 
@@ -66,8 +88,8 @@ class StoreController extends Controller
             $store = Store::create([
                 'name' => $validatedData['name'],
                 'user_id' => auth()->id(),
-                'plan_id' => $paymentDetails->plan_id,
                 'payment_detail_id' => $paymentDetails->id,
+                'plan_id' => $newPlan->id,
                 'email' => $validatedData['email'],
                 'country' => $validatedData['country'],
                 'slug' => $uniqueSlug,
@@ -81,9 +103,13 @@ class StoreController extends Controller
                 'bio' => $validatedData['bio'] ?? '',
             ]);
 
-            return redirect()->to('/' . $store->slug . '/dashboard')->with('success', 'Store created successfully.');
+            return redirect()->to('/'.$store->slug.'/dashboard')
+                ->with('success', 'Store created successfully.');
+
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to create store: ' . $e->getMessage()]);
+            return back()->withErrors([
+                'error' => 'Failed to create store: '.$e->getMessage(),
+            ]);
         }
     }
 }
