@@ -210,6 +210,7 @@ const CreateProduct = ({ storePlan, users, storeName }: CreateProductProps) => {
                     <SelectValue placeholder="Select store admin" />
                   </SelectTrigger>
                   <SelectContent>
+                    {users.length === 0 && <p className='text-sm p-2'>No users available</p>}
                     {users.map((user) => (
                       <SelectItem key={user.id} value={String(user.id)}>
                         {user.name}

@@ -184,7 +184,7 @@ export function EditorSidebar({
                         )
                     )}
                 </div>
-                {actionPerformed && productType === 'physical' && (
+                {productType === 'physical' && (
                     <>
                         {auth.user ? (
                             <Button className="cursor-pointer lg:ml-2" onClick={() => setShowProceedToCheckOutModal(true)}>

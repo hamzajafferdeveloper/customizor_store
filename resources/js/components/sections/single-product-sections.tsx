@@ -55,7 +55,7 @@ const SingleProductSection = ({
     const handleDelete = () => {
         const isOwner = auth?.user?.id === product.user_id;
         if (store) {
-            if (isOwner) router.delete(route('store.product.delete', { storeSlug : store.slug, id: product.id }));
+            if (isOwner) router.delete(route('store.product.delete', { storeSlug: store.slug, id: product.id }));
             else toast.error('You are not authorized to delete this product.');
         } else router.delete(route('superadmin.product.destroy', product.id));
 
@@ -73,6 +73,7 @@ const SingleProductSection = ({
     const parsedSizes = safeParseArray(product.sizes);
     const parsedMaterials = safeParseArray(product.materials);
 
+    const isStoreAdmin = product?.user_id === auth?.user?.id;
     const isProductBought = buyedProduct.some((item) => item.product_id === product.id);
 
     const customizeHref =
@@ -103,6 +104,8 @@ const SingleProductSection = ({
                     <Button className="flex w-full items-center justify-center gap-2">Customize</Button>
                 </Link>
             );
+
+        if (isStoreAdmin) return renderCustomizeButton();
 
         // 🧍 Regular user logic
         if (product.price_type === 'digital' && !isProductBought) return renderCheckoutButton();
@@ -171,7 +174,9 @@ const SingleProductSection = ({
                     />
 
                     {/* Owner/Admin actions */}
-                    {store?.id === product.store_id ? renderStoreActions(store, product, setConfirmOpen) : isAdmin && renderAdminActions(product, setConfirmOpen)}
+                    {store?.id === product.store_id
+                        ? renderStoreActions(store, product, setConfirmOpen)
+                        : isAdmin && renderAdminActions(product, setConfirmOpen)}
                 </div>
             </div>
 
@@ -261,7 +266,7 @@ const safeParseArray = (val: any): string[] => {
 // 🔧 Action Renderers
 const renderStoreActions = (store: StoreData, product: Product, setConfirmOpen: React.Dispatch<React.SetStateAction<boolean>>) => (
     <>
-        <Link href={route('store.product.edit', { storeSlug : store.slug, sku: product.sku })}>
+        <Link href={route('store.product.edit', { storeSlug: store.slug, sku: product.sku })}>
             <Pen className="h-5 w-5" />
         </Link>
         <button
@@ -275,11 +280,12 @@ const renderStoreActions = (store: StoreData, product: Product, setConfirmOpen: 
             href={
                 product.template
                     ? route('store.product.edit.template', {
-                          storeSlug : store.slug,
+                          storeSlug: store.slug,
+                        //   slug: product.slug,
                           id: product.template.id,
                       })
                     : route('store.product.add.template', {
-                          storeSlug : store.slug,
+                          storeSlug: store.slug,
                           slug: product.slug,
                       })
             }

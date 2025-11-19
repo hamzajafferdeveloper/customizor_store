@@ -355,9 +355,11 @@ class StoreController extends Controller
     public function requestExtraPermission(string $storeSlug, string $permission_id)
     {
         try {
+            $store = Store::where('slug', $storeSlug)->first();
+
             // Create the permission request
             $request_permission = RequestExtraPermission::create([
-                'store_id' => $storeSlug,
+                'store_id' => $store->id,
                 'permission_id' => $permission_id,
                 'status' => 'pending',
             ]);

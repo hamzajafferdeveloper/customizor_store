@@ -81,6 +81,8 @@ class HomeController extends Controller
         // Map permissions to product types
         $allowedTypes = array_values(array_intersect($availablePermission, $permissions));
 
+        // dd($allowedTypes);
+
         $productTypeIds = ProductType::whereIn('name', str_replace('_product', '', $allowedTypes))
             ->pluck('id');
 
@@ -124,6 +126,11 @@ class HomeController extends Controller
             $store = Store::where('slug', $storeSlug)->first();
             $plan = $store->load('plan.permissions');
             $productsPermissions = $plan->plan->permissions()->where('key', 'products')->get();
+            // dd($productsPermissions);
+            if ($productsPermissions->isEmpty()) {
+                return redirect()->route('store.products', $storeSlug)->with('error', 'You do not have permission to create products.');
+            }
+
             $productLimit = $productsPermissions->first()->pivot->limit;
 
             $numberOfProducts = Product::where('store_id', $store->id)->count();
@@ -131,7 +138,7 @@ class HomeController extends Controller
                 return redirect()->route('store.products', $storeSlug)->with('error', 'You have reached the maximum limit of products.');
             }
 
-            $store = Store::where('slug', $storeSlug)->first();
+            // dd($store);
             $categories = Category::all();
             $colors = Color::all();
             $brands = Brand::all();
@@ -166,7 +173,7 @@ class HomeController extends Controller
                 'title' => 'required|string|max:100',
                 'price' => 'required|numeric|min:0',
                 'price_type' => 'required|in:physical,digital',
-                'brand_id' => 'required|integer|exists:brands,id',
+                // 'brand_id' => 'nullable|integer|exists:brands,id',
                 'sizes' => 'required|array|min:1',
                 'sizes.*' => 'required|string|max:20',
                 'materials' => 'required|array|min:1',
@@ -177,11 +184,11 @@ class HomeController extends Controller
                 'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             ]);
 
-            $brand = Brand::findOrFail($request->brand_id);
+            // $brand = Brand::findOrFail($request->brand_id);
             $category = Category::findOrFail($request->categories_id);
 
             // ✅ Create base slug
-            $rawSlug = $brand->slug_short.$category->slug_short;
+            $rawSlug = $category->slug_short;
             $originalSlug = Str::slug($rawSlug);
             $slug = $originalSlug;
             $count = 1;
@@ -191,24 +198,25 @@ class HomeController extends Controller
                 $count++;
             }
 
-            // ✅ Auto-generate unique SKU
-            // Format: ANB-BRN-CAT-0001
-            $basePrefix = 'ANB';
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
-            $prefix = $basePrefix.'-'.$baseSku.'-';
+            $categoryShort = strtoupper(substr($category->slug_short, 0, 3));
 
-            $lastProduct = Product::where('sku', 'like', $prefix.'%')
+            // SKU prefix
+            $prefix = "ANB-" . $categoryShort . "-";
+
+            // Find last SKU in this group
+            $lastProduct = Product::where('sku', 'like', $prefix . '%')
                 ->orderBy('sku', 'desc')
                 ->first();
 
-            if ($lastProduct) {
-                $lastNumber = (int) substr($lastProduct->sku, -4);
-                $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            if ($lastProduct && preg_match('/(\d{4})$/', $lastProduct->sku, $match)) {
+                // Get last number and increase
+                $nextNumber = str_pad(((int)$match[1]) + 1, 4, '0', STR_PAD_LEFT);
             } else {
+                // First SKU
                 $nextNumber = '0001';
             }
 
-            $sku = $prefix.$nextNumber;
+            $sku = $prefix . $nextNumber;
 
             // Clean up arrays
             $validated['sizes'] = array_filter($validated['sizes']);
@@ -227,7 +235,7 @@ class HomeController extends Controller
             $product = Product::create([
                 'title' => $validated['title'],
                 'sku' => $sku, // ✅ Added SKU
-                'slug' => $slug,
+                'slug' => $sku,
                 'store_id' => $store->id,
                 'price' => $validated['price'],
                 'price_type' => $validated['price_type'],
@@ -237,7 +245,7 @@ class HomeController extends Controller
                 'sizes' => json_encode(array_values($validated['sizes'])),
                 'materials' => json_encode(array_values($validated['materials'])),
                 'categories_id' => $validated['categories_id'],
-                'brand_id' => $validated['brand_id'],
+                'brand_id' => null,
             ]);
 
             // Attach Colors
@@ -282,7 +290,7 @@ class HomeController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'price_type' => 'required|in:physical,digital',
-            'brand_id' => 'required|integer|exists:brands,id',
+            'brand_id' => 'nullable|integer|exists:brands,id',
             'categories_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
             'sizes' => 'nullable|array',
@@ -307,46 +315,56 @@ class HomeController extends Controller
             $product->image = $product_image;
         }
 
-        $brand = Brand::findOrFail($validated['brand_id']);
+        // $brand = Brand::findOrFail($validated['brand_id']);
         $category = Category::findOrFail($validated['categories_id']);
 
-        // ✅ Only regenerate slug if brand/category changed
-        if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $rawSlug = $brand->slug_short.$category->slug_short;
-            $originalSlug = Str::slug($rawSlug);
+        if ($product->categories_id != $validated['categories_id']) {
+
+            // Use product title for slug
+            $originalSlug = Str::slug($validated['title']);
             $slug = $originalSlug;
             $count = 1;
 
-            while (Product::where('slug', $slug)
-                ->where('id', '!=', $product->id)
-                ->exists()) {
-
-                $slug = $originalSlug.'-'.$count;
+            while (
+                Product::where('slug', $slug)
+                    ->where('id', '!=', $product->id)
+                    ->exists()
+            ) {
+                $slug = $originalSlug . '-' . $count;
                 $count++;
             }
 
-            $product->slug = 'ANB-'.$slug;
+            // No need to force ANB- in slug. If you still want it:
+            // $product->slug = 'ANB-' . $slug;
+            $product->slug = $slug;
         }
 
-        // ✅ Only regenerate SKU if brand/category changed
-        if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
 
-            $basePrefix = 'ANB';
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
-            $prefix = $basePrefix.'-'.$baseSku.'-';
+        // ===============================
+        // REGENERATE SKU (if brand or category changed)
+        // ===============================
+        if (
+            $product->brand_id != $validated['brand_id'] ||
+            $product->categories_id != $validated['categories_id']
+        ) {
+            // Category short code – first 3 letters
+            $categoryShort = strtoupper(substr($category->slug_short, 0, 3));
 
-            $lastProduct = Product::where('sku', 'like', $prefix.'%')
+            // SKU prefix
+            $prefix = "ANB-{$categoryShort}-";
+
+            // Find last SKU matching the pattern
+            $lastProduct = Product::where('sku', 'like', $prefix . '%')
                 ->orderBy('sku', 'desc')
                 ->first();
 
-            if ($lastProduct) {
-                $lastNumber = (int) substr($lastProduct->sku, -4);
-                $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            if ($lastProduct && preg_match('/(\d{4})$/', $lastProduct->sku, $match)) {
+                $nextNumber = str_pad(((int)$match[1]) + 1, 4, '0', STR_PAD_LEFT);
             } else {
                 $nextNumber = '0001';
             }
 
-            $product->sku = $prefix.$nextNumber;
+            $product->sku = $prefix . $nextNumber;
         }
 
         // ✅ Update product fields
@@ -451,9 +469,10 @@ class HomeController extends Controller
     {
         $store = Store::where('slug', $storeSlug)->first();
         $template = SvgTemplate::with('part')->findOrFail($id);
-        $product = Product::where('id', $template->product_id)->where('store_id', $storeSlug)->firstOrFail();
+        $product = Product::where('id', $template->product_id)->where('store_id', $store->id)->firstOrFail();
 
-        if ((int) $product->store_id !== (int) $storeSlug) {
+
+        if ((int) $product->store_id !== (int) $store->id) {
             return redirect()->route('store.products', $storeSlug)->with('error', 'You do not have permission to edit this template.');
         }
 

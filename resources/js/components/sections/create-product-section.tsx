@@ -127,32 +127,34 @@ const CreateProductSection = ({
                                     <InputError message={errors.title} />
                                 </div>
                                 {/* Product SKU */}
-                                <div className="grid gap-4">
-                                    <Label htmlFor="sku">Product Brand</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start" tabIndex={5}>
-                                                {brands.find((c) => c.id === data.brand_id)?.name || 'Select Brand'}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[300px] p-0">
-                                            <Command>
-                                                <CommandInput placeholder="Search brand..." />
-                                                <CommandList>
-                                                    <CommandEmpty>No results found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {brands.map((brand) => (
-                                                            <CommandItem key={brand.id} onSelect={() => setData('brand_id', brand.id)}>
-                                                                {brand.name}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <InputError message={errors.brand_id} />
-                                </div>
+                                {!store && (
+                                    <div className="grid gap-4">
+                                        <Label htmlFor="sku">Product Brand</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-start" tabIndex={5}>
+                                                    {brands.find((c) => c.id === data.brand_id)?.name || 'Select Brand'}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Search brand..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No results found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {brands.map((brand) => (
+                                                                <CommandItem key={brand.id} onSelect={() => setData('brand_id', brand.id)}>
+                                                                    {brand.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <InputError message={errors.brand_id} />
+                                    </div>
+                                )}
 
                                 {/* Product Price and it's type */}
                                 <div className="flex gap-2">

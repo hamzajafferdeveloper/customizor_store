@@ -2,10 +2,10 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Brand, Category, Color, Product } from '@/types/data';
 import { ProductForm } from '@/types/form';
 import { StoreData } from '@/types/store';
@@ -92,7 +92,7 @@ const EditProductSection = ({
         e.preventDefault();
 
         if (store) {
-            post(route('store.product.update', { storeSlug : store.slug, id: product.id }), {
+            post(route('store.product.update', { storeSlug: store.slug, id: product.id }), {
                 forceFormData: true, // This will internally convert data to FormData (including file/array handling)
                 onError: (err) => console.error(err), // optional for debugging
                 onSuccess: () => console.log('Submitted successfully!'),
@@ -130,32 +130,34 @@ const EditProductSection = ({
                                     <InputError message={errors.title} />
                                 </div>
 
-                                <div className="grid gap-4">
-                                    <Label htmlFor="sku">Product Brand</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start" tabIndex={5}>
-                                                {brands.find((b) => b.id === data.brand_id)?.name || 'Select Brand'}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[300px] p-0">
-                                            <Command>
-                                                <CommandInput placeholder="Search brand..." />
-                                                <CommandList>
-                                                    <CommandEmpty>No results found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {brands.map((brand) => (
-                                                            <CommandItem key={brand.id} onSelect={() => setData('brand_id', brand.id)}>
-                                                                {brand.name}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <InputError message={errors.brand_id} />
-                                </div>
+                                {!store && (
+                                    <div className="grid gap-4">
+                                        <Label htmlFor="sku">Product Brand</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-start" tabIndex={5}>
+                                                    {brands.find((b) => b.id === data.brand_id)?.name || 'Select Brand'}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Search brand..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No results found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {brands.map((brand) => (
+                                                                <CommandItem key={brand.id} onSelect={() => setData('brand_id', brand.id)}>
+                                                                    {brand.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <InputError message={errors.brand_id} />
+                                    </div>
+                                )}
 
                                 {/* Product Price and it's type */}
                                 <div className="flex gap-2">
