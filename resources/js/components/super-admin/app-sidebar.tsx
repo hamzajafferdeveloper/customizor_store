@@ -91,6 +91,7 @@ export function AppSidebar() {
                                         <SidebarMenuButton
                                             onClick={() => toggleGroup(item.group)}
                                             className="flex w-full items-center justify-between"
+                                            isActive={item.group === openGroup}
                                         >
                                             <span className="text-xs font-semibold text-gray-500 uppercase">{item.group}</span>
                                             <ChevronRight className={`h-3 w-3 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`} />
@@ -104,7 +105,7 @@ export function AppSidebar() {
                                     >
                                         {item.items.map((subItem, subIdx) => (
                                             <SidebarMenuItem key={subIdx} className="pl-6">
-                                                <SidebarMenuButton asChild>
+                                                <SidebarMenuButton isActive={subItem.href === window.location.pathname} asChild>
                                                     <Link href={subItem.href} prefetch className="flex items-center">
                                                         <subItem.icon className="mr-2 h-4 w-4" />
                                                         {subItem.title}
@@ -118,7 +119,7 @@ export function AppSidebar() {
                         } else {
                             return (
                                 <SidebarMenuItem key={idx}>
-                                    <SidebarMenuButton asChild>
+                                    <SidebarMenuButton isActive={item.href === window.location.pathname} asChild>
                                         <Link href={item.href} prefetch className="flex items-center">
                                             <item.icon className="mr-2 h-4 w-4" />
                                             {item.title}
