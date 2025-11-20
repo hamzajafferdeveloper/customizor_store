@@ -51,7 +51,7 @@ const StoreType = ({ plans, permissions }: { plans: Plan[]; permissions: Permiss
         <SuperAdminLayout breadcrumbs={[{ title: 'All Store Plan', href: '/admin/plans' }]}>
             <Head title="Store Plans" />
             <div className="flex-1 overflow-x-auto p-4">
-                <div className="mx-auto max-w-xl rounded-lg border p-4 shadow">
+                <div className="mx-auto max-w-4xl rounded-lg border p-4 shadow">
                     <TableHeaderCustom
                         btnText="Create"
                         searchValue={searchValue}
@@ -70,8 +70,10 @@ const StoreType = ({ plans, permissions }: { plans: Plan[]; permissions: Permiss
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Plan Name</TableHead>
+                                <TableHead>Store Name</TableHead>
                                 <TableHead>Plan Price</TableHead>
                                 <TableHead>Display</TableHead>
+                                <TableHead>Permissions</TableHead>
 
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
@@ -80,9 +82,22 @@ const StoreType = ({ plans, permissions }: { plans: Plan[]; permissions: Permiss
                             {filterData.map((plan) => (
                                 <TableRow key={plan.id}>
                                     <TableCell>{plan.name}</TableCell>
+                                    <TableCell>{plan.store_name}</TableCell>
                                     <TableCell>${plan.price}</TableCell>
                                     <TableCell>
                                         <Switch checked={plan.display} onCheckedChange={() => handleDisplayChange(plan)} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="ghost"
+                                            className="flex w-full cursor-pointer justify-start text-gray-900"
+                                            onClick={() => {
+                                                setSelectedPlan(plan);
+                                                setPermissionModalOpen(true);
+                                            }}
+                                        >
+                                            <SquareKanban /> Manage
+                                        </Button>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
@@ -91,18 +106,6 @@ const StoreType = ({ plans, permissions }: { plans: Plan[]; permissions: Permiss
                                             </DropdownMenuTrigger>
 
                                             <DropdownMenuContent className="space-y-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    className="flex w-full cursor-pointer justify-start text-gray-900"
-                                                    onClick={() => {
-                                                        setSelectedPlan(plan);
-                                                        setPermissionModalOpen(true);
-                                                    }}
-                                                >
-                                                    <DropdownMenuItem className="cursor-pointer">
-                                                        <SquareKanban /> Permissions
-                                                    </DropdownMenuItem>
-                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     className="flex w-full cursor-pointer justify-start text-gray-900"

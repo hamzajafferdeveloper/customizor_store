@@ -12,8 +12,16 @@ class PlansController extends Controller
 {
     public function index()
     {
-        $plans = Plan::with('permissions')->get(); // Fetch all plans from the database
-        $permissions = Permission::all(); // Fetch all permissions for the plans
+        $plans = Plan::with('permissions')->get();
+        $permissions = Permission::all();
+
+        foreach ($plans as $plan) {
+            $store = $plan->stores()->first();
+            if ($store) {
+                $plan->store_id = $store->id;
+                $plan->store_name = $store->name;
+            }
+        }
 
         // Logic to display plans
         return Inertia::render('super-admin/plans/index', [
@@ -59,6 +67,7 @@ class PlansController extends Controller
         ]);
 
         $plan = Plan::findOrFail($id);
+
         $plan->update([
             'name' => $data['name'],
             'description' => $data['description'],
