@@ -83,64 +83,34 @@ export async function downloadClippedCanvas({
             return;
         }
 
-        // 🧩 PNG export logic
-        const fullSvgString = await formatSVGForDownload(svgEl, uploadedItems, fileName, width, height, true);
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = width * zoom;
+            canvas.height = height * zoom;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
 
-        // @ts-ignore
-        const svgBlob = new Blob([fullSvgString], {
-            type: 'image/svg+xml;charset=utf-8',
-        });
-        const url = URL.createObjectURL(svgBlob);
-        const img = new Image();
+            ctx.save();
+            ctx.scale(zoom, zoom);
+            ctx.translate(pan.x, pan.y);
 
-        img.onload = async () => {
-            try {
-                const viewBox = svgEl.getAttribute('viewBox');
-                let vbWidth = width,
-                    vbHeight = height;
-                if (viewBox) {
-                    const parts = viewBox.split(' ').map(Number);
-                    if (parts.length === 4) [, , vbWidth, vbHeight] = parts;
+            await drawSvgToCanvas(ctx, svgString, width, height);
+
+            for (const item of uploadedItems) {
+                if (item.type === 'image') {
+                    await drawImageItem(item, ctx);
+                } else if (item.type === 'text' && item.text) {
+                    drawTextItem(item, ctx);
                 }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = vbWidth * zoom;
-                canvas.height = vbHeight * zoom;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-
-                ctx.drawImage(img, 0, 0, vbWidth * zoom, vbHeight * zoom);
-
-                await new Promise<void>((resolve) => {
-                    canvas.toBlob((blob) => {
-                        if (!blob) return resolve();
-                        const pngUrl = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = pngUrl;
-                        link.download = `${fileName}.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(pngUrl);
-                        resolve();
-                    }, 'image/png');
-                });
-            } finally {
-                // ✅ Hide loader AFTER PNG is generated
-                const loaderEl = document.getElementById('export-loader');
-                if (loaderEl) loaderEl.remove();
             }
-            URL.revokeObjectURL(url);
-        };
 
-        img.onerror = () => {
+            ctx.restore();
+            formatPngForDownload(canvas, fileName);
+        } finally {
             console.error('❌ Image failed to load during PNG export');
             const loaderEl = document.getElementById('export-loader');
             if (loaderEl) loaderEl.remove();
-            URL.revokeObjectURL(url);
-        };
-
-        img.src = url;
+        }
     } catch (err) {
         console.error('❌ Export failed:', err);
         alert('Something went wrong during export.');
@@ -246,13 +216,12 @@ export function generateCanvasSVG({
     uploadedItems: CanvasItem[];
     svgOverlayBox: { left: number; top: number; width: number; height: number };
 }) {
-
     const { width, height } = svgOverlayBox;
     const svgContainer = document.getElementById(svgContainerId);
     if (!svgContainer) return '';
     const svgEl = svgContainer.querySelector('svg');
     if (!svgEl) return '';
-    return  formatSVGForDownload(svgEl, uploadedItems, 'temp', width, height, true);
+    return formatSVGForDownload(svgEl, uploadedItems, 'temp', width, height, true);
 }
 
 /* ------------------ Helpers ------------------ */
