@@ -206,10 +206,8 @@ export async function downloadCreateProduct({
 
     svgString = fixSvgSize(svgString, width, height);
 
-    // 🎭 Draw base SVG first
     await drawSvgToCanvas(ctx, svgString, width, height);
 
-    // 🎭 Create a mask canvas from the base SVG
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = width;
     maskCanvas.height = height;
@@ -374,7 +372,6 @@ async function drawImagePartWithMask(part: PartLayer, ctx: CanvasRenderingContex
     });
 }
 
-// 🎭 Draw text with clipping mask applied
 function drawTextItemWithMask(
     item: TextLayer,
     ctx: CanvasRenderingContext2D,
@@ -465,6 +462,8 @@ async function formatSVGForDownload(
 
     const itemSvgs: string[] = [];
 
+    console.log(serializer.serializeToString(svgEl));
+
     for (const item of uploadedItems) {
         if (item.type === 'image') {
             const href = await embedImageAsBase64(item.src || '');
@@ -502,17 +501,31 @@ async function formatSVGForDownload(
 
     const partSvgs = uploadedPart
         ? uploadedPart
-              .map((part) =>
-                  part.path ? `<image href="${part.path}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />` : '',
-              )
+              .map((part) => (part.path ? `<image href="${part.path}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />` : ''))
               .join('\n')
         : '';
 
+    // Use the rendered base SVG as a mask so items/parts are clipped the same way PNG export does.
+    // We embed the baseSvg as a data-image inside the mask so the mask reflects the visual rendering.
+    const baseSvgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(baseSvg);
+
     const svgOutput = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-        ${baseSvg}
-        ${partSvgs}
-        ${itemSvgs.join('\n')}
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <defs>
+                <!-- Use alpha channel of the embedded SVG image for masking -->
+                <mask id="export-mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" mask-type="alpha" x="0" y="0" width="${width}" height="${height}">
+                    <image href="${baseSvgDataUrl}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />
+                </mask>
+            </defs>
+
+            <!-- Render the base SVG visually so the template is visible in the exported SVG -->
+            <image href="${baseSvgDataUrl}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />
+
+            <!-- Draw parts and items inside a group that uses the mask -->
+            <g mask="url(#export-mask)">
+                ${partSvgs}
+                ${itemSvgs.join('\n')}
+            </g>
         </svg>`;
     if (returnString) return svgOutput;
 
