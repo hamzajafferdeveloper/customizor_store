@@ -96,46 +96,32 @@ export async function downloadClippedCanvas({
             ctx.translate(pan.x, pan.y);
 
             svgString = fixSvgSize(svgString, width, height);
-
-            // 🎭 Draw base SVG first (this contains the shape/mask)
             await drawSvgToCanvas(ctx, svgString, width, height);
 
-            // 🎭 Create a mask canvas from the base SVG
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = width;
-            maskCanvas.height = height;
-            const maskCtx = maskCanvas.getContext('2d');
-            if (!maskCtx) {
-                ctx.restore();
-                formatPngForDownload(canvas, fileName);
-                return;
+            for (const item of uploadedItems) {
+                if (item.type === 'image') {
+                    await drawImageItem(item, ctx);
+                } else if (item.type === 'text' && item.text) {
+                    drawTextItem(item, ctx);
+                }
             }
 
+            // 🎭 Apply mask using template (destination-in)
             await new Promise<void>((resolve) => {
                 const maskImg = new Image();
                 maskImg.onload = () => {
-                    maskCtx.drawImage(maskImg, 0, 0, width, height);
+                    ctx.globalCompositeOperation = 'destination-in';
+                    ctx.drawImage(maskImg, 0, 0, width, height);
+                    ctx.globalCompositeOperation = 'source-over';
                     resolve();
                 };
                 maskImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
             });
 
-            // Get mask image data for per-pixel clipping
-            const maskImageData = maskCtx.getImageData(0, 0, width, height);
-            const maskData = maskImageData.data;
-
-            // Draw items with clipping applied
-            for (const item of uploadedItems) {
-                if (item.type === 'image') {
-                    await drawImageItemWithMask(item, ctx, maskData, width, height);
-                } else if (item.type === 'text' && item.text) {
-                    drawTextItemWithMask(item, ctx, maskData, width, height);
-                }
-            }
-
             ctx.restore();
             formatPngForDownload(canvas, fileName);
         } finally {
+            console.error('❌ Image failed to load during PNG export');
             const loaderEl = document.getElementById('export-loader');
             if (loaderEl) loaderEl.remove();
         }
@@ -206,46 +192,27 @@ export async function downloadCreateProduct({
 
     svgString = fixSvgSize(svgString, width, height);
 
-    // 🎭 Draw base SVG first
     await drawSvgToCanvas(ctx, svgString, width, height);
 
-    // 🎭 Create a mask canvas from the base SVG
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = width;
-    maskCanvas.height = height;
-    const maskCtx = maskCanvas.getContext('2d');
-    if (!maskCtx) {
-        ctx.restore();
-        formatPngForDownload(canvas, fileName);
-        return;
-    }
-
-    await new Promise<void>((resolve) => {
-        const maskImg = new Image();
-        maskImg.onload = () => {
-            maskCtx.drawImage(maskImg, 0, 0, width, height);
-            resolve();
-        };
-        maskImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-    });
-
-    // Get mask image data for per-pixel clipping
-    const maskImageData = maskCtx.getImageData(0, 0, width, height);
-    const maskData = maskImageData.data;
-
-    // Draw parts with mask
     for (const part of uploadedPart) {
         if (part.path) {
-            await drawImagePartWithMask(part, ctx, maskData, width, height);
+            await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve();
+                };
+                img.src = part.path;
+            });
         }
     }
 
-    // Draw items with mask
     for (const item of uploadedItems) {
         if (item.type === 'image') {
-            await drawImageItemWithMask(item, ctx, maskData, width, height);
+            await drawImageItem(item, ctx);
         } else if (item.type === 'text' && item.text) {
-            drawTextItemWithMask(item, ctx, maskData, width, height);
+            drawTextItem(item, ctx);
         }
     }
 
@@ -286,41 +253,16 @@ async function drawSvgToCanvas(ctx: CanvasRenderingContext2D, svgString: string,
     });
 }
 
-// 🎭 Draw image with clipping mask applied
-async function drawImageItemWithMask(item: any, ctx: CanvasRenderingContext2D, maskData: Uint8ClampedArray, width: number, height: number) {
+async function drawImageItem(item: any, ctx: CanvasRenderingContext2D) {
     return new Promise<void>((resolve) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
-            // Create temporary canvas for this item
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = width;
-            tempCanvas.height = height;
-            const tempCtx = tempCanvas.getContext('2d');
-            if (!tempCtx) {
-                resolve();
-                return;
-            }
-
-            // Draw the item on temp canvas
-            tempCtx.save();
-            tempCtx.translate(item.x + item.width / 2, item.y + item.height / 2);
-            tempCtx.rotate((item.rotation * Math.PI) / 180);
-            tempCtx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
-            tempCtx.restore();
-
-            // Apply mask using imageData
-            const itemImageData = tempCtx.getImageData(0, 0, width, height);
-            const itemData = itemImageData.data;
-
-            // Apply mask by multiplying alpha channels
-            for (let i = 3; i < itemData.length; i += 4) {
-                const maskAlpha = maskData[i] / 255;
-                itemData[i] = Math.round(itemData[i] * maskAlpha);
-            }
-
-            tempCtx.putImageData(itemImageData, 0, 0);
-            ctx.drawImage(tempCanvas, 0, 0);
+            ctx.save();
+            ctx.translate(item.x + item.width / 2, item.y + item.height / 2);
+            ctx.rotate((item.rotation * Math.PI) / 180);
+            ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
+            ctx.restore();
             resolve();
         };
 
@@ -336,105 +278,21 @@ async function drawImageItemWithMask(item: any, ctx: CanvasRenderingContext2D, m
     });
 }
 
-// 🎭 Draw part (colored image) with clipping mask applied
-async function drawImagePartWithMask(part: PartLayer, ctx: CanvasRenderingContext2D, maskData: Uint8ClampedArray, width: number, height: number) {
-    return new Promise<void>((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            // Create temporary canvas for this part
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = width;
-            tempCanvas.height = height;
-            const tempCtx = tempCanvas.getContext('2d');
-            if (!tempCtx) {
-                resolve();
-                return;
-            }
-
-            // Draw the part on temp canvas
-            tempCtx.drawImage(img, 0, 0, width, height);
-
-            // Apply mask using imageData
-            const partImageData = tempCtx.getImageData(0, 0, width, height);
-            const partData = partImageData.data;
-
-            // Apply mask by multiplying alpha channels
-            for (let i = 3; i < partData.length; i += 4) {
-                const maskAlpha = maskData[i] / 255;
-                partData[i] = Math.round(partData[i] * maskAlpha);
-            }
-
-            tempCtx.putImageData(partImageData, 0, 0);
-            ctx.drawImage(tempCanvas, 0, 0);
-            resolve();
-        };
-
-        img.src = part.path;
-    });
-}
-
-// 🎭 Draw text with clipping mask applied
-function drawTextItemWithMask(
-    item: TextLayer,
-    ctx: CanvasRenderingContext2D,
-    maskData: Uint8ClampedArray,
-    width: number,
-    height: number
-) {
+function drawTextItem(item: TextLayer, ctx: CanvasRenderingContext2D) {
     ctx.save();
-
     const fontWeight = item.bold ? 'bold' : 'normal';
     const fontStyle = item.italic ? 'italic' : 'normal';
     const fontSize = item.fontSize || 20;
     const fontFamily = item.fontFamily || 'Arial';
-
-    // Create temporary canvas for text
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) {
-        ctx.restore();
-        return;
-    }
-
-    // Set font
-    tempCtx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-    tempCtx.textAlign = item.textAlignment || 'center';
-    tempCtx.textBaseline = 'middle';
-    tempCtx.translate(item.x + (item.width || 0) / 2, item.y + (item.height || 0) / 2);
-    if (item.rotation) tempCtx.rotate((item.rotation * Math.PI) / 180);
-
-    // Stroke text (if stroke is defined)
-    if (item.stroke && item.stroke > 0) {
-        tempCtx.lineWidth = item.stroke && item.stroke >= 1 ? item.stroke - 1 : item.stroke;
-        tempCtx.strokeStyle = item.strokeColor || '#000';
-        tempCtx.lineJoin = 'round'; // smooth corners
-        tempCtx.lineCap = 'round';
-
-        tempCtx.strokeText(item.text || '', 0, 0);
-    }
-
-    // Fill text
-    tempCtx.fillStyle = item.color || '#000';
-    tempCtx.fillText(item.text || '', 0, 0);
-
-    // Apply mask using imageData
-    const textImageData = tempCtx.getImageData(0, 0, width, height);
-    const textData = textImageData.data;
-
-    // Apply mask by multiplying alpha channels
-    for (let i = 3; i < textData.length; i += 4) {
-        const maskAlpha = maskData[i] / 255;
-        textData[i] = Math.round(textData[i] * maskAlpha);
-    }
-
-    tempCtx.putImageData(textImageData, 0, 0);
-    ctx.drawImage(tempCanvas, 0, 0);
+    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+    ctx.fillStyle = item.color || '#000';
+    ctx.textAlign = item.textAlignment || 'center';
+    ctx.textBaseline = 'middle';
+    ctx.translate(item.x + (item.width || 0) / 2, item.y + (item.height || 0) / 2);
+    if (item.rotation) ctx.rotate((item.rotation * Math.PI) / 180);
+    ctx.fillText(item.text || '', 0, 0);
     ctx.restore();
 }
-
 
 async function formatSVGForDownload(
     svgEl: SVGSVGElement,
@@ -447,6 +305,23 @@ async function formatSVGForDownload(
 ) {
     const serializer = new XMLSerializer();
     const baseSvg = serializer.serializeToString(svgEl);
+
+    // Try to find a base/template element inside the SVG that should be used
+    // as the clipping shape for uploaded parts/items. We look for a few
+    // conventional markers: an element with id="baseSvg", an element with
+    // attribute `data-base-svg`, or an <image> whose href references an SVG
+    // file (e.g. "testing.svg"). If found, we'll create a clipPath from it
+    // and render uploaded items only inside that clip.
+    const svgClone = svgEl.cloneNode(true) as SVGSVGElement;
+    let baseElement: Element | null = svgClone.querySelector('#baseSvg') || svgClone.querySelector('[data-base-svg]');
+    if (!baseElement) {
+        // look for an <image> referencing an external SVG (by href or xlink:href)
+        const images = Array.from(svgClone.querySelectorAll('image')) as Element[];
+        baseElement = images.find((img) => {
+            const href = (img.getAttribute('href') || img.getAttribute('xlink:href') || '').toLowerCase();
+            return href.endsWith('.svg') || href.includes('testing.svg');
+        }) || null;
+    }
 
     const embedImageAsBase64 = async (src: string): Promise<string> => {
         if (!src) return '';
@@ -471,7 +346,7 @@ async function formatSVGForDownload(
             const transform = `translate(${item.x + item.width / 2},${item.y + item.height / 2}) rotate(${item.rotation || 0}) translate(${-item.width / 2},${-item.height / 2})`;
             itemSvgs.push(`<image href="${href}" width="${item.width}" height="${item.height}" transform="${transform}" />`);
         } else if (item.type === 'text' && item.text) {
-            const fontWeight = item.bold ? '900' : '700';
+            const fontWeight = item.bold ? 'bold' : 'normal';
             const fontStyle = item.italic ? 'italic' : 'normal';
             const fontSize = item.fontSize || 20;
             const fontFamily = item.fontFamily || 'Arial';
@@ -479,41 +354,56 @@ async function formatSVGForDownload(
             const centerX = item.x + (item.width || 0) / 2;
             const centerY = item.y + (item.height || 0) / 2;
             const transform = `translate(${centerX},${centerY}) rotate(${item.rotation || 0}) translate(0, ${fontSize / 2})`;
-
-            const stroke = item.stroke ? `stroke="${item.strokeColor || '#000'}" stroke-width="${item.stroke && item.stroke >= 1 ? item.stroke - 1  : item.stroke  }" stroke-linejoin="round" stroke-linecap="round"` : '';
-
             itemSvgs.push(
-                `<text
-                    font-family="${fontFamily}"
-                    font-size="${fontSize}"
-                    font-style="${fontStyle}"
-                    font-weight="${fontWeight}"
-                    fill="${item.color || '#000'}"
-                    ${stroke}
-                    text-anchor="${textAnchor}"
-                    transform="${transform}"
-                >
-                    ${item.text}
-                </text>`
+                `<text font-family="${fontFamily}" font-size="${fontSize}" font-style="${fontStyle}" font-weight="${fontWeight}" fill="${item.color || '#000'}" text-anchor="${textAnchor}" transform="${transform}">${item.text}</text>`,
             );
-
         }
     }
 
     const partSvgs = uploadedPart
         ? uploadedPart
-              .map((part) =>
-                  part.path ? `<image href="${part.path}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />` : '',
-              )
+              .map((part) => (part.path ? `<image href="${part.path}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" />` : ''))
               .join('\n')
         : '';
 
-    const svgOutput = `
+    // Log the detected base element for debugging. If we detected a specific
+    // base element, log its serialized form; otherwise fall back to the full
+    // SVG string.
+    if (baseElement) {
+        console.log('baseSvg', serializer.serializeToString(baseElement));
+    } else {
+        console.log('baseSvg', baseSvg);
+    }
+
+    // If we found a base element, create a defs with a clipPath (or mask)
+    // using that element and render parts/items inside a clipped group. If
+    // not found, fall back to rendering everything together.
+    let svgOutput = '';
+    if (baseElement) {
+        const baseSerialized = serializer.serializeToString(baseElement);
+        const defs = `<defs><clipPath id="clip-base">${baseSerialized}</clipPath></defs>`;
+
+        // We also want the base element visible (e.g., template outline), so
+        // include it outside the clipped group as the visual base, then place
+        // parts/items inside the clipped group so they're only visible where
+        // the base element is.
+        svgOutput = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+            ${defs}
+            ${baseSerialized}
+            <g clip-path="url(#clip-base)">
+                ${partSvgs}
+                ${itemSvgs.join('\n')}
+            </g>
+        </svg>`;
+    } else {
+        svgOutput = `
         <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
         ${baseSvg}
         ${partSvgs}
         ${itemSvgs.join('\n')}
         </svg>`;
+    }
     if (returnString) return svgOutput;
 
     const blob = new Blob([svgOutput], { type: 'image/svg+xml;charset=utf-8' });
@@ -526,6 +416,7 @@ async function formatSVGForDownload(
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
+
 
 function formatPngForDownload(canvas: HTMLCanvasElement, fileName: string) {
     canvas.toBlob((blob) => {
