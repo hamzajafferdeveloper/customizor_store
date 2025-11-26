@@ -104,6 +104,18 @@ export async function downloadClippedCanvas({
                 }
             }
 
+            // 🎭 Apply mask using template (destination-in)
+            await new Promise<void>((resolve) => {
+                const maskImg = new Image();
+                maskImg.onload = () => {
+                    ctx.globalCompositeOperation = 'destination-in';
+                    ctx.drawImage(maskImg, 0, 0, width, height);
+                    ctx.globalCompositeOperation = 'source-over';
+                    resolve();
+                };
+                maskImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+            });
+
             ctx.restore();
             formatPngForDownload(canvas, fileName);
         } finally {
@@ -287,6 +299,7 @@ async function formatSVGForDownload(
     returnString = false,
     uploadedPart?: PartLayer[],
 ) {
+    console.log('SVG Element for formatting:', svgEl);
     const serializer = new XMLSerializer();
     const baseSvg = serializer.serializeToString(svgEl);
 

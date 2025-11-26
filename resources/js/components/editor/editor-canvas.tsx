@@ -32,7 +32,9 @@ type Props = {
     canRedo: boolean;
 
     svgOverlayBox: { left: number; top: number; width: number; height: number } | null;
-    setSvgOverlayBox: React.Dispatch<React.SetStateAction<{ left: number; top: number; width: number; height: number; bottom: number; right: number; x: number; y: number; } | null>>;
+    setSvgOverlayBox: React.Dispatch<
+        React.SetStateAction<{ left: number; top: number; width: number; height: number; bottom: number; right: number; x: number; y: number } | null>
+    >;
 };
 
 export default function EditorCanvas({
@@ -52,7 +54,7 @@ export default function EditorCanvas({
     canUndo,
     canRedo,
     svgOverlayBox,
-    setSvgOverlayBox
+    setSvgOverlayBox,
 }: Props) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const offsetRef = useRef<{ offsetX: number; offsetY: number }>({ offsetX: 0, offsetY: 0 });
@@ -66,7 +68,6 @@ export default function EditorCanvas({
 
     const [svgMaskUrl, setSvgMaskUrl] = useState<string | null>(null);
     const [clipPath, setClipPath] = useState<string | null>(null);
-
 
     const controllerRef = useRef<HTMLDivElement | null>(null);
     const [isResizing, setIsResizing] = useState(false);
@@ -394,278 +395,278 @@ export default function EditorCanvas({
                 <input type="file" accept=".svg,.png,.jpg,.jpeg" multiple className="hidden" ref={fileInputRef} onChange={handleUploadChange} />
             )}
 
-            <div
-                ref={canvasContainerRef}
-                className="background-container relative flex h-full max-h-[90vh] w-full max-w-full items-center justify-center overflow-hidden rounded-lg border-2 bg-white p-2 dark:bg-transparent"
-                onMouseDown={handlePanStart}
-                onTouchStart={handlePanStart}
-                style={{
-                    cursor: isPanning ? 'grabbing' : 'default',
-                    minHeight: 0,
-                    minWidth: 0,
-                }}
-            >
+            <div className='background-container w-full h-full max-h-fit flex justify-center border-2 dark:bg-transparent rounded-lg'>
                 <div
+                    ref={canvasContainerRef}
+                    className="relative flex items-center justify-center overflow-hidden bg-none p-2 lg:h-[700px] lg:w-[700px] xl:h-[900px] xl:w-[900px] "
+                    onMouseDown={handlePanStart}
+                    onTouchStart={handlePanStart}
                     style={{
-                        width: '100%',
-                        height: '100%',
-                        maxWidth: '100vw',
-                        maxHeight: '80vh',
-                        aspectRatio: svgOverlayBox ? `${svgOverlayBox.width} / ${svgOverlayBox.height}` : undefined,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                        transformOrigin: '0 0',
-                        transition: isPanning ? 'none' : 'transform 0.1s',
+                        cursor: isPanning ? 'grabbing' : 'default',
+                        minHeight: 0,
+                        minWidth: 0,
                     }}
                 >
-                    {/* SVG template container */}
                     <div
-                        ref={downloadRef}
                         style={{
                             width: '100%',
                             height: '100%',
+                            aspectRatio: svgOverlayBox ? `${svgOverlayBox.width} / ${svgOverlayBox.height}` : undefined,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            position: 'relative',
+                            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                            transformOrigin: '0 0',
+                            transition: isPanning ? 'none' : 'transform 0.1s',
                         }}
                     >
+                        {/* SVG template container */}
                         <div
-                            id="svg-container"
-                            className="h-full w-full"
-                            ref={svgContainerRef}
-                            onClick={handleSvgContainerClick}
+                            ref={downloadRef}
                             style={{
                                 width: '100%',
                                 height: '100%',
-                                minWidth: 0,
-                                minHeight: 0,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                             }}
-                        />
-                    </div>
-
-                    {/* Uploaded items (masked) */}
-                    {svgOverlayBox && svgMaskUrl && (
-                        <div
-                            style={{
-                                position: 'absolute',
-                                left: svgOverlayBox.left ?? 0,
-                                top: svgOverlayBox.top ?? 0,
-                                width: svgOverlayBox.width ?? 0,
-                                height: svgOverlayBox.height ?? 0,
-                                pointerEvents: 'none',
-                                WebkitMaskImage: svgMaskUrl || undefined,
-                                maskImage: svgMaskUrl || undefined,
-                                WebkitMaskRepeat: 'no-repeat',
-                                maskRepeat: 'no-repeat',
-                                WebkitMaskSize: '100% 100%',
-                                maskSize: '100% 100%',
-                                zIndex: 20,
-                                minWidth: 0,
-                                minHeight: 0,
-                            }}
-                            className="p-2"
                         >
-                            {uploadedItems.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="uploaded-item"
-                                    style={{
-                                        position: 'absolute',
-                                        left: item.x,
-                                        top: item.y,
-                                        width: item.width,
-                                        height: item.height,
-                                        transform: `rotate(${item.rotation}deg)`,
-                                        cursor: 'move',
-                                        zIndex: 10,
-                                        pointerEvents: 'auto',
-                                        borderRadius: 8,
-                                    }}
-                                    onMouseDown={(e) => {
-                                        // start drag gesture (live updates)
-                                        handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef);
-                                    }}
-                                    onTouchStart={(e) => {
-                                        handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef);
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedItemId(item.id);
-                                    }}
-                                >
-                                    {item.type === 'image' ? (
-                                        item.fileType === 'svg' ? (
-                                            <object
-                                                type="image/svg+xml"
-                                                data={item.src}
-                                                className="pointer-events-none h-full w-full"
-                                                style={{ objectFit: 'fill' }}
-                                            />
-                                        ) : (
-                                            <img
-                                                src={item.src}
-                                                alt={item.originalFileName}
-                                                className="pointer-events-none h-full w-full"
-                                                style={{ objectFit: 'fill' }}
-                                            />
-                                        )
-                                    ) : (
-                                        <div
-                                            style={{
-                                                position: 'relative',
-                                                display: 'flex',
-                                                justifyContent:
-                                                    item.textAlignment === 'center'
-                                                        ? 'center'
-                                                        : item.textAlignment === 'right'
-                                                          ? 'flex-end'
-                                                          : 'flex-start',
-                                                width: '100%',
-                                                height: '100%',
-                                            }}
-                                        >
-                                            {/* Stroke layer */}
-                                            <span
-                                                style={{
-                                                    position: 'absolute',
-                                                    fontSize: item.fontSize,
-                                                    fontFamily: item.fontFamily,
-                                                    fontStyle: item.italic ? 'italic' : 'normal',
-                                                    fontWeight: item.bold ? 'bold' : 'normal',
-                                                    WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
-                                                    color: 'transparent',
-                                                }}
-                                            >
-                                                {item.text}
-                                            </span>
-
-                                            {/* Fill layer */}
-                                            <span
-                                                style={{
-                                                    color: item.color,
-                                                    fontSize: item.fontSize,
-                                                    fontFamily: item.fontFamily,
-                                                    fontStyle: item.italic ? 'italic' : 'normal',
-                                                    fontWeight: item.bold ? 'bold' : 'normal',
-                                                    zIndex: 1,
-                                                }}
-                                            >
-                                                {item.text}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                            <div
+                                id="svg-container"
+                                className="h-full w-full"
+                                ref={svgContainerRef}
+                                onClick={handleSvgContainerClick}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            />
                         </div>
-                    )}
 
-                    {/* Controller overlay */}
-                    {selectedItemId &&
-                        (() => {
-                            const item = uploadedItems.find((i) => i.id === selectedItemId);
-                            if (!item || !svgOverlayBox) return null;
-                            return (
-                                <div
-                                    ref={controllerRef}
-                                    className="controller-overlay border-2 border-dashed border-indigo-500"
-                                    style={{
-                                        position: 'absolute',
-                                        left: (svgOverlayBox.left ?? 0) + item.x - 16,
-                                        top: (svgOverlayBox.top ?? 0) + item.y - 16,
-                                        width: item.width + 32,
-                                        height: item.height + 32,
-                                        pointerEvents: 'auto',
-                                        zIndex: 9999,
-                                        borderRadius: 10,
-                                        boxSizing: 'border-box',
-                                        // pointerEvents: 'none',
-                                        transform: `rotate(${item.rotation}deg)`,
-                                    }}
-                                    onMouseDown={(e) => {
-                                        const target = e.target as HTMLElement;
-                                        if (target.closest('.resize-handle') || target.closest('.rotate-handle')) return;
-                                        // start drag gesture (live)
-                                        handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef);
-                                    }}
-                                >
-                                    {/* SVG Color Change (opens modal) */}
-                                    {item.type === 'image' && (
+                        {/* Uploaded items (masked) */}
+                        {svgOverlayBox && svgMaskUrl && (
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    left: svgOverlayBox.left ?? 0,
+                                    top: svgOverlayBox.top ?? 0,
+                                    width: svgOverlayBox.width ?? 0,
+                                    height: svgOverlayBox.height ?? 0,
+                                    pointerEvents: 'none',
+                                    WebkitMaskImage: svgMaskUrl || undefined,
+                                    maskImage: svgMaskUrl || undefined,
+                                    WebkitMaskRepeat: 'no-repeat',
+                                    maskRepeat: 'no-repeat',
+                                    WebkitMaskSize: '100% 100%',
+                                    maskSize: '100% 100%',
+                                    zIndex: 20,
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                }}
+                                className="p-2"
+                            >
+                                {uploadedItems.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="uploaded-item"
+                                        style={{
+                                            position: 'absolute',
+                                            left: item.x,
+                                            top: item.y,
+                                            width: item.width,
+                                            height: item.height,
+                                            transform: `rotate(${item.rotation}deg)`,
+                                            cursor: 'move',
+                                            zIndex: 10,
+                                            pointerEvents: 'auto',
+                                            borderRadius: 8,
+                                        }}
+                                        onMouseDown={(e) => {
+                                            // start drag gesture (live updates)
+                                            handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef);
+                                        }}
+                                        onTouchStart={(e) => {
+                                            handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef);
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedItemId(item.id);
+                                        }}
+                                    >
+                                        {item.type === 'image' ? (
+                                            item.fileType === 'svg' ? (
+                                                <object
+                                                    type="image/svg+xml"
+                                                    data={item.src}
+                                                    className="pointer-events-none h-full w-full"
+                                                    style={{ objectFit: 'fill' }}
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={item.src}
+                                                    alt={item.originalFileName}
+                                                    className="pointer-events-none h-full w-full"
+                                                    style={{ objectFit: 'fill' }}
+                                                />
+                                            )
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    position: 'relative',
+                                                    display: 'flex',
+                                                    justifyContent:
+                                                        item.textAlignment === 'center'
+                                                            ? 'center'
+                                                            : item.textAlignment === 'right'
+                                                              ? 'flex-end'
+                                                              : 'flex-start',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                }}
+                                            >
+                                                {/* Stroke layer */}
+                                                <span
+                                                    style={{
+                                                        position: 'absolute',
+                                                        fontSize: item.fontSize,
+                                                        fontFamily: item.fontFamily,
+                                                        fontStyle: item.italic ? 'italic' : 'normal',
+                                                        fontWeight: item.bold ? 'bold' : 'normal',
+                                                        WebkitTextStroke: `${item.stroke}px ${item.strokeColor}`,
+                                                        color: 'transparent',
+                                                    }}
+                                                >
+                                                    {item.text}
+                                                </span>
+
+                                                {/* Fill layer */}
+                                                <span
+                                                    style={{
+                                                        color: item.color,
+                                                        fontSize: item.fontSize,
+                                                        fontFamily: item.fontFamily,
+                                                        fontStyle: item.italic ? 'italic' : 'normal',
+                                                        fontWeight: item.bold ? 'bold' : 'normal',
+                                                        zIndex: 1,
+                                                    }}
+                                                >
+                                                    {item.text}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Controller overlay */}
+                        {selectedItemId &&
+                            (() => {
+                                const item = uploadedItems.find((i) => i.id === selectedItemId);
+                                if (!item || !svgOverlayBox) return null;
+                                return (
+                                    <div
+                                        ref={controllerRef}
+                                        className="controller-overlay border-2 border-dashed border-indigo-500"
+                                        style={{
+                                            position: 'absolute',
+                                            left: (svgOverlayBox.left ?? 0) + item.x - 16,
+                                            top: (svgOverlayBox.top ?? 0) + item.y - 16,
+                                            width: item.width + 32,
+                                            height: item.height + 32,
+                                            pointerEvents: 'auto',
+                                            zIndex: 9999,
+                                            borderRadius: 10,
+                                            boxSizing: 'border-box',
+                                            // pointerEvents: 'none',
+                                            transform: `rotate(${item.rotation}deg)`,
+                                        }}
+                                        onMouseDown={(e) => {
+                                            const target = e.target as HTMLElement;
+                                            if (target.closest('.resize-handle') || target.closest('.rotate-handle')) return;
+                                            // start drag gesture (live)
+                                            handleMouseDown(e, item, svgContainerRef, setDraggingId, offsetRef);
+                                        }}
+                                    >
+                                        {/* SVG Color Change (opens modal) */}
+                                        {item.type === 'image' && (
+                                            <div
+                                                className="resize-handle absolute top-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                                onMouseDown={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsResizing(true);
+                                                    resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
+                                                }}
+                                                onClick={() => {
+                                                    setOpenSvgDialog(true);
+                                                    setSelectedSvgId(selectedItemId);
+                                                }}
+                                            >
+                                                <Pen size={16} className="text-indigo-500" />
+                                            </div>
+                                        )}
+
+                                        {/* Rotate Handle - opens angle modal (commit on confirm) */}
                                         <div
-                                            className="resize-handle absolute top-0 left-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                            className="rotate-handle absolute top-0 right-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
                                             onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setIsResizing(true);
                                                 resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
                                             }}
-                                            onClick={() => {
-                                                setOpenSvgDialog(true);
-                                                setSelectedSvgId(selectedItemId);
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenRotateDialog(true);
                                             }}
                                         >
-                                            <Pen size={16} className="text-indigo-500" />
+                                            <RotateCw size={16} className="text-indigo-500" />
                                         </div>
-                                    )}
 
-                                    {/* Rotate Handle - opens angle modal (commit on confirm) */}
-                                    <div
-                                        className="rotate-handle absolute top-0 right-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
-                                        onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                            setIsResizing(true);
-                                            resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
-                                        }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setOpenRotateDialog(true);
-                                        }}
-                                    >
-                                        <RotateCw size={16} className="text-indigo-500" />
-                                    </div>
+                                        {/* Resize Handle (live updates, commit on mouseup) */}
+                                        <div
+                                            className="resize-handle absolute right-0 bottom-0 flex h-7 w-7 cursor-nesw-resize items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setIsResizing(true);
+                                                resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
+                                            }}
+                                            onTouchStart={(e) => {
+                                                e.stopPropagation();
+                                                setIsResizing(true);
+                                                const touch = e.touches[0];
+                                                resizeStart.current = { x: touch.clientX, y: touch.clientY, width: item.width, height: item.height };
+                                            }}
+                                        >
+                                            <Maximize2 size={16} className="text-indigo-500" />
+                                        </div>
 
-                                    {/* Resize Handle (live updates, commit on mouseup) */}
-                                    <div
-                                        className="resize-handle absolute right-0 bottom-0 flex h-7 w-7 cursor-nesw-resize items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
-                                        onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                            setIsResizing(true);
-                                            resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
-                                        }}
-                                        onTouchStart={(e) => {
-                                            e.stopPropagation();
-                                            setIsResizing(true);
-                                            const touch = e.touches[0];
-                                            resizeStart.current = { x: touch.clientX, y: touch.clientY, width: item.width, height: item.height };
-                                        }}
-                                    >
-                                        <Maximize2 size={16} className="text-indigo-500" />
+                                        {/* Delete Handle (commit) */}
+                                        <div
+                                            className="resize-handle absolute bottom-0 left-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setIsResizing(true);
+                                                resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
+                                            }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteItem(selectedItemId, (updater: React.SetStateAction<CanvasItem[]>) => {
+                                                    setUploadedItemsCommit(updater);
+                                                });
+                                            }}
+                                        >
+                                            <Trash2 size={16} className="text-indigo-500" />
+                                        </div>
                                     </div>
-
-                                    {/* Delete Handle (commit) */}
-                                    <div
-                                        className="resize-handle absolute bottom-0 left-0 z-50 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-indigo-500 bg-white shadow"
-                                        onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                            setIsResizing(true);
-                                            resizeStart.current = { x: e.clientX, y: e.clientY, width: item.width, height: item.height };
-                                        }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteItem(selectedItemId, (updater: React.SetStateAction<CanvasItem[]>) => {
-                                                setUploadedItemsCommit(updater);
-                                            });
-                                        }}
-                                    >
-                                        <Trash2 size={16} className="text-indigo-500" />
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                                );
+                            })()}
+                    </div>
                 </div>
             </div>
 

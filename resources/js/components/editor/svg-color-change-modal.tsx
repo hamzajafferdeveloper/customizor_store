@@ -106,6 +106,7 @@ const SvgColorChangeModal = ({ open, onOpenChange, selecetSvgId, uploadedItems, 
   const sanitizedSvg = useMemo(() => makeSvgResponsive(decodedSvg), [decodedSvg]);
 
   const handleClickOnSvg = (e: React.MouseEvent<HTMLDivElement>) => {
+    console.log('SVG clicked', e);
     const svgRoot = svgContainerRef.current?.querySelector('svg');
     if (!svgRoot) return;
     const allowedTags = ['path', 'rect', 'circle', 'polygon', 'ellipse'];
@@ -137,7 +138,7 @@ const SvgColorChangeModal = ({ open, onOpenChange, selecetSvgId, uploadedItems, 
       const allowedTags = ['path', 'rect', 'circle', 'polygon', 'ellipse'];
       const elements = Array.from(doc.querySelectorAll(allowedTags.join(',')));
       if (elements[selectedElementIndex]) {
-        elements[selectedElementIndex].setAttribute('fill', color);
+        elements[selectedElementIndex].setAttribute('fill', color );
         const serializer = new XMLSerializer();
         const updatedSvg = serializer.serializeToString(doc.documentElement);
         setDecodedSvg(updatedSvg);
