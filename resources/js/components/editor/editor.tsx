@@ -286,10 +286,13 @@ export default function Editor({ template, logoGallery, permissions }: Props) {
         const run = async () => {
             try {
                 const svgString = await generateCanvasSVG({
-                    svgContainerId: svgContainerRef.current.id,
+                    // @ts-ignore
+                    svgContainerId: svgContainerRef.current?.id,
                     uploadedItems,
+                    // @ts-ignore
                     svgOverlayBox,
                 });
+                // @ts-ignore
                 setSvgFile(svgString);
             } catch (error) {
                 console.error('Error generating SVG:', error);

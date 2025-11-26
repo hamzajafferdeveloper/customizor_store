@@ -103,6 +103,7 @@ class HomeController extends Controller
             'categories' => $categories,
             'colors' => $colors,
             'product_types' => ProductType::all(),
+            'page_type' => 'store',
         ]);
     }
 
@@ -110,12 +111,14 @@ class HomeController extends Controller
     {
         $store = Store::where('slug', $storeSlug)->first();
         $product = Product::where('sku', $sku)->with('productColors.color', 'template')->firstOrFail();
+        $buyedProducts = get_buyed_products();
 
         // Render the store product detail view
         return Inertia::render('store/product/show', [
             'store' => $store,
             'product' => $product,
             'page_type' => 'store',
+            'buyedProducts' => $buyedProducts,
         ]);
     }
 

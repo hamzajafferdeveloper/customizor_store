@@ -123,7 +123,7 @@ const ManageUserModal = ({
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                credentials: 'same-origin',
+                credentials: 'include',
             });
 
             if (!res.ok) {
@@ -144,7 +144,6 @@ const ManageUserModal = ({
         }
     };
 
-    /** ❌ Remove user from store */
     const handleRemoveUser = async (id: number) => {
         setDeletingUserId(id);
         try {
@@ -156,7 +155,7 @@ const ManageUserModal = ({
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                credentials: 'same-origin',
+                credentials: 'include',
             });
 
             if (!res.ok) throw new Error('Failed to delete user');

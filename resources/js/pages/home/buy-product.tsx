@@ -15,6 +15,8 @@ export default function BuyProduct({ products, selectedUrlType }: any) {
         { id: 'physical', name: 'Physical' },
     ];
 
+    console.log({ products });
+
     return (
         <AppLayout>
             <Head title="Welcome">
@@ -94,8 +96,8 @@ export default function BuyProduct({ products, selectedUrlType }: any) {
                                       onClick={() =>
                                           router.get(
                                               route(product.product.store_id === null ? 'product.show' : 'store.product.show', {
-                                                  slug: product.product.slug,
-                                                  storeId: product.product.store_id,
+                                                  sku: product.product.sku,
+                                                  storeSlug: product.product.store?.slug,
                                               }),
                                               {},
                                               { preserveScroll: true },

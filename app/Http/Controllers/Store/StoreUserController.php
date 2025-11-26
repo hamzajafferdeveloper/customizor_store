@@ -92,7 +92,8 @@ class StoreUserController extends Controller
     public function removeUserFromStore($storeSlug, $userId)
     {
         try {
-            $storeUser = StoreUser::where('store_id', $storeSlug)
+            $store = Store::where('slug', $storeSlug)->first();
+            $storeUser = StoreUser::where('store_id', $store->id)
                 ->where('user_id', $userId)
                 ->first();
 

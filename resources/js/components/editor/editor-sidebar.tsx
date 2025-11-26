@@ -91,6 +91,7 @@ export function EditorSidebar({
     // ✅ Download PNG
     const DownloadPNG: boolean = getPermission('download_png').is_enabled;
 
+
     const color: SvgColorBar = {
         leatherColors: leatherColors,
         protectionColors: protectionColors,

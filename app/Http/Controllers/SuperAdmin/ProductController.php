@@ -13,6 +13,8 @@ use App\Models\Plan;
 use App\Models\Product;
 use App\Models\ProductColors;
 use App\Models\ProductType;
+use App\Models\SoldPhysicalProduct;
+use App\Models\SoldProduct;
 use App\Models\SvgTemplate;
 use App\Models\SvgTemplatePart;
 use Exception;
@@ -59,7 +61,7 @@ class ProductController extends Controller
             'categories' => $categories,
             'colors' => $colors,
             'page_type' => 'home',
-            'product_types' => $product_types
+            'product_types' => $product_types,
         ]);
     }
 
@@ -112,23 +114,23 @@ class ProductController extends Controller
         $category = Category::findOrFail($request->categories_id);
 
         // ✅ Create base slug
-        $rawSlug = $brand->slug_short.$category->slug_short;
+        $rawSlug = $brand->slug_short . $category->slug_short;
         $originalSlug = Str::slug($rawSlug);
         $slug = $originalSlug;
         $count = 1;
 
         while (Product::where('slug', $slug)->exists()) {
-            $slug = $originalSlug.'-'.$count;
+            $slug = $originalSlug . '-' . $count;
             $count++;
         }
 
         // ✅ Auto-generate unique SKU
         // Format: ANB-BRN-CAT-0001
         $basePrefix = 'ANB';
-        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
-        $prefix = $basePrefix.'-'.$baseSku.'-';
+        $baseSku = strtoupper(substr($brand->slug_short, 0, 3)) . strtoupper(substr($category->slug_short, 0, 3));
+        $prefix = $basePrefix . '-' . $baseSku . '-';
 
-        $lastProduct = Product::where('sku', 'like', $prefix.'%')
+        $lastProduct = Product::where('sku', 'like', $prefix . '%')
             ->orderBy('sku', 'desc')
             ->first();
 
@@ -139,7 +141,7 @@ class ProductController extends Controller
             $nextNumber = '0001';
         }
 
-        $sku = $prefix.$nextNumber;
+        $sku = $prefix . $nextNumber;
 
         // Filter Arrays
         $validated['sizes'] = array_filter($validated['sizes']);
@@ -150,7 +152,7 @@ class ProductController extends Controller
         $product_image = null;
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = time().'-'.$file->getClientOriginalName();
+            $filename = time() . '-' . $file->getClientOriginalName();
             $product_image = $file->storeAs('product', $filename, 'public');
         }
 
@@ -188,11 +190,13 @@ class ProductController extends Controller
     public function show(string $sku)
     {
         $product = Product::where('sku', $sku)->with('productColors.color', 'template', 'productType')->first();
+        $buyedProducts = get_buyed_products();
         if ($product) {
 
             return Inertia::render('home/product/show', [
                 'product' => $product,
                 'page_type' => 'home',
+                'buyedProducts' => $buyedProducts
             ]);
         } else {
             abort(404);
@@ -252,7 +256,7 @@ class ProductController extends Controller
 
             // Save new image
             $file = $request->file('image');
-            $filename = time().'-'.$file->getClientOriginalName();
+            $filename = time() . '-' . $file->getClientOriginalName();
             $product_image = $file->storeAs('product', $filename, 'public');
 
             $product->image = $product_image;
@@ -263,30 +267,32 @@ class ProductController extends Controller
 
         // ✅ Only regenerate slug if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
-            $rawSlug = $brand->slug_short.$category->slug_short;
+            $rawSlug = $brand->slug_short . $category->slug_short;
             $originalSlug = Str::slug($rawSlug);
             $slug = $originalSlug;
             $count = 1;
 
-            while (Product::where('slug', $slug)
-                ->where('id', '!=', $product->id)
-                ->exists()) {
+            while (
+                Product::where('slug', $slug)
+                    ->where('id', '!=', $product->id)
+                    ->exists()
+            ) {
 
-                $slug = $originalSlug.'-'.$count;
+                $slug = $originalSlug . '-' . $count;
                 $count++;
             }
 
-            $product->slug = 'ANB-'.$slug;
+            $product->slug = 'ANB-' . $slug;
         }
 
         // ✅ Only regenerate SKU if brand/category changed
         if ($product->brand_id !== $validated['brand_id'] || $product->categories_id !== $validated['categories_id']) {
 
             $basePrefix = 'ANB';
-            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)).strtoupper(substr($category->slug_short, 0, 3));
-            $prefix = $basePrefix.'-'.$baseSku.'-';
+            $baseSku = strtoupper(substr($brand->slug_short, 0, 3)) . strtoupper(substr($category->slug_short, 0, 3));
+            $prefix = $basePrefix . '-' . $baseSku . '-';
 
-            $lastProduct = Product::where('sku', 'like', $prefix.'%')
+            $lastProduct = Product::where('sku', 'like', $prefix . '%')
                 ->orderBy('sku', 'desc')
                 ->first();
 
@@ -297,7 +303,7 @@ class ProductController extends Controller
                 $nextNumber = '0001';
             }
 
-            $product->sku = $prefix.$nextNumber;
+            $product->sku = $prefix . $nextNumber;
         }
 
         // Update product fields
@@ -315,7 +321,7 @@ class ProductController extends Controller
         ProductColors::where('product_id', $product->id)->delete();
 
         // Add new colors
-        if (! empty($validated['colors'])) {
+        if (!empty($validated['colors'])) {
             foreach (array_filter($validated['colors']) as $colorId) {
                 ProductColors::create([
                     'product_id' => $product->id,

@@ -73,7 +73,7 @@ const EditorDownload = ({ open, onOpenChange, downlaodpng, downloadsvg }: Props)
                                 Cancel
                             </Button>
                             <Button
-                                className={`w-1/2 ${downloadsvg && downlaodpng ? '' : 'pointer-events-none opacity-50'}`}
+                                className={`w-1/2 ${downloadsvg || downlaodpng ? '' : 'pointer-events-none opacity-50'}`}
                                 onClick={handleDownload}
                             >
                                 Download

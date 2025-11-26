@@ -172,7 +172,7 @@ class HomeController extends Controller
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => url('/payment/success?session_id={CHECKOUT_SESSION_ID}'),
+                'success_url' => url('/payment/success?session_id={CHECKOUT_SESSION_ID}&product_sku='.$product->sku),
                 'cancel_url' => url('/payment/cancel'),
             ]);
 
@@ -190,9 +190,14 @@ class HomeController extends Controller
     public function paymentSuccess(Request $request)
     {
         $sessionId = $request->get('session_id');
+        $productSku = $request->query('product_sku');
 
         if (! $sessionId) {
             abort(404, 'Missing session');
+        }
+
+        if (! $productSku) {
+            abort(404, 'Missing product sku');
         }
 
         Stripe::setApiKey(config('services.stripe.secret'));
@@ -206,7 +211,7 @@ class HomeController extends Controller
 
         // Get product & user data (you can use metadata if needed)
         $user = auth()->user();
-        $product = Product::where('title', $lineItems->data[0]->description ?? '')->first();
+        $product = Product::where('sku', $productSku)->first();
 
         // ✅ Now safely create the record
         SoldProduct::firstOrCreate([
@@ -218,6 +223,11 @@ class HomeController extends Controller
 
         // Render your Inertia view
         $template = SvgTemplate::with('part')->where('product_id', $product->id)->first();
+
+        if(!$template){
+            abort(404, 'Template not found for the purchased product.');
+        }
+
         $storePermissions = Plan::with('permissions', 'fonts')->where('id', 1)->first();
         $logoGallery = LogoCategory::with('logos')->get();
 
@@ -240,7 +250,7 @@ class HomeController extends Controller
                 ->get();
         } else {
             $products = SoldProduct::where('user_id', $user->id)
-                ->with('product')
+                ->with('product.store')
                 ->get();
         }
 

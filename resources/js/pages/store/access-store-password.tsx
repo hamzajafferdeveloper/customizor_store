@@ -32,6 +32,7 @@ export default function AccessStorePassword({ store }: Props) {
                     <div className="text-center">
                         <h2 className="text-2xl font-semibold text-gray-800">This Store is Protected</h2>
                         <p className="text-sm">Please Enter Password to access this store</p>
+                        <p className="text-sm">Contact us at: <b>{store.email}</b></p>
                     </div>
                     <form onSubmit={submit}>
                         <div className="mb-4">

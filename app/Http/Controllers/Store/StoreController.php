@@ -324,7 +324,7 @@ class StoreController extends Controller
         // (e.g., mark session, redirect to dashboard, etc.)
         session(['store_logged_in' => $store->id]);
 
-        return redirect()->route('store.products', $store->id)
+        return redirect()->route('store.products', $store->slug)
             ->with('success', 'Successfully logged into the store.');
     }
 
