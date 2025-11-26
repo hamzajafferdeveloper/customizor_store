@@ -514,15 +514,12 @@ export default function CreateProductCanvas({
                                                     <span
                                                         style={{
                                                             position: 'absolute',
-                                                            top: 0,
-                                                            left: 0,
                                                             fontSize: layer.fontSize,
                                                             fontFamily: layer.fontFamily,
                                                             fontStyle: layer.italic ? 'italic' : 'normal',
                                                             fontWeight: layer.bold ? 'bold' : 'normal',
                                                             WebkitTextStroke: `${layer.stroke}px ${layer.strokeColor}`,
                                                             color: 'transparent',
-                                                            zIndex: 0,
                                                         }}
                                                     >
                                                         {layer.text}
@@ -531,7 +528,6 @@ export default function CreateProductCanvas({
                                                     {/* Fill layer */}
                                                     <span
                                                         style={{
-                                                            position: 'relative',
                                                             color: layer.color,
                                                             fontSize: layer.fontSize,
                                                             fontFamily: layer.fontFamily,
