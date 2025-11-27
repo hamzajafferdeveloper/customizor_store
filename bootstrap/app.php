@@ -6,6 +6,7 @@ use App\Http\Middleware\IsAdminMiddleware;
 use App\Http\Middleware\IsStoreActiveMiddleware;
 use App\Http\Middleware\IsStoreAdminMiddleware;
 use App\Http\Middleware\IsStorePublicMiddleware;
+use App\Http\Middleware\isValidStoreSlugMiddlware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'isStoreAdmin' => IsStoreAdminMiddleware::class,
             'isStorePublic' => IsStorePublicMiddleware::class,
             'isStoreActive' => IsStoreActiveMiddleware::class,
+            'isValidStoreSlug' => isValidStoreSlugMiddlware::class,
         ]);
 
     })

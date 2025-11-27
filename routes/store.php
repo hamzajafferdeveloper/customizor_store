@@ -19,7 +19,7 @@ Route::prefix('/{storeSlug}')->name('store.')->middleware(['auth'])->group(funct
     Route::post('/user/login', [StoreController::class, 'loginToStore'])->name('user.login');
 });
 
-Route::prefix('/{storeSlug}')->name('store.')->middleware(['isStorePublic', 'isStoreActive'])->group(function () {
+Route::prefix('/{storeSlug}')->name('store.')->middleware(['isValidStoreSlug', 'isStorePublic', 'isStoreActive'])->group(function () {
 
     Route::get('/products', [HomeController::class, 'products'])->name('products');
     Route::get('/product/{sku}', [HomeController::class, 'showProduct'])->name('product.show');
