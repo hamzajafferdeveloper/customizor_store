@@ -6,6 +6,7 @@ use App\Models\Store;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class IsStoreActiveMiddleware
 {
@@ -26,7 +27,7 @@ class IsStoreActiveMiddleware
 
         // If no store found → 404
         if (!$store) {
-            abort(404, 'Store not found.');
+            throw new NotFoundHttpException();
         }
 
         $user = auth()->user();
