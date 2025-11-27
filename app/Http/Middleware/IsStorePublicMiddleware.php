@@ -6,6 +6,7 @@ use App\Models\Store;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class IsStorePublicMiddleware
 {
@@ -19,16 +20,19 @@ class IsStorePublicMiddleware
         $storeSlug = $request->route('storeSlug');
         $store = Store::where('slug', $storeSlug)->first();
 
+        if (!$store) {
+            throw new NotFoundHttpException();
+        }
         // dd($store->load('plan'), $store->load('paymentDetail'));
 
         $user = auth()->user();
 
-        if($user && $user->type == 'admin'){
+        if ($user && $user->type == 'admin') {
             return $next($request);
         }
         if ($store && $store->type === 'protected') {
             // If the store is protected, check if the user is the owner
-            if($user && $store->user_id === $user->id){
+            if ($user && $store->user_id === $user->id) {
                 return $next($request);
             }
 

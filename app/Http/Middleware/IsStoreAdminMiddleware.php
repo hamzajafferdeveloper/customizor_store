@@ -6,6 +6,7 @@ use App\Models\Store;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class IsStoreAdminMiddleware
 {
@@ -18,9 +19,14 @@ class IsStoreAdminMiddleware
     {
         $storeSlug = $request->route('storeSlug');
         $storeId = Store::where('slug', $storeSlug)->first()->id;
+        if (!$storeId) {
+            throw new NotFoundHttpException();
+        }
+
         $user = auth()->user();
 
-        if($user && $user->type == 'admin'){
+
+        if ($user && $user->type == 'admin') {
             return $next($request);
         }
 
