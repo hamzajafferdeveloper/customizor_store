@@ -15,8 +15,6 @@ export default function BuyProduct({ products, selectedUrlType }: any) {
         { id: 'physical', name: 'Physical' },
     ];
 
-    console.log({ products });
-
     return (
         <AppLayout>
             <Head title="Welcome">
